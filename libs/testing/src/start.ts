@@ -118,10 +118,16 @@ async function startOne(
   server.on('request', (request) => {
     received.push(request.httpVersion);
   });
-  await app.listen(options.port, LOOPBACK_HOST);
-  assertLoopbackListener(server.address());
   const url = `http://${LOOPBACK_HOST}:${options.port}`;
-  await waitForHealth(`${url}${healthPath}`);
+  // A start that fails must not leave a running service, or its database engine, behind.
+  try {
+    await app.listen(options.port, LOOPBACK_HOST);
+    assertLoopbackListener(server.address());
+    await waitForHealth(`${url}${healthPath}`);
+  } catch (error) {
+    await app.close();
+    throw error;
+  }
   return {
     app,
     port: options.port,

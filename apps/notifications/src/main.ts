@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import {
   LOOPBACK_HOST,
   assertLoopbackListener,
+  stopOnSignal,
 } from '@zazzles/exchange-config';
 import { NestFactory } from '@nestjs/core';
 import {
@@ -19,7 +20,7 @@ async function bootstrap() {
     AppModule,
     adapter,
   );
-  app.enableShutdownHooks();
+  stopOnSignal(app);
   await app.listen(app.get(Environment).NOTIFICATIONS_PORT, LOOPBACK_HOST);
   assertLoopbackListener(app.getHttpServer().address());
 }

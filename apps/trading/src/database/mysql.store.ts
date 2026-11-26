@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { BeforeApplicationShutdown, Injectable } from '@nestjs/common';
 import { createDB } from 'mysql-memory-server';
 
 /** The MySQL release every machine runs. Pinned: the package would otherwise pick one by the machine's own version of itself. */
@@ -21,7 +21,7 @@ export interface MysqlConnection {
  * survives it. The first start on a machine downloads the binary first.
  */
 @Injectable()
-export class MysqlStore implements OnApplicationShutdown {
+export class MysqlStore implements BeforeApplicationShutdown {
   private database?: Awaited<ReturnType<typeof createDB>>;
   private opening?: Promise<MysqlConnection>;
 
@@ -31,7 +31,13 @@ export class MysqlStore implements OnApplicationShutdown {
     return this.opening;
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  /**
+   * The engine stops before the HTTP server is closed, not after. Nest closes
+   * the server between this hook and the shutdown hook, and a client that
+   * keeps a connection open can keep that close from finishing. The machine
+   * must be as it was whatever a client does, so the engine does not wait.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
     await this.database?.stop();
   }
 

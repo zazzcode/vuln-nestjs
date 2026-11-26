@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationShutdown } from '@nestjs/common';
+import { BeforeApplicationShutdown, Injectable } from '@nestjs/common';
 import { Db, MongoClient } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
@@ -17,7 +17,7 @@ export const MONGO_DATABASE = 'MONGO_DATABASE';
  * object (ADR-011).
  */
 @Injectable()
-export class MongoStore implements OnApplicationShutdown {
+export class MongoStore implements BeforeApplicationShutdown {
   private memory?: MongoMemoryServer;
   private client?: MongoClient;
   private opening?: Promise<Db>;
@@ -35,7 +35,13 @@ export class MongoStore implements OnApplicationShutdown {
     return true;
   }
 
-  async onApplicationShutdown(): Promise<void> {
+  /**
+   * The engine stops before the HTTP server is closed, not after. Nest closes
+   * the server between this hook and the shutdown hook, and a client that
+   * keeps a connection open can keep that close from finishing. The machine
+   * must be as it was whatever a client does, so the engine does not wait.
+   */
+  async beforeApplicationShutdown(): Promise<void> {
     await this.client?.close();
     await this.memory?.stop();
   }
