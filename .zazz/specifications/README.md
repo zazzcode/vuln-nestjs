@@ -30,8 +30,8 @@ The steps are defined in the [implementation plan](../project/implementation-pla
 
 | Specification | Step | Branch | Status |
 | --- | --- | --- | --- |
-| — the plan and the service specifications are this change | 0 — Plan, architecture, service specifications | `phase-0-plan-and-architecture` | In review |
-| `001-foundation.md` | 1 — Scaffolding | `phase-1-foundation` | Not written. Next, in a new session |
+| — the plan and the service specifications are this change | 0 — Plan, architecture, service specifications | `phase-0-plan-and-architecture` | Merged on 2026-11-26 in [pull request 1](https://github.com/zazzcode/vuln-nestjs/pull/1) |
+| [`001-foundation.md`](001-foundation.md) | 1 — Scaffolding | `phase-1-foundation` | In implementation |
 | `002a-accounts.md` | 2a — The `accounts` service | `phase-2a-accounts` | Planned |
 | `002b-trading.md` | 2b — The `trading` service | `phase-2b-trading` | Planned |
 | `002c-notifications.md` | 2c — The `notifications` service | `phase-2c-notifications` | Planned |
