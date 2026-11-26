@@ -18,6 +18,8 @@ This is the build order, from an empty repository to a complete lab. The design 
 
 Step 2 is parallel because the services never call each other. Each one is built, and tested, on its own.
 
+**Before Step 2 starts**, the Project Owner turns off Dependabot security updates for the repository. Three of the vulnerable pins are installed in Step 2, because their scenarios are not exploitable without them, and GitHub would otherwise open a pull request against each.
+
 ## 2. Step 1 — scaffolding
 
 "Complete" means all of this is true, and has been run:
@@ -86,8 +88,6 @@ The eight pins in [`docs/vulnerabilities/dependencies.md`](../../docs/vulnerabil
 ## 6. Step 5 — release
 
 A fresh clone, installed, started, exercised and stopped, against every success criterion of the [project plan](project-plan.md#4-success-criteria). The evidence goes in the pull request. Then the tag `v1.0.0`.
-
-Before this step, the Project Owner turns off Dependabot security updates for the repository, or GitHub opens a pull request against every pin.
 
 ## 7. Conventions for every step
 
