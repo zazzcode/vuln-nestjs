@@ -11,7 +11,7 @@ const withStatus = (status: number): GraphQLFormattedError => ({
   },
 });
 
-const codeOf = (formattedError: GraphQLFormattedError): string | undefined =>
+const codeOf = (formattedError: GraphQLFormattedError): unknown =>
   formatGraphQLError(formattedError).extensions?.code;
 
 describe('formatGraphQLError', () => {
