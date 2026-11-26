@@ -76,7 +76,7 @@ The existing [vuln-nextjs](https://github.com/zazzcode/vuln-nextjs) lab covers N
 
 | ID | Assumption | If wrong |
 | --- | --- | --- |
-| A1 | The methodology referred to is the [Zazz methodology](https://github.com/zazzcode/zazz-skills); the link was missing from the request | The layout of `.zazz/` is adjusted |
+| A1 | The methodology referred to is the [Zazz methodology](https://github.com/zazz-skills). The link was missing from the request. **Confirmed by the Project Owner on 2026-11-26** | — |
 | A2 | pnpm and Node 24 are used, as in vuln-nextjs | Minor: the workspace and script names change |
 | A3 | The third backend service is `notifications` (price alerts and webhooks). It is the natural home for request forgery, template injection and command injection | It is dropped with its scenarios; the gateway and two services still meet the constraints |
 | A4 | The NestJS 12 line stays current for the life of this lab | Versions are re-pinned per phase; exact pins are kept |
@@ -165,7 +165,7 @@ Each has a default the plan follows. Change any of them in review.
 
 | ID | Question | Default in this plan |
 | --- | --- | --- |
-| Q1 | Is `zazz-skills` the methodology you meant? The link was missing from the request | Yes; `.zazz/` follows its document model with the two adaptations named in [../README.md](../README.md) |
+| Q1 | Is `zazz-skills` the methodology you meant? The link was missing from the request | **Confirmed on 2026-11-26.** `.zazz/` follows its document model, with the adaptations named in [../README.md](../README.md) |
 | Q2 | Is the third backend service wanted, or should the lab stay at two? | `notifications`, because it gives request forgery, template injection and command injection a real home |
 | Q3 | Should the specification be reviewed on its own before implementation, in a separate pull request? | One pull request per deliverable: the specification is its first commit, and the PR opens as a draft until it is approved |
 | Q4 | Which authentication and validation patterns should the baseline use? | The established ones: `@nestjs/jwt` with custom guards, and class-validator DTOs. NestJS 12 also teaches `@nestjs/authentication` and Zod schemas; they are an optional later variant. See [../architecture/decisions/ADR-007-auth-and-validation-patterns.md](../architecture/decisions/ADR-007-auth-and-validation-patterns.md) |
