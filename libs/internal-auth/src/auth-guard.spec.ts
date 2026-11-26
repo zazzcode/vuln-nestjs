@@ -9,6 +9,7 @@ import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-hos
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from './auth.guard.js';
 import { Public, Roles, ServiceToken } from './decorators.js';
+import { graphContext } from './graph-context.js';
 import type { AuthenticatedRequest } from './request.js';
 import { RolesGuard } from './roles.guard.js';
 import {
@@ -17,6 +18,7 @@ import {
   SESSION_COOKIE,
   type TokenPayload,
 } from './token.js';
+import { TokenVerifier } from './token-verifier.js';
 
 const SECRET = 'a-secret-of-at-least-thirty-two-characters';
 const TOKEN_OF_THE_RUN = 'the-service-token-of-the-run';
@@ -40,8 +42,8 @@ class Operations {
 /**
  * A Nest context as the guards receive it, built from Nest's own class rather
  * than a look-alike. For a route the arguments are (request, response, next);
- * for a resolver, whose arguments are (parent, args, context, info), the
- * request sits in the context.
+ * for a root operation of a resolver they are (parent, args, context, info),
+ * and the request sits in the context.
  */
 function contextFor(
   operation: keyof Operations,
@@ -59,10 +61,11 @@ function contextFor(
   return context as ExecutionContext;
 }
 
+const verifier = new TokenVerifier(new JwtService({ secret: SECRET }));
 const guard = new AuthGuard(
   new Reflector(),
-  new JwtService({ secret: SECRET }),
   new ConfigService({ [INTERNAL_SERVICE_TOKEN]: TOKEN_OF_THE_RUN }),
+  verifier,
 );
 const roles = new RolesGuard(new Reflector());
 
@@ -173,5 +176,34 @@ describe('the authentication and role guards', () => {
     await expect(
       attempt('internal', withBearer(signed(admin))),
     ).rejects.toBeInstanceOf(UnauthorizedException);
+  });
+});
+
+describe('the GraphQL context', () => {
+  const context = graphContext(verifier);
+
+  // A field resolver and an entity reference are reached without the guard, so the caller cannot come from it.
+  it('attaches the caller when the token of the request verifies', async () => {
+    const req = withBearer(signed(alice));
+
+    expect(await context({ req })).toEqual({ user: alice });
+    // The driver also passes the request itself.
+    expect(await context(withBearer(signed(admin)))).toEqual({ user: admin });
+    expect(req.user).toEqual(alice);
+  });
+
+  // A token that does not verify must still reach the operation it was sent to: nothing may refuse it on the way.
+  it('leaves the caller unset, and throws nothing, for a request with no token or with one that does not verify', async () => {
+    const withoutToken: AuthenticatedRequest = { headers: {} };
+    const forged: AuthenticatedRequest = withBearer(
+      signed(alice, {}, 'another-secret-of-at-least-thirty-two-characters'),
+    );
+    const expired: AuthenticatedRequest = withBearer(
+      signed(alice, { expiresIn: -1 }),
+    );
+
+    expect(await context({ req: withoutToken })).toEqual({});
+    expect(await context({ req: forged })).toEqual({});
+    expect(await context({ req: expired })).toEqual({});
   });
 });

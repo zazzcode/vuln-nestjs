@@ -2,6 +2,7 @@ import {
   createParamDecorator,
   ExecutionContext,
   SetMetadata,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { requestOf } from './request.js';
 import type { Role, TokenPayload } from './token.js';
@@ -24,14 +25,15 @@ export const ServiceToken = (): MethodDecorator & ClassDecorator =>
 function requireUser(context: ExecutionContext): TokenPayload {
   const user = requestOf(context).user;
   if (!user) {
-    throw new Error(
-      'The caller is not signed in: is this operation behind the authentication guard?',
-    );
+    throw new UnauthorizedException('This operation needs a signed-in caller');
   }
   return user;
 }
 
-/** The claims of the caller's token: `sub`, `sid` and `role`. */
+/**
+ * The caller, with the claims of its token: `sub`, `sid` and `role`. Refuses a
+ * request that has no signed-in caller, in any resolver.
+ */
 export const CurrentUser = createParamDecorator(
   (_data: unknown, context: ExecutionContext): TokenPayload =>
     requireUser(context),

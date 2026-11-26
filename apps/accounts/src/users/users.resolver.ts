@@ -1,4 +1,11 @@
-import { Args, ID, Query, ResolveReference, Resolver } from '@nestjs/graphql';
+import {
+  Args,
+  ID,
+  Parent,
+  Query,
+  ResolveReference,
+  Resolver,
+} from '@nestjs/graphql';
 import { Roles } from '@zazzles/exchange-internal-auth';
 import { User } from './user.model.js';
 import { UsersService } from './users.service.js';
@@ -9,7 +16,7 @@ export class UsersResolver {
 
   /** The gateway calls this when another service returns a reference to a user. */
   @ResolveReference()
-  reference(reference: { id: string }): Promise<User | null> {
+  reference(@Parent() reference: { id: string }): Promise<User | null> {
     return this.users.byId(reference.id);
   }
 

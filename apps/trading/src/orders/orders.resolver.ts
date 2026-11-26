@@ -1,0 +1,84 @@
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Parent,
+  Query,
+  ResolveField,
+  ResolveReference,
+  Resolver,
+} from '@nestjs/graphql';
+import {
+  CurrentUser,
+  UserId,
+  type TokenPayload,
+} from '@zazzles/exchange-internal-auth';
+import { Order } from './order.model.js';
+import { OrdersService } from './orders.service.js';
+import { User } from './user.model.js';
+
+@Resolver(() => Order)
+export class OrdersResolver {
+  constructor(private readonly orders: OrdersService) {}
+
+  /** The caller's orders. */
+  @Query(() => [Order], { name: 'orders' })
+  placedByCaller(@UserId() userId: string): Promise<Order[]> {
+    return this.orders.byUser(userId);
+  }
+
+  /**
+   * The gateway asks for an order by key. An order is read by who placed it,
+   * or by an administrator. The representation is the parent.
+   * This resolver is reached without the guard: it refuses for itself.
+   */
+  @ResolveReference()
+  async reference(
+    @Parent() reference: { id: string },
+    @CurrentUser() caller: TokenPayload,
+  ): Promise<Order> {
+    const order = await this.orders.byId(Number(reference.id));
+    if (order === null) {
+      throw new NotFoundException(`There is no order ${reference.id}`);
+    }
+    if (order.userId !== caller.sub && caller.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'An order is read by the user who placed it',
+      );
+    }
+    return order;
+  }
+
+  /** The order's user, as a reference built from what is stored. Never from a caller's argument. */
+  @ResolveField(() => User)
+  user(@Parent() order: Order): User {
+    return { id: order.userId, orders: [] };
+  }
+}
+
+/** The part of the user entity this service adds: the orders a user placed. */
+@Resolver(() => User)
+export class UserOrdersResolver {
+  constructor(private readonly orders: OrdersService) {}
+
+  /** The gateway asks for the user's own fields when a query reaches a user this service did not provide. */
+  @ResolveReference()
+  reference(@Parent() reference: { id: string }): User {
+    return { id: reference.id, orders: [] };
+  }
+
+  /**
+   * A user's orders, for that user or for an administrator. The reference
+   * names a user the caller did not choose, so it is checked against the caller.
+   */
+  @ResolveField('orders', () => [Order])
+  placedByUser(
+    @CurrentUser() caller: TokenPayload,
+    @Parent() user: User,
+  ): Promise<Order[]> {
+    if (caller.sub !== user.id && caller.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'Orders are read by the user who placed them',
+      );
+    }
+    return this.orders.byUser(user.id);
+  }
+}

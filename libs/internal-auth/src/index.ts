@@ -10,8 +10,10 @@ export {
   ServiceToken,
   UserId,
 } from './decorators.js';
+export { graphContext } from './graph-context.js';
+export type { GraphContext } from './graph-context.js';
 export { accessTokenOf, requestOf, serviceTokenOf } from './request.js';
-export type { AuthenticatedRequest } from './request.js';
+export type { AuthenticatedHeaders, AuthenticatedRequest } from './request.js';
 export { RolesGuard } from './roles.guard.js';
 export {
   INTERNAL_SERVICE_TOKEN,
@@ -22,3 +24,4 @@ export {
   isRole,
 } from './token.js';
 export type { Role, TokenPayload } from './token.js';
+export { TokenVerifier } from './token-verifier.js';
