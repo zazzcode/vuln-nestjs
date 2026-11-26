@@ -1,4 +1,5 @@
 import type { ExecutionContext } from '@nestjs/common';
+import { GqlExecutionContext } from '@nestjs/graphql';
 import { SESSION_COOKIE, type TokenPayload } from './token.js';
 
 /** The headers authentication reads from a request, on either adapter. */
@@ -16,12 +17,13 @@ export interface AuthenticatedRequest {
 
 /**
  * The request behind a resolver or a controller. For a resolver it is the
- * GraphQL context's `req`; for a route, the route's own request.
+ * `req` of its GraphQL context; for a route, the route's own request.
  */
 export function requestOf(context: ExecutionContext): AuthenticatedRequest {
-  // A resolver's second argument is its context, and Nest marks that with the type "graphql".
   if ((context.getType() as string) === 'graphql') {
-    return context.getArgByIndex(1).req;
+    return GqlExecutionContext.create(context).getContext<{
+      req: AuthenticatedRequest;
+    }>().req;
   }
   return context.switchToHttp().getRequest<AuthenticatedRequest>();
 }

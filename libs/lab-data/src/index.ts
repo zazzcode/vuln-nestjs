@@ -75,6 +75,9 @@ export const labUsers: readonly LabUser[] = [
   },
 ];
 
+/** The one moment every record of the fake data is stamped with, so that every run is identical. */
+export const labStart = new Date('2026-01-01T00:00:00.000Z');
+
 /** Five coins against the dollar, and where the price of each one starts. */
 export const labMarkets: readonly LabMarket[] = [
   {

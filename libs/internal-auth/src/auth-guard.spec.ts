@@ -5,10 +5,11 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
+import { ExecutionContextHost } from '@nestjs/core/helpers/execution-context-host.js';
 import { JwtService } from '@nestjs/jwt';
 import { AuthGuard } from './auth.guard.js';
 import { Public, Roles, ServiceToken } from './decorators.js';
-import { requestOf, type AuthenticatedRequest } from './request.js';
+import type { AuthenticatedRequest } from './request.js';
 import { RolesGuard } from './roles.guard.js';
 import {
   INTERNAL_SERVICE_TOKEN,
@@ -36,21 +37,26 @@ class Operations {
   internal() {}
 }
 
-/** A fabricated Nest context: what the guards see for a route, or for a resolver. */
+/**
+ * A Nest context as the guards receive it, built from Nest's own class rather
+ * than a look-alike. For a route the arguments are (request, response, next);
+ * for a resolver, whose arguments are (parent, args, context, info), the
+ * request sits in the context.
+ */
 function contextFor(
   operation: keyof Operations,
   request: AuthenticatedRequest,
   type: 'http' | 'graphql',
 ): ExecutionContext {
-  const context = {
-    getHandler: () => Operations.prototype[operation],
-    getClass: () => Operations,
-    getType: () => type,
-    getArgByIndex: (index: number) =>
-      index === 1 ? { req: request } : undefined,
-    switchToHttp: () => ({ getRequest: () => request }),
-  };
-  return context as unknown as ExecutionContext;
+  const context = new ExecutionContextHost(
+    type === 'http'
+      ? [request, {}, undefined]
+      : [undefined, {}, { req: request }, {}],
+    Operations,
+    Operations.prototype[operation],
+  );
+  context.setType(type);
+  return context as ExecutionContext;
 }
 
 const guard = new AuthGuard(
@@ -108,10 +114,11 @@ describe('the authentication and role guards', () => {
     expect(await attempt('plain', request)).toEqual(alice);
   });
 
+  // A resolver's request is the third of its arguments, inside the context: not where a route's is.
   it('reads the token of a resolver from the request in the GraphQL context', async () => {
-    expect(
-      requestOf(contextFor('plain', withBearer(signed(admin)), 'graphql')),
-    ).toEqual(withBearer(signed(admin)) as AuthenticatedRequest);
+    await expect(
+      attempt('plain', { headers: {} }, 'graphql'),
+    ).rejects.toBeInstanceOf(UnauthorizedException);
     expect(
       await attempt('plain', withBearer(signed(admin)), 'graphql'),
     ).toEqual(admin);

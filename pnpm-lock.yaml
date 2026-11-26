@@ -738,6 +738,9 @@ importers:
       '@nestjs/config':
         specifier: 12.1.1
         version: 12.1.1(@nestjs/common@12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: 12.6.3
+        version: 12.6.3(@nestjs/common@12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/platform-express@12.6.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
       class-transformer:
         specifier: 0.5.1
         version: 0.5.1
@@ -846,6 +849,9 @@ importers:
 
   libs/internal-auth:
     dependencies:
+      '@apollo/subgraph':
+        specifier: 2.17.0
+        version: 2.17.0(graphql@16.15.0)
       '@nestjs/common':
         specifier: 12.6.3
         version: 12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0)
@@ -855,6 +861,9 @@ importers:
       '@nestjs/core':
         specifier: 12.6.3
         version: 12.6.3(@nestjs/common@12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/platform-express@12.6.3)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/graphql':
+        specifier: 14.2.2
+        version: 14.2.2(@apollo/subgraph@2.17.0(graphql@16.15.0))(@nestjs/common@12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@12.6.3)(class-transformer@0.5.1)(class-validator@0.15.1)(graphql@16.15.0)(reflect-metadata@0.2.2)(ts-morph@28.0.0)(typescript@6.0.3)
       '@nestjs/jwt':
         specifier: 12.0.5
         version: 12.0.5(@nestjs/common@12.6.3(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))
@@ -864,12 +873,18 @@ importers:
       class-validator:
         specifier: 0.15.1
         version: 0.15.1
+      graphql:
+        specifier: 16.15.0
+        version: 16.15.0
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
       rxjs:
         specifier: 7.8.2
         version: 7.8.2
+      ts-morph:
+        specifier: 28.0.0
+        version: 28.0.0
     devDependencies:
       '@types/node':
         specifier: 24.19.4
