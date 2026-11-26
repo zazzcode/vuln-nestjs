@@ -39,7 +39,7 @@ The reasoning for the stores is in [data-architecture.md](data-architecture.md#2
 
 The system runs on one machine. Its shape follows from the constraints in the [project plan](../project/project-plan.md#5-constraints-and-assumptions):
 
-- NestJS, TypeScript, TypeORM. The Fastify adapter for most processes; the Express adapter for one service.
+- NestJS, TypeScript, and TypeORM for the relational stores. MongoDB is reached through its native driver ([ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md)). The Fastify adapter for most processes; the Express adapter for one service.
 - GraphQL federation between the services, and HTTP/2 wherever both ends can speak it.
 - One gateway that is the only public listener, and three backend services at most.
 - One service on MongoDB in memory, another on MySQL in memory, because the whole application is ephemeral.
@@ -281,6 +281,7 @@ sequenceDiagram
 | [ADR-008](decisions/ADR-008-safe-baseline-then-deliberate-flaws.md) | Safe functional baseline first, deliberate flaws as twin operations, about two safe for every vulnerable one |
 | [ADR-009](decisions/ADR-009-vulnerable-pins-one-workspace.md) | Vulnerable pins, one workspace each, guarded by an audit snapshot |
 | [ADR-010](decisions/ADR-010-services-never-call-each-other.md) | Services never call each other. The gateway and the client orchestrate |
+| [ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md) | `accounts` uses the native MongoDB driver, not TypeORM |
 
 ## 10. Risks and open questions
 
@@ -289,8 +290,8 @@ sequenceDiagram
 | T1 | The Apollo gateway on the Fastify adapter, with a data source that speaks HTTP/2 | **Verified** by the spike of 2026-11-26 |
 | T3 | HTTP/2 on `FastifyAdapter({ http2: true })`, with Apollo mounted | **Verified** by the same spike: every gateway request arrived as `HTTP/2.0` |
 | T6 | An Apollo subgraph on the Express adapter | **Verified** by the same spike |
-| T2 | TypeORM's MongoDB support is basic by its own description. The `accounts` entities may need more than it offers | Open. Scaffolding proves it with one real entity |
+| T2 | TypeORM's MongoDB support is basic by its own description. The `accounts` entities may need more than it offers | **Closed by decision** on 2026-11-26. `accounts` uses the native driver, and nothing is built on TypeORM's MongoDB support ([ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
 | T4 | Starting `mysqld` on a cold cache may exceed a test timeout | Open. Scaffolding measures it |
-| T7 | The code-first GraphQL generator with TypeScript 6. The spike used schema-first definitions | Open. Scaffolding finds out first |
+| T7 | The code-first GraphQL generator with TypeScript 6. The spike used schema-first definitions | **Verified** on 2026-11-26, by the scaffolding: under TypeScript 6.0.3 the generator produced a federation schema with `@key`, and the subgraph answered a query and an entity reference over HTTP/2 |
 | T5 | NestJS 12 is weeks old. A minor release between steps may change behaviour | Every step re-checks versions at its start |
 | Q1 | Which service uses the Express adapter. The Project Owner likes the design; the choice of `notifications` has not been confirmed | Open. Default `notifications` |

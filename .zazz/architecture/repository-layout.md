@@ -38,7 +38,7 @@ vuln-nestjs/
 └── tsconfig.base.json
 ```
 
-Each service is what the NestJS CLI produces, plus the lab's additions:
+Each service is what the NestJS CLI produces, plus the lab's additions. `accounts` is the example, and the one that differs from the other two backend services: it has no entity file, because its documents are plain objects ([ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md)).
 
 ```text
 apps/accounts/
@@ -46,14 +46,14 @@ apps/accounts/
 │   ├── main.ts
 │   ├── app.module.ts
 │   ├── config/               the service's typed environment
-│   ├── database/             TypeORM setup, the store's start and stop
+│   ├── database/             the MongoDB client, the store's start and stop
 │   ├── seed/                 the fake data
 │   ├── health/               /internal/health and /internal/lab/reset
 │   └── users/                one feature module
 │       ├── users.module.ts
-│       ├── user.entity.ts    TypeORM entity
 │       ├── user.model.ts     GraphQL object type
 │       ├── user.input.ts     GraphQL input types
+│       ├── users.repository.ts   the users collection, through the native driver
 │       ├── users.resolver.ts
 │       ├── users.service.ts
 │       └── users.controller.ts   internal REST
@@ -62,6 +62,8 @@ apps/accounts/
 ├── tsconfig.json
 └── package.json              @zazzles/exchange-accounts
 ```
+
+In `trading` and `notifications` the same place holds a TypeORM entity, `*.entity.ts`, and `database/` holds the TypeORM setup.
 
 Why one package per service: [ADR-001](decisions/ADR-001-pnpm-workspace-monorepo.md).
 
@@ -99,9 +101,9 @@ The versions are the latest published on 2026-11-26, checked against each other'
 | | `ts-morph` | 28.0.0 |
 | Web framework | `fastify`, through `@nestjs/platform-fastify` | 5.12.8 |
 | | `express`, through `@nestjs/platform-express` | 5.3.0 |
-| Data | `typeorm` | 1.1.3 |
-| | `@nestjs/typeorm` | 12.0.3 |
-| | `mongodb`, `mongodb-memory-server` | 7.9.1, 11.4.0 |
+| Data | `typeorm` | 1.1.3. In `trading` and `notifications` only |
+| | `@nestjs/typeorm` | 12.0.3. The same two |
+| | `mongodb`, `mongodb-memory-server` | 7.9.1, 11.4.0. In `accounts` only, through the native driver ([ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
 | | `mysql2`, `mysql-memory-server` | 3.24.6, 1.18.0 |
 | | `sql.js` | 1.17.0 |
 | Validation | `class-validator`, `class-transformer` | 0.15.1, 0.5.1 |

@@ -14,6 +14,7 @@ Each record is one decision that is expensive to reverse: what was chosen, what 
 | [ADR-008](ADR-008-safe-baseline-then-deliberate-flaws.md) | Safe functional baseline first, deliberate flaws as twin operations, about two safe for every vulnerable one | Accepted 2026-11-26 |
 | [ADR-009](ADR-009-vulnerable-pins-one-workspace.md) | Vulnerable pins, one workspace each, guarded by an audit snapshot | Accepted 2026-11-26 |
 | [ADR-010](ADR-010-services-never-call-each-other.md) | Services never call each other. The gateway and the client orchestrate | Accepted 2026-11-26 |
+| [ADR-011](ADR-011-native-mongodb-driver-for-accounts.md) | `accounts` uses the native MongoDB driver, not TypeORM | Decided by the Project Owner 2026-11-26 |
 
 ## Format
 

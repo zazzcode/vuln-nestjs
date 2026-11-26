@@ -30,7 +30,7 @@ Step 2 is parallel because the services never call each other. Each one is built
 | Libraries | `libs/config` (typed environment, the service registry), `libs/http2` (the HTTP/2 fetch and the JSON client), `libs/internal-auth` (the guards and decorators), `libs/lab-data` (the fixed identifiers of the fake users, and the markets' starting prices, shared by every seed module), `libs/testing` (start and stop the lab from a test) |
 | Four applications | For each of `gateway`, `accounts`, `trading`, `notifications`: `main.ts`, `app.module.ts`, configuration, the store's start and stop, health and reset on `/internal/*`, the GraphQL module, one feature module as the pattern to copy, a unit test and an integration test |
 | The graph | The gateway composes the three subgraphs and answers a query whose fields come from all three |
-| Stores | MongoDB, MySQL and SQLite in memory, each with one real entity, seeded at start |
+| Stores | MongoDB, MySQL and SQLite in memory, each with one real record seeded at start: a collection of documents in `accounts`, a table in `trading` and in `notifications` |
 | Ground truth | `catalog/catalog.json` with its schema, `pnpm scenario:check`, `scenario:update`, `audit:check`, `audit:update` |
 | Tests | Unit, integration and end-to-end suites run with one command each. The end-to-end suite proves the HTTP versions and a clean stop |
 | Running | `pnpm start` starts the lab in order and stops it, engines included |
@@ -57,7 +57,7 @@ The gateway's pass-through controllers need the `/internal/*` contract of the ot
 
 ### Order of work inside a service
 
-1. **Store, fake data, health.** The entities, the seed module, `GET /internal/health`, `POST /internal/lab/reset`. An integration test proves a round trip to the store.
+1. **Store, fake data, health.** The entities (collections, in `accounts`), the seed module, `GET /internal/health`, `POST /internal/lab/reset`. An integration test proves a round trip to the store.
 2. **Safe operations.** Every safe operation in the specification's API tables, with a functional test for each.
 3. **Vulnerable operations.** Every vulnerable operation, with a both-directions test for each of its scenarios.
 4. **Documentation and catalogue.** One documentation module per scenario, with a reproduction that has been run. Catalogue entries for every scenario, counterpart included. Snapshots regenerated.
@@ -112,5 +112,7 @@ Things learned that the scaffolding needs:
 | Apollo Server returns a stack trace in every error unless `NODE_ENV` is `production` | True from the first line of gateway code. It is scenario GQL-004 |
 | NestJS's Express adapter creates an `http` or an `https` server and nothing else | The Express service speaks HTTP/1.1 |
 | With `http2: true`, `request.raw.httpVersion` is `"2.0"` | That is how a test proves the protocol |
+| The GraphQL driver writes no schema file unless `autoSchemaFile` has a `path` | Each service sets one, resolved from its own directory, so the file lands at `apps/<service>/schema.gql` whatever the working directory |
+| `accounts` does not use TypeORM | Decided by the Project Owner on 2026-11-26 ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)). MongoDB is reached through the native `mongodb` driver, so nothing has to be proven about TypeORM and MongoDB |
 
-The spike used schema-first GraphQL definitions. The lab is code first. Whether the code-first generator works with TypeScript 6 has not been checked; the scaffolding finds out first.
+The spike used schema-first GraphQL definitions. The lab is code first. The scaffolding checked the code-first generator with TypeScript 6.0.3 on 2026-11-26: it works, and no fallback to TypeScript 5.9.3 is needed.

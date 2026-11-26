@@ -60,7 +60,7 @@ The existing [vuln-nextjs](https://github.com/zazzcode/vuln-nextjs) lab covers N
 
 - The application is a **sample, not a running service**. It is started, preloaded with fake data, exercised, and shut down. The whole of it is ephemeral.
 - Because the application is ephemeral, the databases are in memory. `mongodb-memory-server` and `mysql-memory-server` were named as options.
-- NestJS with the Fastify adapter, built idiomatically; TypeScript; TypeORM. One backend service may use the Express adapter instead of Fastify.
+- NestJS with the Fastify adapter, built idiomatically; TypeScript; TypeORM. One backend service may use the Express adapter instead of Fastify. Refined by the Project Owner on 2026-11-26: MongoDB is reached through the native driver, and TypeORM is for the relational stores ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)).
 - Microservices communicating through GraphQL federation and through HTTP/2.
 - Services do not call each other. The gateway talks to every service, so that each can be built and tested on its own.
 - Every OWASP Top 10 weakness, with SQL injection, NoSQL injection, prototype pollution and stored XSS included. About two safe operations for every vulnerable one, or one to one where two is harder.
@@ -146,8 +146,8 @@ Rules:
 
 | ID | Risk | Likelihood | Mitigation |
 | --- | --- | --- | --- |
-| R1 | TypeORM's documentation calls its MongoDB support basic. The `accounts` service may hit a gap in TypeORM 1.1.3 | Medium | Validate in the scaffolding, with one real entity. Fallback: the native `mongodb` driver behind the same repositories |
-| R2 | The Apollo gateway on the Fastify adapter with an HTTP/2 data source | Closed | **Verified** by a spike on 2026-11-26: the gateway composed a Fastify subgraph and an Express subgraph, and the Fastify one received every request over `HTTP/2.0`. The spike did not cover the code-first schema generator with TypeScript 6, or TypeORM against MongoDB. The scaffolding checks both first |
+| R1 | TypeORM's documentation calls its MongoDB support basic. The `accounts` service may hit a gap in TypeORM 1.1.3 | Closed | **Closed by decision** on 2026-11-26: the Project Owner chose the native `mongodb` driver for `accounts` before the proof ran ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
+| R2 | The Apollo gateway on the Fastify adapter with an HTTP/2 data source | Closed | **Verified** by a spike on 2026-11-26: the gateway composed a Fastify subgraph and an Express subgraph, and the Fastify one received every request over `HTTP/2.0`. The scaffolding checked the code-first generator with TypeScript 6 the same day, and it works. TypeORM against MongoDB is no longer used ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
 | R3 | `mysql-memory-server` downloads a large binary from MySQL's CDN. A slow or failed download breaks CI | Medium | Pin the MySQL version, cache the binary in CI, and give the trading tests a generous start timeout |
 | R4 | A vulnerable pin may not install under pnpm 12, or may break the service that uses it | Medium | Pins are chosen without install scripts. Each is validated in Step 4; the dependency document lists replacements |
 | R5 | New advisories appear for pinned libraries and change the audit snapshot | High, over time | `pnpm audit:update` adds advisories freely. Only removal needs a named retirement |

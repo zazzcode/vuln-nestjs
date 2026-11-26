@@ -49,9 +49,19 @@ An in-memory engine would have been simpler still, and for SQLite it is what the
 | They may be damaged on purpose | Some scenarios corrupt data. That is expected, and reset undoes it |
 | The first run is slower | The two binaries are downloaded once |
 
-## 4. Object-relational mapping
+## 4. Data access
 
-All three services use TypeORM 1.1.3 through `@nestjs/typeorm` 12.0.3.
+There are two ways into a store, one for each kind.
+
+| Service | Store | Reached through |
+| --- | --- | --- |
+| `accounts` | MongoDB | The native `mongodb` driver 7.9.1. A document is a plain JSON object whose `_id` is the fixed identifier of its record. One repository class per collection |
+| `trading` | MySQL | TypeORM 1.1.3 through `@nestjs/typeorm` 12.0.3 |
+| `notifications` | SQLite | The same |
+
+`accounts` has no object-relational mapping. The Project Owner decided that on 2026-11-26, before anything was built on TypeORM's MongoDB support: [ADR-011](decisions/ADR-011-native-mongodb-driver-for-accounts.md).
+
+**The relational stores.**
 
 | Setting | Value | Why |
 | --- | --- | --- |
@@ -59,7 +69,7 @@ All three services use TypeORM 1.1.3 through `@nestjs/typeorm` 12.0.3.
 | `entities` | Listed explicitly per service | Loading by glob breaks with the build output |
 | `logging` | Off | Queries contain user data |
 
-**Risk T2.** TypeORM's documentation describes its MongoDB support as basic. The `accounts` service is written against the repository API and stays within operations TypeORM documents for MongoDB. Where an operation is missing, the service reaches the native collection through the TypeORM manager. The scaffolding proves this with one real entity before anything is built on it.
+**The document store.** There is no schema to synchronize. The service creates its collections and their indexes when it starts, and creates them again on reset, because a scenario is allowed to drop one. What each collection holds, and which of its fields is unique, is in the [accounts specification](../project/services/accounts.md#2-data).
 
 ## 5. Money
 
@@ -74,7 +84,7 @@ Floating-point numbers are not used for money anywhere in the functional baselin
 
 ## 6. Entities
 
-The entities of each service are defined in its [service specification](../project/services/README.md). This is the shape the design depends on.
+The entities of each service are defined in its [service specification](../project/services/README.md). This is the shape the design depends on. In `accounts` each one is a collection of documents; in `trading` and `notifications` each one is a table.
 
 | Service | Entity | Holds |
 | --- | --- | --- |

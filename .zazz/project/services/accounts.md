@@ -7,9 +7,11 @@
 
 Users, passwords, sign-in, sessions, profile, preferences and uploaded documents. It owns the `User` entity of the federated graph. It does not own money: wallets, deposits and orders are in [`trading`](trading.md).
 
-It calls no other service.
+It calls no other service. Its store is reached through the native `mongodb` driver, with no object-relational mapping ([ADR-011](../../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)).
 
 ## 2. Data
+
+Each entity below is a collection of documents. The `_id` of a document is the fixed identifier of its record, declared in `libs/lab-data`.
 
 | Entity | Fields | Indexes |
 | --- | --- | --- |

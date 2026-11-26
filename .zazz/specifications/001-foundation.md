@@ -41,7 +41,7 @@ Read this specification end to end first.
 - [`.zazz/project/implementation-plan.md`](../project/implementation-plan.md) — §1 (who does what), §2 (what the scaffolding must contain), §7 (conventions), §8 (facts from the spike).
 - [`.zazz/architecture/repository-layout.md`](../architecture/repository-layout.md) — §1 (shape), §3 (tooling and versions), §4 (conventions), §5 (root scripts).
 - [`.zazz/architecture/service-communication.md`](../architecture/service-communication.md) — §3 (the graph), §4 (HTTP/2 and the `libs/http2` exports), §5 (internal REST contract), §6 (identity propagation), §8 (startup order).
-- [`.zazz/architecture/data-architecture.md`](../architecture/data-architecture.md) — §1 (one store per service), §4 (object-relational mapping), §8 (the fake data), §10 (reset).
+- [`.zazz/architecture/data-architecture.md`](../architecture/data-architecture.md) — §1 (one store per service), §4 (data access), §8 (the fake data), §10 (reset).
 - [`.zazz/architecture/project.md`](../architecture/project.md) — §7 (cross-cutting concerns: configuration, lifecycle), §10 (risks T2, T4, T7).
 - [`.zazz/architecture/security-model.md`](../architecture/security-model.md) — §3 (safety rails), §4 (functional baseline).
 - [`.zazz/architecture/testing-strategy.md`](../architecture/testing-strategy.md) — §2 (layers), §5 (ground truth), §6 (CI), §7 (definition of done).
@@ -134,8 +134,9 @@ Every file in this change is under the repository root, in the paths listed belo
 | `AGENTS.md` | Modified | "Repository commands", the library list in the ownership rule |
 | `.zazz/specifications/README.md`, `.zazz/specifications/001-foundation.md` | New or Modified | The specification and its index |
 | `.zazz/README.md`, `.zazz/project/README.md`, `.zazz/project/implementation-plan.md`, `.zazz/project/scenario-catalog.md` | Modified | What this change made untrue: the status of Step 1, the library list, the catalogue schema |
-| `.zazz/architecture/README.md`, `.zazz/architecture/project.md`, `.zazz/architecture/repository-layout.md`, `.zazz/architecture/service-communication.md`, `.zazz/architecture/data-architecture.md`, `.zazz/architecture/testing-strategy.md` | Modified | Risks T2, T4, T7 closed. Versions confirmed. The test layer names. The library list |
-| `.zazz/project/services/*.md` | Modified | Only the test-layer names in their "API tests" sections, to match §D-4. No operation, no scenario and no count changes |
+| `.zazz/architecture/README.md`, `.zazz/architecture/project.md`, `.zazz/architecture/repository-layout.md`, `.zazz/architecture/service-communication.md`, `.zazz/architecture/data-architecture.md`, `.zazz/architecture/testing-strategy.md` | Modified | Risks T2, T4, T7 closed (T2 through ADR-011). Versions confirmed. The test layer names. The library list |
+| `.zazz/architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md`, `.zazz/architecture/decisions/README.md` | New / Modified | The decision that `accounts` uses the native MongoDB driver, and its index. Directed by the Project Owner during implementation: see §13 |
+| `.zazz/project/services/*.md` | Modified | Only two things: the test-layer names in their "API tests" sections, to match §D-4, and one sentence in the accounts specification on how its store is reached, to match ADR-011. No operation, no scenario and no count changes |
 
 ### Out Of Scope
 
@@ -198,7 +199,7 @@ Each answers "why this over the obvious alternative?"
 
 ### D-7 — Fixed identifiers; reset recreates, empties and reloads
 
-**Decision.** Seeded rows carry the fixed identifiers of `libs/lab-data`. Reset is `synchronize`, then `clear` of every entity, then the seed module.
+**Decision.** Seeded records carry the fixed identifiers of `libs/lab-data`. In the relational stores, reset is `synchronize`, then `clear` of every entity, then the seed module. In `accounts`, reset drops and recreates each collection with its indexes, then runs the seed module.
 
 **Why.** A scanner must see the same target on every run (NFR-4). An identifier minted by the store changes after a reset, and a MySQL auto-increment counter survives a `DELETE`. `synchronize` first because a scenario is allowed to drop a table, and reset has to undo that.
 
@@ -216,9 +217,9 @@ Each answers "why this over the obvious alternative?"
 
 ### D-10 — The three unknowns are proven before anything is built on them
 
-**Decision.** In this order, each in a throwaway project outside the repository: the code-first generator with TypeScript 6; TypeORM 1.1.3 against MongoDB with one real entity; `mysql-memory-server`. Each result goes into the pull request as soon as it is known.
+**Decision.** In this order, each in a throwaway project outside the repository: the code-first generator with TypeScript 6; the native `mongodb` driver against `mongodb-memory-server`, with one collection and a fixed string `_id`; `mysql-memory-server`. Each result goes into the pull request as soon as it is known.
 
-**Why.** A fallback changes the shape of everything after it. The fallbacks are the plan's: TypeScript 5.9.3; the native `mongodb` driver behind the same repositories; a generous timeout for the trading tests.
+**Why.** A fallback changes the shape of everything after it. The fallbacks that remain are the plan's: TypeScript 5.9.3, and a generous timeout for the trading tests. The second unknown was TypeORM against MongoDB until the Project Owner decided [D-15](#d-15--accounts-uses-the-native-mongodb-driver).
 
 ### D-11 — A written validator, and a named retirement
 
@@ -243,6 +244,12 @@ Each answers "why this over the obvious alternative?"
 **Decision.** Before the lab starts, `libs/testing` records the `mongod` and `mysqld` processes and the temporary directories the two memory-server packages create. After it stops, both sets must be what they were.
 
 **Why.** The assertion does not depend on what each store chooses to expose, works for the in-process lab and for `pnpm start`, and is not confused by a database the machine already runs.
+
+### D-15 — `accounts` uses the native MongoDB driver
+
+**Decision.** `accounts` reaches MongoDB through the native `mongodb` driver, with documents as plain JSON. `typeorm` and `@nestjs/typeorm` are not dependencies of `apps/accounts`. `trading` and `notifications` stay on TypeORM.
+
+**Why.** The Project Owner decided it on 2026-11-26, during implementation: [ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md). It removes the proof the plan asked for, and the rework a failed proof would have caused in the middle of Step 2, and it puts the NoSQL scenarios in the driver's own language.
 
 ---
 
@@ -329,10 +336,10 @@ Stop and surface to the Project Owner if any of these occur:
 
 ## 6. Acceptance Criteria
 
-- **AC1 — Install, pinned.** From a clean clone, with Node 24.11 or later and pnpm 12.23.0, `pnpm install --frozen-lockfile` exits 0 and no install script runs. Every dependency in every `package.json` is an exact version or a `workspace:` reference. No manifest contains `@nestjs/observe` or `@nestjs/mau`. Verified by: `pnpm install --frozen-lockfile` and `tests/manifests.spec.ts`.
+- **AC1 — Install, pinned.** From a clean clone, with Node 24.11 or later and pnpm 12.23.0, `pnpm install --frozen-lockfile` exits 0 and no install script runs. Every dependency in every `package.json` is an exact version or a `workspace:` reference. No manifest contains `@nestjs/observe` or `@nestjs/mau`. `apps/accounts` depends on neither `typeorm` nor `@nestjs/typeorm`. Verified by: `pnpm install --frozen-lockfile` and `tests/manifests.spec.ts`.
 - **AC2 — Static checks.** `pnpm lint` (oxlint, type-aware) and `pnpm format:check` exit 0. A file under `apps/accounts/` that imports `@zazzles/exchange-http2`, or `apps/accounts/` that imports from `apps/trading/`, fails `pnpm lint`. Verified by: the two commands, and one run of each violation recorded in the pull request.
 - **AC3 — Libraries.** `pnpm build` builds the six libraries before any application, and each library has a passing unit test. Verified by: `pnpm build && pnpm test`.
-- **AC4 — Every service starts alone.** For each of `accounts`, `trading`, `notifications`: started with its own store on its own port, `GET /internal/health` answers `200` with `status: "ok"`, the service's name and its store as connected; the listener's address is exactly `127.0.0.1`; a GraphQL query against the service's own `/graphql` returns the seeded entity. Verified by: `apps/<service>/test/app.int-spec.ts`, run by `pnpm test:int`.
+- **AC4 — Every service starts alone.** For each of `accounts`, `trading`, `notifications`: started with its own store on its own port, `GET /internal/health` answers `200` with `status: "ok"`, the service's name and its store as connected; the listener's address is exactly `127.0.0.1`; a GraphQL query against the service's own `/graphql` returns the seeded record. Verified by: `apps/<service>/test/app.int-spec.ts`, run by `pnpm test:int`.
 - **AC5 — Authentication on both surfaces.** In `accounts`, `user(id)` refuses a request with no token with `extensions.code` `UNAUTHENTICATED`, refuses a `USER` token with `FORBIDDEN`, and answers an `ADMIN` token with the seeded user. `GET /internal/users` answers `401` and `403` in the same cases and `200` for the administrator. Verified by: `apps/accounts/test/app.int-spec.ts`.
 - **AC6 — Federation.** The gateway composes the three subgraphs at start and answers, in one query, fields owned by each of the three services. A query for an order's `user { id email }` is answered from `trading` and `accounts` together, through an entity reference that carries `@provides(fields: "id")`. Verified by: `tests/e2e/graph.e2e-spec.ts`.
 - **AC7 — Transports.** Requests the gateway sends reach `accounts` and `trading` as `HTTP/2.0` and `notifications` as `HTTP/1.1`. A client's own request reaches the gateway as `HTTP/1.1`. Verified by: `tests/e2e/transport.e2e-spec.ts`.
@@ -344,7 +351,7 @@ Stop and surface to the Project Owner if any of these occur:
 - **AC13 — Ground truth.** `pnpm scenario:check` exits 0 against the committed snapshots and fails on a catalogue with a duplicate identifier, an entry whose `source` does not exist, and an entry with neither a counterpart nor a hardened value. `pnpm scenario:update` leaves the committed files byte-identical. `pnpm audit:check` exits 0. `pnpm audit:update --retire <id>` exits 1 when the audit no longer reports an advisory the snapshot holds and the advisory was not named. Verified by: the commands, and `scripts/check-scenarios.spec.ts` and `scripts/check-audit.spec.ts`.
 - **AC14 — One command per suite.** `pnpm test`, `pnpm test:int`, `pnpm test:e2e` and `pnpm test:api` each exit 0, `test:api` against a running stack. Verified by: the four commands.
 - **AC15 — The launcher.** `pnpm start` builds what is missing, starts the three backend services, waits for each `/internal/health`, then starts the gateway and waits for `/api/v1/health`. Interrupted, it stops the gateway first and exits 0. Verified by: a recorded run.
-- **AC16 — The three unknowns.** (a) The code-first generator produces a federation schema with TypeScript 6.0.3, or the fallback is applied and recorded. (b) TypeORM 1.1.3 creates, reads, updates and deletes one real `accounts` entity through a repository against MongoDB, with a fixed string identifier. (c) `mysql-memory-server` starts on this machine: the download size and the start time on a warm cache are recorded. Verified by: AC4 for (b) and (c); `apps/accounts/test/schema.int-spec.ts` for (a); the measurements in the pull request and in [repository-layout §3](../architecture/repository-layout.md#3-tooling-and-versions).
+- **AC16 — The three unknowns.** (a) The code-first generator produces a federation schema with TypeScript 6.0.3, or the fallback is applied and recorded. (b) The native `mongodb` driver creates, reads, updates and deletes one real `accounts` document with a fixed string `_id`, in a `mongod` that `mongodb-memory-server` started, and `apps/accounts` does not depend on TypeORM. (c) `mysql-memory-server` starts on this machine: the download size and the start time on a warm cache are recorded. Verified by: AC4 for (b) and (c); `apps/accounts/test/schema.int-spec.ts` for (a); the measurements in the pull request and in [repository-layout §3](../architecture/repository-layout.md#3-tooling-and-versions).
 - **AC17 — CI.** `.github/workflows/ci.yml` runs on pull requests and on `main`: install, static, unit, integration, build, end to end, Newman, the audit as information, the ground truth in its own job. Verified by: a green run on this pull request.
 - **AC18 — Documentation.** `docs/setup-and-testing.md` exists and every command in it was run before it was written. `AGENTS.md` "Repository commands" names the commands that exist. Verified by: review against the run log.
 - **AC19 — Scope clean.** `git diff main --stat` lists exactly the paths in §3. Verified by: the command in §5.
@@ -378,7 +385,7 @@ Reference data sources:
 | `scripts/start.spec.ts` | AC12, AC15 | `generateRunSecrets()` returns two different 64-character hex strings, different on every call. `nextStartupStep` advances backends → gateway → ready and never skips the health wait |
 | `scripts/check-scenarios.spec.ts` | AC13 | The three rejections of AC13; the committed catalogue passes; the scanner export carries one `expectedFinding: true` row and one `false` row per counterpart |
 | `scripts/check-audit.spec.ts` | AC13 | A new advisory is added by an update; an advisory that disappears is refused unless named in `--retire`; identical output passes |
-| `tests/manifests.spec.ts` | AC1, INVARIANT 2 | Every dependency is exact or `workspace:`; no telemetry or deployment package; `packageManager` is `pnpm@12.23.0`; every workspace sets `"type": "module"` |
+| `tests/manifests.spec.ts` | AC1, INVARIANT 2 | Every dependency is exact or `workspace:`; no telemetry or deployment package; `packageManager` is `pnpm@12.23.0`; every workspace sets `"type": "module"`; `apps/accounts` has no ORM package |
 
 `libs/testing` is proven by every integration and end-to-end file. It has no unit test of its own, by design: a test of a test helper asserts nothing a reader cares about.
 
@@ -441,7 +448,7 @@ Follow this order unless verified local evidence shows a safer one. Log each dev
 **Phase 0: The three unknowns, in a throwaway project outside the repository**
 
 0.1. A workspace with TypeScript 6.0.3 and one code-first federation subgraph on `FastifyAdapter({ http2: true })`. Run it. Expect a schema with `@key`, and a type error if the generator cannot read TypeScript 6 output.
-0.2. TypeORM 1.1.3 and `mongodb-memory-server` 11.4.0: one entity with `@PrimaryColumn() id: string`, saved, found, updated, deleted through a repository; `clear()`; `synchronize()` after a collection is dropped.
+0.2. `mongodb` 7.9.1 and `mongodb-memory-server` 11.4.0: one collection whose documents have a fixed string `_id`, inserted, found, updated and deleted through the driver; a unique index enforced; the collection dropped and recreated with its index.
 0.3. `mysql-memory-server` 1.18.0: the time to download, the size of the download, the time to start on a warm cache, and a clean stop. The same measurements for `mongod`.
 0.4. Record each result in the pull request and in the run log. Remove the throwaway directory.
 
@@ -582,7 +589,7 @@ async function bootstrap() {
 export class MongoStore implements OnApplicationShutdown {
   private starting?: Promise<{ uri: string; dbName: string }>;
   start(): Promise<{ uri: string; dbName: string }> { /* idempotent */ }
-  async reset(): Promise<void> { /* synchronize, clear each entity, run the seed */ }
+  async reset(): Promise<void> { /* drop and recreate each collection and its indexes, run the seed */ }
   async onApplicationShutdown(): Promise<void> { /* close the data source, stop mongod */ }
 }
 ```
@@ -627,6 +634,7 @@ Resolved by default for this unattended session. Each is listed in the pull requ
 - **OQ-5 — Who merges.** The handoff says the lead agent merges each service. `AGENTS.md`, the implementation plan and the vendored `spec-builder` skill say the Project Owner merges. **Default:** the committed documents win. Nothing is merged by an agent. If Step 1 is not merged when Step 2 starts, its four branches are cut from `phase-1-foundation` and their pull requests target that branch.
 - **OQ-6 — The three pins of Step 2.** The handoff wants them installed in Step 2, and also wants no sub-agent to change the lockfile. **Default:** they are installed on the branch of the service that needs them, as that branch's second commit, by an exact command the lead agent supplies. This branch stays clean.
 - **OQ-7 — Where the catalogue schema lives and what it allows.** **Default:** `catalog/catalog.schema.json`, the fields of the catalogue document plus `hardenedValue`, which the five settings without a counterpart must carry.
+- **OQ-8 — How `accounts` reaches MongoDB.** The plan asked the scaffolding to prove TypeORM against it. **Decided by the Project Owner on 2026-11-26:** the native driver, with no object-relational mapping in `accounts`. [D-15](#d-15--accounts-uses-the-native-mongodb-driver), [ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md).
 
 ---
 
@@ -702,4 +710,19 @@ Only declare done after the verifier reports all-pass.
 
 ## 13. Implementation And Review Change Log
 
-No changes recorded. Delete this line when adding the first change-log entry.
+Accepted steering, QA/UAT findings, PR review feedback, or implementation-discovered
+bugs that change the contract must update the affected sections above in place. This
+section records the audit trail; the current contract lives in the body of the
+specification.
+
+### 2026-11-26 13:10 EST — `accounts` uses the native MongoDB driver, not TypeORM
+
+**Source.** Project Owner steering, during implementation. "Do not use TypeORM with MongoDB, use the native driver. Update specs and plans as required."
+
+**Changed Sections.** [§1.b](#1b-feature--milestone-context), [§3 Scope](#3-scope), [§D-7](#d-7--fixed-identifiers-reset-recreates-empties-and-reloads), [§D-10](#d-10--the-three-unknowns-are-proven-before-anything-is-built-on-them), the new [§D-15](#d-15--accounts-uses-the-native-mongodb-driver), [AC1](#6-acceptance-criteria), AC4, AC16, [§7](#7-test-strategy), [§8 phase 0.2 and the store skeleton](#8-tdd-entry-point--prescriptive-execution-sequence), [§10 OQ-8](#10-open-questions). Outside the specification: the new ADR-011, the data architecture, the project plan, the implementation plan, the architecture's risks, the repository layout, the accounts specification.
+
+**Rationale.** The plan made all three services use TypeORM and carried its MongoDB support as a risk, to be proven first by this step. The Project Owner removed the question before the proof ran. The plan's own fallback was the native driver, so choosing it now costs nothing and removes a possible rewrite of the service's data access in Step 2.
+
+**Summary.** The second of the three unknowns is no longer TypeORM against MongoDB. It is the native `mongodb` driver against `mongodb-memory-server`, which has no fallback. `typeorm` and `@nestjs/typeorm` leave `apps/accounts` and stay in `trading` and `notifications`. Reset in `accounts` recreates collections and indexes instead of synchronizing a schema. A new decision record holds the reasoning, and the documents that said otherwise now point to it.
+
+**Verification Impact.** AC1 gains "no ORM package in `apps/accounts`", checked by the manifest test. AC16(b) is reworded and verified by the same integration file as before. Nothing else changes. TypeORM is still proven by this step, in `trading` and `notifications`, where it stays.
