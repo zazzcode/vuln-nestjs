@@ -1,7 +1,8 @@
+import type { GraphQLFormattedError } from 'graphql';
 import { errorCodeFor, formatGraphQLError } from './errors.js';
 
-// What the driver hands the formatter, for the exceptions it does not map itself.
-const withStatus = (status: number) => ({
+// What the driver hands the formatter for an exception it does not map itself.
+const withStatus = (status: number): GraphQLFormattedError => ({
   message: 'There is no order 99',
   extensions: {
     code: 'INTERNAL_SERVER_ERROR',
@@ -10,28 +11,27 @@ const withStatus = (status: number) => ({
   },
 });
 
+const codeOf = (formattedError: GraphQLFormattedError): string | undefined =>
+  formatGraphQLError(formattedError).extensions?.code;
+
 describe('formatGraphQLError', () => {
-  // The lab's API promises a client these codes; the driver alone would answer INTERNAL_SERVER_ERROR for each.
+  // The API promises a client these codes. The driver alone answers INTERNAL_SERVER_ERROR for each.
   it.each([
     [404, 'NOT_FOUND'],
     [409, 'CONFLICT'],
     [503, 'SERVICE_UNAVAILABLE'],
   ])('names a %i as %s', (status, code) => {
-    expect(formatGraphQLError(withStatus(status)).extensions?.code).toBe(code);
+    expect(codeOf(withStatus(status))).toBe(code);
   });
 
   it('names invalid input BAD_USER_INPUT, whatever status the driver gave it', () => {
-    expect(formatGraphQLError(withStatus(400)).extensions?.code).toBe(
-      'BAD_USER_INPUT',
-    );
-    expect(formatGraphQLError(withStatus(422)).extensions?.code).toBe(
-      'BAD_USER_INPUT',
-    );
+    expect(codeOf(withStatus(400))).toBe('BAD_USER_INPUT');
+    expect(codeOf(withStatus(422))).toBe('BAD_USER_INPUT');
     expect(
-      formatGraphQLError({
+      codeOf({
         message: 'email must be an email',
         extensions: { code: 'BAD_REQUEST' },
-      }).extensions?.code,
+      }),
     ).toBe('BAD_USER_INPUT');
   });
 
@@ -42,38 +42,37 @@ describe('formatGraphQLError', () => {
       'GRAPHQL_VALIDATION_FAILED',
       'INTERNAL_SERVER_ERROR',
     ]) {
-      expect(
-        formatGraphQLError({ message: 'x', extensions: { code } }).extensions
-          .code,
-      ).toBe(code);
+      expect(codeOf({ message: 'x', extensions: { code } })).toBe(code);
     }
   });
 
-  it('keeps everything else of the error, including what the scenario about stack traces needs', () => {
-    const formatted = formatGraphQLError({
-      message: 'There is no order 99',
-      path: ['order'],
-      locations: [{ line: 1, column: 3 }],
-      extensions: {
-        code: 'INTERNAL_SERVER_ERROR',
-        status: 404,
-        stacktrace: ['GraphQLError: There is no order 99'],
-      },
-    });
-
-    expect(formatted).toEqual({
-      message: 'There is no order 99',
-      path: ['order'],
-      locations: [{ line: 1, column: 3 }],
-      extensions: {
-        code: 'NOT_FOUND',
-        status: 404,
-        stacktrace: ['GraphQLError: There is no order 99'],
-      },
-    });
+  it('names any other status an internal error', () => {
+    expect(errorCodeFor(500)).toBe('INTERNAL_SERVER_ERROR');
+    expect(errorCodeFor(418)).toBe('INTERNAL_SERVER_ERROR');
   });
 
-  it('maps every status of the contract', () => {
-    expect(errorCodeFor(500)).toBe('INTERNAL_SERVER_ERROR');
+  it('changes the code and nothing else', () => {
+    const locations = [{ line: 1, column: 3 }];
+    const originalError = { statusCode: 404, message: 'There is no order 99' };
+    const stacktrace = ['GraphQLError: There is no order 99'];
+
+    expect(
+      formatGraphQLError({
+        message: 'There is no order 99',
+        path: ['order'],
+        locations,
+        extensions: {
+          code: 'INTERNAL_SERVER_ERROR',
+          status: 404,
+          originalError,
+          stacktrace,
+        },
+      }),
+    ).toEqual({
+      message: 'There is no order 99',
+      path: ['order'],
+      locations,
+      extensions: { code: 'NOT_FOUND', status: 404, originalError, stacktrace },
+    });
   });
 });
