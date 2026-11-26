@@ -54,7 +54,7 @@ Severity is the advisory's own rating. "Fixed in" is the first version without t
 | [GHSA-phwq-j96m-2c2q](https://github.com/advisories/GHSA-phwq-j96m-2c2q) · CVE-2022-29078 | Critical | Server-side template injection | 3.1.7 |
 | [GHSA-ghr5-ch3p-vcr6](https://github.com/advisories/GHSA-ghr5-ch3p-vcr6) · CVE-2024-33883 | Medium | Lacks certain pollution protection | 3.1.10 |
 
-**Control:** none. Only one service renders templates.
+**Control:** `ejs` 3.1.10 in `apps/accounts`, which renders its admin directory page.
 
 ### SCA-005 — `mysql2` 3.9.3 in `apps/trading`
 
@@ -103,6 +103,18 @@ This version of the adapter pins `fastify` 5.12.1, so it carries its own advisor
 **Control:** `@nestjs/platform-fastify` 12.6.3, with `fastify` 5.12.8, in `apps/gateway` and `apps/accounts`. No advisory.
 
 **Why `trading`.** It is a Fastify service that listens on HTTP/2, so the trailer advisory concerns a path that is really open. Step 4 confirms that the 12.0.1 adapter works with the 12.6.3 core it has to interoperate with. If it does not, the pin is dropped and the remaining seven stand.
+
+## When the pins are installed
+
+Three of the eight are needed by the code of the services themselves, because no patched version makes the scenario exploitable. They are installed when their service is built, in Step 2 of the build order:
+
+| Pin | Scenario | Why the vulnerable version is needed |
+| --- | --- | --- |
+| `jsonwebtoken` 8.5.1 | AUTH-001 | From 9.0.0, `verify` refuses an HMAC algorithm when it is given a public key. The algorithm confusion only works on 8.5.1 |
+| `node-serialize` 0.0.4 | DESER-001 | 0.0.4 is the only version there is |
+| `dot-prop` 4.1.0 | PROTO-003 | From 4.2.1, `set` refuses `__proto__` in a path |
+
+The other five arrive in Step 4, which also records all eight, with the audit snapshot and the reachability statements.
 
 ## Reachability
 

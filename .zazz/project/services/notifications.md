@@ -106,6 +106,8 @@ input AnnouncementInput { title: String! body: String! }
 
 **Counts.** 10 scenarios on 9 vulnerable operations. 29 safe operations: 20 GraphQL, the four `User` fields included, and 9 REST. More than three safe for every vulnerable one.
 
+**Dependency versions this service is built with.** `ejs` 3.1.10, `node-fetch` 2.7.0 and `dot-prop` 4.1.0. The first two are the controls for SCA-004 and SCA-003; the third is the pin SCA-006, because PROTO-003 is not exploitable without it.
+
 ## 5. Scenarios
 
 ### `SSRF` — server-side request forgery
@@ -140,7 +142,7 @@ The outbound guard, used by every protected counterpart here: the scheme must be
 | INJECT-002 | The alert label written into a log line as it is. A newline forges a line that reads like an administrator action (CWE-117) | `createLabeledAlert` | `createAlert`: the label is logged with `JSON.stringify` | A logging interceptor that records the label as a field |
 | ACCESS-006 | Any user's alerts and webhook URL by `userId` (CWE-639) | `alertsOf` | `alerts`: the caller's own | `User.alerts`: reached only for the caller's own user or through an admin operation |
 
-**PROTO-003 is exploitable at run time only once `dot-prop` 4.1.0 is pinned.** Until then it is a finding in source only. The pin is SCA-006 in the [dependency document](../../../docs/vulnerabilities/dependencies.md).
+**PROTO-003 needs `dot-prop` 4.1.0 to be exploitable.** From 4.2.1, `set` refuses `__proto__` in a path. The service is built with 4.1.0, which is the pin SCA-006 in the [dependency document](../../../docs/vulnerabilities/dependencies.md).
 
 ## 6. API tests
 

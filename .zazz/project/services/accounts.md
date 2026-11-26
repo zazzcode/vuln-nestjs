@@ -131,6 +131,8 @@ The gateway path is what a client calls. The service path is what the gateway ca
 
 **Counts.** 33 scenarios on 28 vulnerable operations. 41 safe operations: 21 GraphQL and 20 REST. About 1.5 safe for every vulnerable one.
 
+**Dependency versions this service is built with.** `jsonwebtoken` 8.5.1 and `node-serialize` 0.0.4, the pins SCA-001 and SCA-007, because AUTH-001 and DESER-001 are not exploitable without them. `ejs` 3.1.10 and `node-fetch` 2.7.0, the controls for SCA-004 and SCA-003. **AUTH-001 needs an RSA key pair.** The attack signs a token with a public key as an HMAC secret, so the fake data must include a key pair and the service must publish its public key. Where it is published is left to the service's deliverable specification.
+
 ## 5. Scenarios
 
 ### `AUTH` — authentication and sessions
