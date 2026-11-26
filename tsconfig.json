@@ -1,0 +1,16 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "declaration": false,
+    "allowJs": true
+  },
+  "include": [
+    "tests",
+    "scripts",
+    "vitest.config.ts",
+    "vitest.config.e2e.ts",
+    "vitest.libs.ts"
+  ]
+}

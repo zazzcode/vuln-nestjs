@@ -1,0 +1,47 @@
+{
+  "name": "vuln-nestjs",
+  "version": "0.0.0",
+  "private": true,
+  "description": "A deliberately vulnerable NestJS application for testing SAST, SCA and DAST tools: Zazzles Exchange, a fake cryptocurrency exchange built as microservices.",
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@12.23.0",
+  "engines": {
+    "node": ">=24.11.0"
+  },
+  "scripts": {
+    "start": "node scripts/start.mjs",
+    "build": "pnpm -r build",
+    "lint": "oxlint --type-aware . && pnpm -r typecheck",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test && vitest run",
+    "test:int": "pnpm -r --workspace-concurrency=1 test:int",
+    "test:e2e": "vitest run --config vitest.config.e2e.ts",
+    "test:api": "newman run postman/vuln-nestjs.postman_collection.json --environment postman/local.postman_environment.json --bail",
+    "scenario:check": "node scripts/check-scenarios.mjs",
+    "scenario:update": "node scripts/check-scenarios.mjs --update",
+    "audit:check": "node scripts/check-audit.mjs",
+    "audit:update": "node scripts/check-audit.mjs --update",
+    "audit:lab": "pnpm audit --prod"
+  },
+  "devDependencies": {
+    "@nestjs/common": "12.6.3",
+    "@nestjs/core": "12.6.3",
+    "@types/node": "24.19.4",
+    "@zazzles/exchange-config": "workspace:*",
+    "@zazzles/exchange-lab-data": "workspace:*",
+    "@zazzles/exchange-testing": "workspace:*",
+    "class-transformer": "0.5.1",
+    "class-validator": "0.15.1",
+    "newman": "6.2.3",
+    "oxlint": "1.95.0",
+    "oxlint-tsgolint": "7.0.2009",
+    "prettier": "3.10.1",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2",
+    "typescript": "6.0.3",
+    "vite": "8.4.0",
+    "vitest": "5.1.2"
+  }
+}
