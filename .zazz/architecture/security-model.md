@@ -1,6 +1,6 @@
 # Security model
 
-**Status:** proposed in Phase 0.
+**Status:** revised on 2026-11-26.
 
 ## 1. Two kinds of safety
 
@@ -9,7 +9,7 @@ This repository needs a security model for two different things, and they pull i
 - **The lab is dangerous on purpose.** The application inside it contains deliberate weaknesses, and some of them execute code on the machine that runs it.
 - **The machine and the repository must stay safe.** Nothing real may be reachable, readable or lost when a scenario is exploited.
 
-So the model has two layers: **safety rails**, which protect the machine and never change, and **the application's own security**, which is written correctly in the functional phases and then deliberately broken in specific, labelled places.
+So the model has two layers: **safety rails**, which protect the machine and never change, and **the application's own security**, which is written correctly in every safe operation and then deliberately broken in specific, labelled places.
 
 A third fact shapes both layers: the application is a sample that is started, preloaded with fake data, exercised, and stopped. There is nothing to steal and nothing to keep. That is why the safety rails can be so few, and why the baseline does not bother with anything that only matters for an application that stays up.
 
@@ -54,7 +54,7 @@ These are invariants. They are never weakened for a scenario.
 
 | Rail | Rule |
 | --- | --- |
-| Loopback only | Every listener binds `127.0.0.1`. Nothing listens on another interface, in any phase |
+| Loopback only | Every listener binds `127.0.0.1`. Nothing listens on another interface, ever |
 | Fake data | No real names, emails, keys, cards or files. The seed modules are the only source of data |
 | Harmless markers | An exploit proves itself with `42`, `zazzles-lab-marker`, or arithmetic. Never with a real file, a real secret, or a request to a host that is not loopback |
 | No real secrets | The start command generates the tokens a run needs. Nothing sensitive is on the machine that runs the lab |
@@ -62,16 +62,18 @@ These are invariants. They are never weakened for a scenario.
 
 ## 4. The functional baseline
 
-Phases 2 to 4 write every operation correctly. These are the protected counterparts of the later scenarios, so they have to be real patterns and not straw men.
+Step 2 writes every safe operation correctly, before any vulnerable one. The safe operations are the protected counterparts of the scenarios, so they have to be real patterns and not straw men.
 
 | Concern | How the baseline does it |
 | --- | --- |
 | Passwords | scrypt through Node's `crypto`, with a per-user salt |
-| Tokens | HS256 JWT, verified by each service. Refresh tokens stored hashed and deleted on sign-out |
+| Tokens | HS256 JWT, verified by each service. Each token belongs to a session record, which sign-out revokes |
 | Authentication | A global guard. Open operations are marked `@Public()` and each one is listed in the specification that adds it |
 | Authorization | `@Roles()` with a roles guard for administration. An ownership check inside the service for anything read or changed by `id` or `userId` |
 | Input validation | `@InputType()` and DTO classes with class-validator, through a global `ValidationPipe` that rejects unknown properties |
 | MongoDB access | Typed, allowlisted filter objects built field by field. Never a request object used as a filter, a sort, a projection or an update |
+| Untrusted objects | No dotted path and no deep merge touches request data. Preferences are written through typed inputs or an allowlist of names. Maps built from input have a null prototype |
+| Entity references | Built from stored data, never from a caller's argument |
 | MySQL access | TypeORM query builder with bound parameters. Raw SQL only with placeholders |
 | Money | Integer minor units. Positive amounts enforced before any balance changes |
 | Balance changes | One conditional update per change, so a balance can never go below zero and a race has no window |
@@ -85,7 +87,7 @@ Phases 2 to 4 write every operation correctly. These are the protected counterpa
 
 ## 5. How a deliberate flaw is added
 
-From Phase 5 on, a weakness enters the code in one of two ways.
+In Step 2, after the safe operations of its service exist, a weakness enters the code in one of two ways.
 
 ### As a twin operation
 
@@ -107,11 +109,11 @@ For process-wide settings, which have no twin.
 2. The documentation records the hardened value next to the weak one.
 3. The test asserts the exploit. There is no counterpart test, because the application cannot run both settings at once.
 
-Phases 1 to 4 leave three settings weak on purpose: introspection, GraphiQL and the OpenAPI document are on, and batched GraphQL requests are accepted. A local sample has no reason to turn them off. Phase 8 registers them with markers rather than adding them.
+The gateway leaves four settings weak on purpose: introspection, GraphiQL and the OpenAPI document are served, and batched GraphQL requests are accepted. A local sample has no reason to turn them off. They are registered as scenarios and marked, not added later.
 
 ## 6. Dependency pins
 
-Phase 9 pins vulnerable versions of individual libraries, one workspace at a time. The pins are chosen so that they install without running scripts, and every advisory they carry is a finding the dependency scanner must report. The list and the advisories are in [`docs/vulnerabilities/dependencies.md`](../../docs/vulnerabilities/dependencies.md); the reasoning is in [ADR-009](decisions/ADR-009-vulnerable-pins-one-workspace.md).
+Step 4 pins vulnerable versions of individual libraries, one workspace at a time. The pins are chosen so that they install without running scripts, and every advisory they carry is a finding the dependency scanner must report. The list and the advisories are in [`docs/vulnerabilities/dependencies.md`](../../docs/vulnerabilities/dependencies.md); the reasoning is in [ADR-009](decisions/ADR-009-vulnerable-pins-one-workspace.md).
 
 ## 7. What this model does not cover
 
@@ -129,7 +131,7 @@ The `AUTH` family still has five scenarios, because sign-in is where a scanner e
 The lab is safe to run under these rules, and only under these rules.
 
 - Run it on a machine you control, on loopback, and stop it afterwards.
-- Several scenarios execute code on that machine: deserialization (`node-serialize`), `eval`, and command injection. Treat the lab process as if anyone who can reach its ports can run code on the machine, because after Phase 6 that is true for anyone who can reach `127.0.0.1`.
+- Several scenarios execute code on that machine: deserialization (`node-serialize`), `eval`, and command injection. Treat the lab process as if anyone who can reach its ports can run code on the machine, because from Step 2 on that is true for anyone who can reach `127.0.0.1`.
 - Do not keep real credentials, SSH keys or sensitive files on a machine where untrusted people can reach the lab's ports.
 - Do not deploy it, publish it on a network interface, or point a scenario at a host you do not own.
 - Point exploit documentation at loopback addresses only.

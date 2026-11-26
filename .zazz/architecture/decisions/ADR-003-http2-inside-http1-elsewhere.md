@@ -1,6 +1,6 @@
 # ADR-003 — HTTP/2 cleartext inside; HTTP/1.1 at the edge and to the Express service
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
@@ -36,12 +36,12 @@ The transport is a property of the service, recorded once in the service registr
 ## Consequences
 
 - An HTTP/2 client is written once, in `libs/http2`: a `fetch`-shaped function for the Apollo data source and a small JSON client for internal REST.
-- Cleartext inside the machine is not a weakness here. It is registered as the negative control DEMO-005, so that a scanner reporting it can be recognized as wrong for this context.
+- Cleartext inside the machine is not a weakness here. The gateway specification records it as intentional, so that a scanner reporting it can be recognized as wrong for this context.
 - A test asserts the protocol: the gateway's fetches reach the Fastify subgraphs with `httpVersion` `"2.0"`, and reach `notifications` with `"1.1"`.
 
 ## Verified facts
 
 Checked on 2026-11-26.
 
-- `FastifyAdapter` passes its options to Fastify, which accepts `http2: true` for a cleartext HTTP/2 listener. Not yet run here; Phase 1 proves it.
+- A spike on 2026-11-26 ran `FastifyAdapter({ http2: true })` with an Apollo subgraph on it. Every request the gateway sent arrived with `httpVersion` `"2.0"`.
 - The Express adapter of NestJS 12.6.3 depends on `express` 5.3.0 and creates an HTTP/1.1 server.

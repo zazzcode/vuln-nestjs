@@ -1,6 +1,6 @@
 # Repository layout
 
-**Status:** proposed in Phase 0. Versions were read from the npm registry on 2026-11-26; Phase 1 installs them, confirms them and pins them.
+**Status:** written in Step 0. Versions were read from the npm registry on 2026-11-26; the scaffolding installs them, confirms them and pins them.
 
 ## 1. Shape
 
@@ -17,6 +17,7 @@ vuln-nestjs/
 │   ├── config/               typed configuration and the service registry
 │   ├── http2/                the HTTP/2 fetch and JSON client
 │   ├── internal-auth/        guards, decorators, the service-token check
+│   ├── lab-data/             the fixed identifiers of the fake users, the markets' starting prices
 │   └── testing/              helpers: start the lab, sign in, call the graph
 ├── catalog/
 │   └── catalog.json          the scenarios. Single source of truth
@@ -26,6 +27,7 @@ vuln-nestjs/
 │   ├── e2e/                  whole-lab tests
 │   └── expected-*.json       generated ground truth
 ├── docs/                     documentation for readers of the lab
+├── .agents/skills/           the spec-builder and handoff skills, vendored from zazz-skills
 ├── .zazz/                    planning and working documents
 ├── .github/
 │   ├── workflows/ci.yml
@@ -77,7 +79,7 @@ A service depends on a library directly. It never reaches into another service's
 
 ## 3. Tooling and versions
 
-The versions are the latest published on 2026-11-26, checked against each other's declared peer ranges. Phase 1 re-checks them, because this stack moves, and pins what it installs.
+The versions are the latest published on 2026-11-26, checked against each other's declared peer ranges. The scaffolding re-checks them, because this stack moves, and pins what it installs.
 
 | Concern | Package | Version |
 | --- | --- | --- |
@@ -113,7 +115,8 @@ Three facts about these versions that the table alone does not show:
 
 - **`graphql` is pinned to 16.** `@apollo/server` 5.5.2 declares `graphql` as `^16.11.0`. The official NestJS federation sample uses 17.1.0 with it, and the other packages accept both. 16.15.0 is inside every declared range.
 - **NestJS 12 is ESM-only.** Relative imports end in `.js`. `__dirname` does not exist; `import.meta.dirname` does.
-- **NestJS Observe is left out.** The CLI scaffold adds `@nestjs/observe` and an `ObserveModule` with placeholder keys. Neither belongs in a lab that must not send telemetry. Phase 1 removes both.
+- **pnpm 12 has a minimum release age.** A package published more recently than that is held back. For versions pinned exactly it writes `minimumReleaseAgeExclude` into `pnpm-workspace.yaml` on its own. Expect that once, for the NestJS packages, and leave it.
+- **NestJS Observe is left out.** The CLI scaffold adds `@nestjs/observe` and an `ObserveModule` with placeholder keys. Neither belongs in a lab that must not send telemetry. The scaffolding removes both.
 
 ## 4. Conventions
 
@@ -124,14 +127,14 @@ Three facts about these versions that the table alone does not show:
 | Strictness | `strict: true`. `strictPropertyInitialization: false`, because DTOs and models are declared and then filled |
 | Lint and format | oxlint with type-aware rules, and Prettier with single quotes and trailing commas: the NestJS 12 scaffold's settings |
 | Versions | Exact, in every `package.json`. No carets. `saveExact: true` in `pnpm-workspace.yaml` |
-| Install scripts | Off for everything, as in vuln-nextjs. The two database packages download at first use, not at install |
+| Install scripts | Off for everything, as in vuln-nextjs. The two database packages download at first use, not at install. pnpm 12 stops the install until the build scripts of `protobufjs` and `@apollo/protobufjs` are denied under `allowBuilds` in `pnpm-workspace.yaml` |
 | Test names | `*.spec.ts` beside the code for unit tests. `*.int-spec.ts` in `test/` for integration. `*.e2e-spec.ts` under `tests/e2e/` |
 | Mocks | Vitest's `vi.fn()`. Jest is not installed |
 | Identifiers | Neutral names in code. No `vuln`, `unsafe` or `safe` in an identifier or a path |
 
 ## 5. Root scripts
 
-Planned names. Phase 1 confirms them and records them in `docs/setup-and-testing.md`.
+Planned names. The scaffolding confirms them and records them in `docs/setup-and-testing.md`.
 
 | Script | Does |
 | --- | --- |
@@ -142,9 +145,9 @@ Planned names. Phase 1 confirms them and records them in `docs/setup-and-testing
 | `pnpm test:int` | Integration tests |
 | `pnpm test:e2e` | End-to-end tests: the whole lab in the test process |
 | `pnpm test:api` | Newman against a running stack |
-| `pnpm scenario:check`, `pnpm scenario:update` | Ground truth for scenarios (Phase 5) |
-| `pnpm audit:check`, `pnpm audit:update` | Ground truth for dependencies (Phase 5) |
+| `pnpm scenario:check`, `pnpm scenario:update` | Ground truth for scenarios |
+| `pnpm audit:check`, `pnpm audit:update` | Ground truth for dependencies |
 
 ## 6. Branches
 
-One branch per phase, `phase-<n>-<slug>`, and one pull request. The workflow is in the [project plan](../project/project-plan.md#8-branch-and-pr-workflow).
+One branch per deliverable, `phase-<n>-<slug>`, and one pull request. The workflow is in the [project plan](../project/project-plan.md#8-branch-and-pr-workflow).

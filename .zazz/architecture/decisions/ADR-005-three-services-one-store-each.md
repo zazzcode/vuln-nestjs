@@ -1,6 +1,6 @@
 # ADR-005 — Three backend services, each the only user of its store
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
@@ -11,11 +11,11 @@ The constraint is one gateway and no more than three backend services, with Mong
 
 | Service | Owns | Store |
 | --- | --- | --- |
-| `accounts` | Users, sessions, wallets, the ledger, profile documents | MongoDB |
-| `trading` | Markets, orders, the order book, trades, price ticks, reports | MySQL |
+| `accounts` | Users, passwords, sessions, profile, preferences, documents | MongoDB |
+| `trading` | Markets, prices, wallets, the ledger, deposits, withdrawals, orders, trades, reports | MySQL |
 | `notifications` | Alerts, webhook deliveries, announcements | SQLite in memory |
 
-No store is shared. `trading` never stores a balance; it asks `accounts` for a hold or a settle.
+No store is shared, and no service reads another's. No service calls another either: see [ADR-010](ADR-010-services-never-call-each-other.md).
 
 ## Options considered
 
@@ -28,7 +28,8 @@ No store is shared. `trading` never stores a balance; it asks `accounts` for a h
 
 ## Consequences
 
-- There is no transaction across services. A step interrupted between `trading` and `accounts` is undone by a reset. Accepted, because the application is ephemeral (ADR-004).
+- There is no transaction across stores, because no operation touches two stores.
 - Reset is a fan-out: each service resets its own store.
 - `Order.userId` refers to a user in another store. There is no foreign key.
 - Open question Q2 in the [project plan](../../project/project-plan.md#10-open-questions) keeps the two-service fallback visible.
+- Money is in `trading` so that an order is one transaction. The first design kept wallets in `accounts` and called `trading` to `accounts`; that was removed with the calls between services.

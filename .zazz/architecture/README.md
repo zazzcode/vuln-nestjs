@@ -1,6 +1,6 @@
 # Architecture
 
-The intended technical shape of the system. A specification links to the section it depends on instead of restating the design. If implementation shows a decision here is wrong, the document changes through review — one phase does not silently fork the shape.
+The intended technical shape of the system. A specification links to the section it depends on instead of restating the design. If implementation shows a decision here is wrong, the document changes through review — one step does not silently fork the shape.
 
 | Document | Holds |
 | --- | --- |
@@ -15,4 +15,4 @@ The intended technical shape of the system. A specification links to the section
 
 ## Levels
 
-These are project-level documents. Design that belongs to one deliverable — the exact fields of an input type, the exact steps of the matching loop — lives in that phase's [specification](../specifications/README.md). A feature-level architecture document is added when one capability spans several deliverables, as trading does across Phases 3 and 7.
+These are project-level documents. Design that belongs to one deliverable — the exact fields of an input type, the exact steps of the matching loop — lives in the step's [specification](../specifications/README.md). The API of each service, which is feature-level design, lives in its [service specification](../project/services/README.md).

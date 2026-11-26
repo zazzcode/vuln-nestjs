@@ -1,6 +1,6 @@
 # Testing strategy
 
-**Status:** proposed in Phase 0. Commands are named as they are planned; `docs/setup-and-testing.md` records each one only after it has been run.
+**Status:** revised on 2026-11-26. Commands are named as they are planned; `docs/setup-and-testing.md` records each one only after it has been run.
 
 ## 1. What the tests are for
 
@@ -16,7 +16,8 @@ Because the application is ephemeral, tests never need fixtures that persist. Ev
 | Layer | Runner | Where | What it proves |
 | --- | --- | --- | --- |
 | Unit | Vitest | `*.spec.ts` beside the code | One class or function in isolation: a money calculation, a price tick, a URL allowlist |
-| Integration | Vitest | `apps/<service>/test/*.int-spec.ts` | One service with its real in-memory store, through `app.inject()`. No sockets, no other services |
+| Integration | Vitest | `apps/<service>/test/*.int-spec.ts` | One service with its real in-memory store, through `app.inject()`. No other service |
+| Service API | Vitest | `apps/<service>/test/api/*.spec.ts` | The service running on its own ports with its own store. Every operation of its [specification](../project/services/README.md), each scenario in both directions. No other service |
 | End to end | Vitest | `tests/e2e/*.e2e-spec.ts` | All four services started in the test process, real ports, real hops. Federation across services, HTTP/2 between the Fastify services, every scenario that needs a second service or a second request |
 | API collection | Newman | `postman/` | The same requests a person sends from Postman, against a running stack. Functional flows and one request per scenario exploit |
 | Ground truth | Node scripts | `scripts/` | The committed snapshots match the catalogue, the source files and the audit output |
@@ -40,7 +41,7 @@ Tests run in one file at a time. The lab has fixed ports and shared fake data, s
 The pattern from vuln-nextjs, kept because it works. One payload, two targets.
 
 ```ts
-// Illustrative. The real helper arrives with Phase 5.
+// Illustrative. The helper arrives with the scaffolding.
 const payload = { userId: erin.id, amount: '500.00' };
 
 const exploited = await graphqlAs(alice).mutate('creditWallet', payload);
@@ -64,7 +65,7 @@ The Project Owner asked for Postman and Newman or another recommended tool. The 
 
 | Piece | Path | Notes |
 | --- | --- | --- |
-| Collection | `postman/vuln-nestjs.postman_collection.json` | Folders per service, then per phase. A GraphQL request is a `POST` with a JSON body of `query` and `variables` |
+| Collection | `postman/vuln-nestjs.postman_collection.json` | Folders per service. A GraphQL request is a `POST` with a JSON body of `query` and `variables` |
 | Environment | `postman/local.postman_environment.json` | `baseUrl` (`http://127.0.0.1:3000`), the lab users, tokens captured by a sign-in request |
 | Exploit folder | one per scenario family | One request per scenario, with a test script that asserts the marker |
 | Runner | `pnpm test:api` | `newman run … --bail` against a running stack. CI starts the stack first |
@@ -92,7 +93,7 @@ Generated from `catalog/catalog.json`, committed, and never edited by hand. The 
 | `pnpm audit:check` | The audit differs from the snapshot. It is its own CI job, because a new upstream advisory must be visible and must not stop the tests |
 | `pnpm audit:update` | The audit returns an advisory the snapshot has and the update was not told to retire it by name |
 
-The scripts arrive in Phase 5, proven on the pilot batch.
+The scripts arrive with the scaffolding and an empty catalogue. Each service fills in its own entries.
 
 ## 6. CI
 
@@ -118,7 +119,7 @@ For any change:
 ```text
 pnpm lint && pnpm test && pnpm test:int
 pnpm build && pnpm test:e2e
-pnpm scenario:check && pnpm audit:check      (from Phase 5)
+pnpm scenario:check && pnpm audit:check      (from the scaffolding on)
 ```
 
 For a change that adds a scenario, additionally:

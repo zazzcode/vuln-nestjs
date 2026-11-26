@@ -1,6 +1,6 @@
 # ADR-004 — Ephemeral stores, because the application is started, seeded and stopped
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context

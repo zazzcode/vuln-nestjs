@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This repository is a deliberately vulnerable application for testing tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). It exists because a scanner is only as good as the evidence behind it: every weakness in this application has a stable ID, a documented expected finding, an automated test proving it is exploitable, and — where that is meaningful — a protected counterpart that handles the identical payload safely.
+This repository is a deliberately vulnerable application for testing tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). It exists because a scanner is only as good as the evidence behind it: every weakness in this application has a stable ID, a documented expected finding, an automated test proving it is exploitable, and a protected counterpart that handles the identical payload safely.
 
 The application is **Zazzles Exchange**, a small fake cryptocurrency exchange. It is functional enough to behave like real software (accounts, wallets, an order book, price alerts), because weaknesses that sit in plausible features are the ones scanners meet in practice. It is built the way a current NestJS system is built, so the framework idioms are real and not improvised.
 
@@ -22,14 +22,15 @@ What that implies:
 - **The data is fake from the start.** Five users, an administrator, five coins, and some orders are loaded at every start. Nobody enters real data.
 - **Anything may be broken.** The exploits are destructive by nature. A dropped table or an overdrawn wallet is undone by a reset.
 - **Every run is the same.** A scanner, a test, and a person see the same data and the same behaviour.
+- **Services never call each other.** The gateway talks to every service. Each service is built, and tested, on its own.
 
 ## Who it is for
 
 | Audience | What they get |
 | --- | --- |
 | Scanner authors | A target with stable ground truth: a catalogue of expected findings, source hashes, and a dependency-audit snapshot. Per-workspace dependency pins test whether a scanner can say *which* service has the vulnerable package. Both of NestJS's HTTP adapters are present |
-| Security learners | Per-scenario documentation with the flaw explained, reproduction steps, and the protected counterpart (written as scenarios ship) |
-| Coding agents | [AGENTS.md](../../AGENTS.md): the invariants, the test workflow, and the checklists for adding a scenario |
+| Security learners | Per-scenario documentation with the flaw explained, reproduction steps, and the protected counterparts |
+| Coding agents | [AGENTS.md](../../AGENTS.md): the invariants, the workflow, and what each may write |
 
 ## The product being imitated
 
@@ -50,15 +51,14 @@ All money is synthetic and starts from the fake data. Amounts are integer minor 
 
 ## Capabilities
 
-| Capability | Where it lives | Ships in |
+| Capability | Where it lives | Built in |
 | --- | --- | --- |
-| Federated GraphQL API behind a single gateway | `gateway` (Fastify) | Phase 1 |
-| Sign-in, sessions, user administration | `accounts` (Fastify, MongoDB) | Phase 2 |
-| Fiat and coin wallets, deposits, withdrawals, ledger | `accounts` | Phase 2 |
-| Markets, market and limit orders, order book, trade history | `trading` (Fastify, MySQL) | Phase 3 |
-| Price alerts, webhook delivery, announcements | `notifications` (Express, SQLite) | Phase 4 |
-| Deliberate vulnerabilities with protected counterparts | all services | Phases 5 to 9 |
-| Documentation and ground truth for every scenario | `docs/`, `catalog/`, `tests/` | Phases 5 to 10 |
+| Federated GraphQL API behind a single gateway | `gateway` (Fastify) | Step 1 |
+| Sign-in, sessions, profile, documents | `accounts` (Fastify, MongoDB) | Step 2 |
+| Markets, prices, wallets, deposits, withdrawals, ledger, orders, trades, reports | `trading` (Fastify, MySQL) | Step 2 |
+| Price alerts, webhook delivery, announcements | `notifications` (Express, SQLite) | Step 2 |
+| Deliberate weaknesses, designed with their service, each with protected counterparts | every service | Step 2 |
+| Documentation and ground truth for every scenario | `docs/`, `catalog/`, `tests/` | Steps 1 to 5 |
 
 See [requirements.md](requirements.md) for the full list.
 
@@ -76,18 +76,20 @@ See [requirements.md](requirements.md) for the full list.
 - No real money, real prices, real identities, or real credentials.
 - No user interface. A UI may be added later; until then the API is the product.
 - No persistence, no deployment, and no expectation of staying up. A restart returns every store to its fake data.
-- No production-grade exchange engine: no partial fills, no streaming prices, no withdrawals to external addresses. The Apollo gateway does not forward subscriptions to subgraphs, so the graph offers queries and mutations only.
+- No calls between services. A flow that needs two services is two calls made by the client.
+- No production-grade exchange engine: no matching between orders, no partial fills, no streaming prices, no withdrawals to external addresses. The Apollo gateway does not forward subscriptions, so the graph offers queries and mutations only.
 - No operational plumbing: retries, reconciliation, metrics, tracing. NestJS Observe, which the NestJS 12 scaffold wires in, is left out on purpose.
-- It is not a template for building a secure exchange. The functional baseline is written safely so that protected counterparts exist, but the code added from Phase 6 on is unsafe by design.
+- It is not a template for building a secure exchange. The safe operations are written safely so that protected counterparts exist, but the vulnerable operations are unsafe by design.
 
 ## Principles for future work
 
-1. **Functional first.** A service ships working and safe. Its vulnerable twin operations come later, in separate files, so that the same payload can be sent to both.
-2. **Ground truth is generated, never hand-edited.** The scenario catalogue is the single source of truth; hashes, scanner expectations and the audit snapshot are derived from it.
-3. **A protected counterpart is a scoped claim.** It says "this pattern defeats this flaw for identical input", never "secure in general".
-4. **Safety rails stay.** Loopback only, fake data, harmless markers such as `zazzles-lab-marker`, no real secrets or files.
-5. **Names in code stay neutral.** Code identifiers and paths describe the feature, not the flaw. The catalogue and the documentation hold the answers.
-6. **Sample-sized.** If a concern only matters for an application that stays up, it does not belong here.
+1. **Safe operations first.** A service's safe operations are written and tested before any vulnerable one. Each vulnerable operation is a twin in a separate file, so that the same payload can be sent to both.
+2. **Every vulnerable operation has a protected counterpart**, and the lab keeps about two safe operations for every vulnerable one.
+3. **Ground truth is generated, never hand-edited.** The scenario catalogue is the single source of truth; hashes, scanner expectations and the audit snapshot are derived from it.
+4. **A protected counterpart is a scoped claim.** It says "this pattern defeats this flaw for identical input", never "secure in general".
+5. **Safety rails stay.** Loopback only, fake data, harmless markers such as `zazzles-lab-marker`, no real secrets or files.
+6. **Names in code stay neutral.** Code identifiers and paths describe the feature, not the flaw. The catalogue and the documentation hold the answers.
+7. **Sample-sized.** If a concern only matters for an application that stays up, it does not belong here.
 
 ## Glossary
 
@@ -96,19 +98,23 @@ See [requirements.md](requirements.md) for the full list.
 | SAST, SCA, DAST | Tools that read source code, check dependency versions, and probe a running application |
 | CWE, CVE, GHSA | Dictionaries: weakness *types* (CWE-89 is SQL injection), publicly disclosed *vulnerabilities*, and GitHub *advisory* IDs |
 | source, sink, flow | Where attacker-controlled data enters, the dangerous operation it must not reach, and the path between them |
-| scenario | One deliberate weakness: an ID, a vulnerable operation, an optional protected counterpart, documentation and tests |
+| scenario | One deliberate weakness: an ID, a vulnerable operation, its protected counterparts, documentation and tests |
+| safe operation | Part of the functional baseline, or a protected counterpart |
+| vulnerable operation | A GraphQL field, a REST endpoint, or a setting that carries a scenario |
 | protected counterpart (safe control) | An operation that receives the identical payload and keeps it inert |
 | subgraph | One service's part of the federated GraphQL schema |
-| gateway | The only public listener; composes the subgraphs and forwards internal REST calls |
-| h2c | HTTP/2 without TLS, as used between the Fastify services on one machine |
+| gateway | The only public listener; composes the subgraphs and forwards REST calls |
+| h2c | HTTP/2 without TLS, as used between the gateway and the Fastify services |
 | ephemeral | Gone when the application stops. Said of the application and of its stores |
 | marker | A harmless value that proves code ran (`42`, `zazzles-lab-marker`) |
 | workspace | One package in the pnpm workspace: `apps/gateway`, `apps/accounts`, `apps/trading`, `apps/notifications`, or a shared library |
-| phase | One deliverable of the plan: one specification, one branch, one pull request |
+| step | One deliverable of the build order: one specification, one branch, one pull request |
 
 ## Related documents
 
-- [project-plan.md](project-plan.md) — why the lab exists and what the phases are
-- [scenario-catalog.md](scenario-catalog.md) — the planned scenarios
+- [project-plan.md](project-plan.md) — why the lab exists and what was decided
+- [implementation-plan.md](implementation-plan.md) — the build order
+- [services/README.md](services/README.md) — the contract of each service
+- [scenario-catalog.md](scenario-catalog.md) — every designed scenario
 - [../architecture/project.md](../architecture/project.md) — the system shape, and what follows from the application being ephemeral
 - [`docs/architecture.md`](../../docs/architecture.md) — the same shape for readers of the lab

@@ -1,8 +1,8 @@
 # Vulnerable dependencies (SCA)
 
-**Status: planned.** No dependency is installed yet; the repository holds no application code until Phase 1. This page lists the eight libraries that Phase 9 will pin to vulnerable versions, with the advisory each version carries.
+**Status: planned.** No dependency is installed yet; the repository holds no application code until the scaffolding. This page lists the eight libraries that Step 4 will pin to vulnerable versions, with the advisory each version carries.
 
-The versions and their advisories were checked on 2026-11-26 against the GitHub Advisory Database, through its API, and against the npm registry. After Phase 9, `tests/expected-audit.json` is the complete answer. This page is its summary.
+The versions and their advisories were checked on 2026-11-26 against the GitHub Advisory Database, through its API, and against the npm registry. After Step 4, `tests/expected-audit.json` is the complete answer. This page is its summary.
 
 ## Rules
 
@@ -69,7 +69,7 @@ Severity is the advisory's own rating. "Fixed in" is the first version without t
 
 **Control:** none. Only one service uses MySQL.
 
-**A question for the scanner.** TypeORM 1.1.3 declares `mysql2` as `^3.15.3`. The pin is below that range, so the manifest of `apps/trading` would request one version while the lockfile resolves another. A scanner has to report what is installed. Phase 9 first confirms that TypeORM works with 3.9.3 at runtime; if it does not, the pin is replaced by a candidate below.
+**A question for the scanner.** TypeORM 1.1.3 declares `mysql2` as `^3.15.3`. The pin is below that range, so the manifest of `apps/trading` would request one version while the lockfile resolves another. A scanner has to report what is installed. Step 4 first confirms that TypeORM works with 3.9.3 at runtime; if it does not, the pin is replaced by a candidate below.
 
 ### SCA-006 — `dot-prop` 4.1.0 in `apps/notifications`
 
@@ -102,22 +102,22 @@ This version of the adapter pins `fastify` 5.12.1, so it carries its own advisor
 
 **Control:** `@nestjs/platform-fastify` 12.6.3, with `fastify` 5.12.8, in `apps/gateway` and `apps/accounts`. No advisory.
 
-**Why `trading`.** It is a Fastify service that listens on HTTP/2, so the trailer advisory concerns a path that is really open. Phase 9 confirms that the 12.0.1 adapter works with the 12.6.3 core it has to interoperate with. If it does not, the pin is dropped and the remaining seven stand.
+**Why `trading`.** It is a Fastify service that listens on HTTP/2, so the trailer advisory concerns a path that is really open. Step 4 confirms that the 12.0.1 adapter works with the 12.6.3 core it has to interoperate with. If it does not, the pin is dropped and the remaining seven stand.
 
 ## Reachability
 
-A dependency scanner reports a vulnerable version whether or not the application calls the affected function. The lab records which it is, so that a scanner's reachability analysis can be checked too. Phase 9 writes one statement per pin, and a runtime test wherever the answer is "reachable".
+A dependency scanner reports a vulnerable version whether or not the application calls the affected function. The lab records which it is, so that a scanner's reachability analysis can be checked too. Step 4 writes one statement per pin, and a runtime test wherever the answer is "reachable".
 
 | Pin | Expected at the time of writing | Confirmed in |
 | --- | --- | --- |
-| `jsonwebtoken` 8.5.1 | Reachable: the sign-in verification path calls `verify` | Phase 9 |
-| `lodash` 4.17.20 | Partly: input normalization calls `trimEnd` (the denial-of-service advisory). `_.template` is never called | Phase 9 |
-| `node-fetch` 2.6.6 | Reachable: the webhook client follows a redirect with its headers | Phase 9 |
-| `ejs` 3.1.6 | Not reachable: the template options are fixed in code, and CVE-2022-29078 needs caller-controlled options | Phase 9 |
-| `mysql2` 3.9.3 | Not reachable through normal query execution | Phase 9 |
-| `dot-prop` 4.1.0 | Reachable: a caller-supplied path reaches `set` | Phase 9 |
-| `node-serialize` 0.0.4 | Reachable: a cookie reaches `unserialize` | Phase 9 |
-| `@nestjs/platform-fastify` 12.0.1 | Partly: the HTTP/2 trailer advisory is reachable on the listener; the middleware bypass needs path-scoped middleware | Phase 9 |
+| `jsonwebtoken` 8.5.1 | Reachable: the sign-in verification path calls `verify` | Step 4 |
+| `lodash` 4.17.20 | Partly: input normalization calls `trimEnd` (the denial-of-service advisory). `_.template` is never called | Step 4 |
+| `node-fetch` 2.6.6 | Reachable: the webhook client follows a redirect with its headers | Step 4 |
+| `ejs` 3.1.6 | Not reachable: the template options are fixed in code, and CVE-2022-29078 needs caller-controlled options | Step 4 |
+| `mysql2` 3.9.3 | Not reachable through normal query execution | Step 4 |
+| `dot-prop` 4.1.0 | Reachable: a caller-supplied path reaches `set` | Step 4 |
+| `node-serialize` 0.0.4 | Reachable: a cookie reaches `unserialize` | Step 4 |
+| `@nestjs/platform-fastify` 12.0.1 | Partly: the HTTP/2 trailer advisory is reachable on the listener; the middleware bypass needs path-scoped middleware | Step 4 |
 
 ## Candidates if a pin has to be replaced
 

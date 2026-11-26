@@ -1,13 +1,13 @@
 # ADR-001 — One repository, a pnpm workspace, one package per service
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
 
 The lab has four NestJS applications and code they share. Two needs pull against each other.
 
-- A dependency scanner has to be able to say **which service** has a vulnerable package. Phase 9 pins a vulnerable version in one workspace and a patched one in another, and the scanner has to tell them apart.
+- A dependency scanner has to be able to say **which service** has a vulnerable package. Step 4 pins a vulnerable version in one workspace and a patched one in another, and the scanner has to tell them apart.
 - The four applications form one system. A change to the federated schema touches the gateway and a subgraph together, and the end-to-end tests need all four.
 
 ## Decision
@@ -19,7 +19,7 @@ One repository with a pnpm workspace. Each service is its own package under `app
 | Option | Why not |
 | --- | --- |
 | The NestJS CLI's monorepo mode: one root `package.json`, one dependency tree, several projects in `nest-cli.json` | One dependency tree cannot attribute a finding to a service. The same library cannot be at two versions in two services. It defeats the reason for the split |
-| Four repositories | A schema change is four pull requests in four repositories. Nothing can start the whole lab from one checkout. Reviewing one phase means reviewing across repositories |
+| Four repositories | A schema change is four pull requests in four repositories. Nothing can start the whole lab from one checkout. Reviewing one deliverable means reviewing across repositories |
 | npm or yarn workspaces | Equivalent in shape. pnpm is chosen because [vuln-nextjs](https://github.com/zazzcode/vuln-nextjs) uses it, so the two labs are installed and maintained the same way |
 
 ## Consequences

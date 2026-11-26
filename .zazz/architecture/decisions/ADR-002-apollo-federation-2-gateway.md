@@ -1,6 +1,6 @@
 # ADR-002 — Apollo Federation 2 with the Apollo gateway
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
@@ -39,4 +39,7 @@ Checked on 2026-11-26 against the npm registry and the published typings of `@ap
 - `GatewayConfigBase` has `buildService`, through which a data source with a custom `fetcher` is supplied.
 - `RemoteGraphQLDataSource` accepts a `fetcher` and exposes `willSendRequest`.
 - `IntrospectAndCompose` and `LocalCompose` are exported.
-- Not verified: that the gateway driver runs on the Fastify adapter with an HTTP/2 fetcher. Phase 1 proves it first.
+- `IntrospectAndCompose` has no `fetcher` per subgraph. Schema discovery goes through the data source from `buildService`, so the transport is decided there once.
+- An entity reference returned from a parent object needs `@provides(fields: "id")`, or composition fails.
+- **Run on 2026-11-26.** A gateway on the Fastify adapter composed a Fastify subgraph and an Express subgraph, and answered a query that joins them. The Fastify subgraph received every gateway request over `HTTP/2.0`.
+- Not verified by the spike: the code-first schema generator with TypeScript 6. The spike used schema-first definitions. The scaffolding uses code first and finds out.

@@ -1,6 +1,6 @@
 # ADR-009 — Vulnerable pins, one workspace each, guarded by an audit snapshot
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
@@ -30,7 +30,7 @@ The list, with every advisory, is in [`docs/vulnerabilities/dependencies.md`](..
 
 - The audit snapshot changes over time as new advisories appear for pinned versions. Adding them is routine; removing one is not.
 - GitHub will flag the pins. Dependabot security updates are turned off for this repository, as in vuln-nextjs (risk R10 in the [project plan](../../project/project-plan.md#9-risks-and-mitigations)).
-- Each pin is validated when it is installed (Phase 9). A pin that does not install or breaks its service is replaced by a candidate from the dependency document.
+- Each pin is validated when it is installed, in Step 4. A pin that does not install or breaks its service is replaced by a candidate from the dependency document.
 - Two pins have no control workspace, because only one service uses that library (`ejs`, `mysql2`), and one has no corrected version at all (`node-serialize`).
 
 ## Verified facts

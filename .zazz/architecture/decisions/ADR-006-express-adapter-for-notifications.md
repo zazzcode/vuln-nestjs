@@ -1,6 +1,6 @@
 # ADR-006 — The notifications service uses the Express adapter
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted in principle on 2026-11-26. Which service uses Express is the Project Owner's call; `notifications` is the default
 **Date:** 2026-11-26
 
 ## Context

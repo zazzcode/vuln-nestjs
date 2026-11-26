@@ -1,12 +1,12 @@
 ## Context
 
-- **Phase:**
+- **Step:**
 - **Specification:** `.zazz/specifications/…`
 - **PR status:** Draft until the specification is approved. Ready for review once the definition of done is met.
 
 ## Why
 
-What this phase is for, and what is true after it that was not true before.
+What this step is for, and what is true after it that was not true before.
 
 ## Functional overview
 
@@ -24,7 +24,7 @@ One line per criterion from the specification, with the test or command that cov
 
 ### Scenarios added or changed
 
-For a vulnerability phase. For a functional phase, write "none".
+For a step that adds weaknesses. Otherwise write "none".
 
 | ID | Vulnerable operation | Protected counterpart | Exploit test | Newman request | Documentation |
 | --- | --- | --- | --- | --- | --- |
@@ -48,4 +48,4 @@ Only what actually ran.
 ## Risks and notes
 
 - Known risks:
-- Follow-ups that belong to a later phase:
+- Follow-ups that belong to a later step:

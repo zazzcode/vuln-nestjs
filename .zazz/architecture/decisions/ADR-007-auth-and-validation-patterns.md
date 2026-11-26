@@ -1,6 +1,6 @@
 # ADR-007 — Established authentication and validation patterns
 
-**Status:** Proposed in Phase 0, waiting for review
+**Status:** Accepted by the Project Owner on 2026-11-26
 **Date:** 2026-11-26
 
 ## Context
@@ -30,7 +30,7 @@ Use the established patterns.
 
 - The baseline uses patterns that are in most NestJS codebases, so a scanner's result against the lab says something about its result against them.
 - The mass-assignment scenario (ACCESS-004) has a clear counterpart: the same DTO without `whitelist` lets the `role` property through.
-- The newer packages stay available as an optional variant in a later phase. Open question Q4 in the [project plan](../../project/project-plan.md#10-open-questions).
+- The newer packages stay available as an optional variant later. Open question Q4 in the [project plan](../../project/project-plan.md#10-open-questions).
 
 ## Verified facts
 
