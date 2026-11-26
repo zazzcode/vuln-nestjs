@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Environment. Nothing real is ever stored here: the start command generates
+# the secrets of a run and does not write them to disk.
+.env*
+!.env.example
+
+# Test output
+coverage/
+test-results/
+*.log
+
+# Generated GraphQL schema files
+apps/*/schema.gql
+
+# Planning scratch: run logs, handoffs, QA findings
+.zazz/ephemeral/
+
+# OS
+.DS_Store
