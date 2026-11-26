@@ -5,8 +5,5 @@
     "rootDir": ".",
     "incremental": false
   },
-  "include": [
-    "src",
-    "test"
-  ]
+  "include": ["src", "test"]
 }

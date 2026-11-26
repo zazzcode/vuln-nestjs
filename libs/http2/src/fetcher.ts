@@ -14,5 +14,5 @@ export function fetcherFor(
   if (services[service].transport === 'http2') {
     return (url, init) => client.fetch(url, init);
   }
-  return (url, init) => fetch(url, init);
+  return (url, init) => fetch(url, init as RequestInit);
 }

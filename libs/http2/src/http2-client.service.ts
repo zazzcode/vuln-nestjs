@@ -9,8 +9,8 @@ import { ClientHttp2Session, connect, constants } from 'node:http2';
 /** A request as this client takes it: the WHATWG shape. A body is text, or bytes in any form Node knows. */
 export type FetchInit = Omit<RequestInit, 'body'> & { body?: unknown };
 
-/** The signature of the global `fetch`, which is also what a GraphQL data source takes. */
-export type Fetcher = (url: string, init?: RequestInit) => Promise<Response>;
+/** The signature of the global `fetch`, taking a body as a GraphQL data source passes one: text, or bytes in any form. */
+export type Fetcher = (url: string, init?: FetchInit) => Promise<Response>;
 
 /** How long a service has to answer. Then the caller reports it unavailable. */
 export const REQUEST_TIMEOUT_MS = 10_000;
