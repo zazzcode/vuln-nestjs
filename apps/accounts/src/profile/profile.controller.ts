@@ -1,11 +1,5 @@
 import { Body, Controller, HttpCode, Post, Put } from '@nestjs/common';
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  Matches,
-  MaxLength,
-} from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches } from 'class-validator';
 import {
   CurrentUser,
   type TokenPayload,

@@ -178,7 +178,6 @@ describe('PROTO-001: the dotted path is walked without checks', () => {
   // The last describe of the file: its exploit leaves a value on the
   // prototype of every object in the service, and nothing takes it off.
   // The key differs from PROTO-002's, so the two observations do not meet.
-  const path = () => '__proto__.theme';
 
   test('setPreference refuses the value: an enum names the one key it writes', async () => {
     const refused = await gql(
