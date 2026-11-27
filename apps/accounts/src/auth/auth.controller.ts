@@ -8,7 +8,6 @@ import {
   Res,
   UseInterceptors,
 } from '@nestjs/common';
-import { RouteConfig } from '@nestjs/platform-fastify';
 import type { FastifyReply } from 'fastify';
 import { IsString, MinLength } from 'class-validator';
 import {
@@ -48,8 +47,9 @@ export class ResumeSettingsDto {
 const REMEMBER_COOKIE = 'vcx_remember';
 
 /**
- * Replaces named fields with a marker in what reaches the logger, so a sign-in
- * can be logged without its password. It runs last, over the whole route.
+ * Logs a sign-in without its password: the email and fixed strings are all
+ * that reach the logger, and no other field of the body is read. It runs
+ * last, over the whole route.
  */
 @Injectable()
 export class RedactSecretsInterceptor implements NestInterceptor {
@@ -83,10 +83,11 @@ export class AuthController {
 
   /**
    * Open. Credentials through a DTO of strings, ten attempts a minute: the
-   * typed counterpart of every weak sign-in route.
+   * typed counterpart of every weak sign-in route. The limit is applied by
+   * the platform module, which names this route: a limit declared on the
+   * route itself is never read.
    */
   @Public()
-  @RouteConfig({ rateLimit: { max: 10, timeWindow: '1 minute' } })
   @UseInterceptors(RedactSecretsInterceptor)
   @Post('typed')
   @HttpCode(200)

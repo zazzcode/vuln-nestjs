@@ -294,7 +294,7 @@ describe('the safe operations, each doing what its row says', () => {
     });
   });
 
-  test('setAvatarUrl stores the URL and fetches nothing', async () => {
+  test('setAvatarUrl stores the URL', async () => {
     const response = await gql(
       lab,
       `mutation { setAvatarUrl(url: "https://avatars.vcx.exchange/alice.png") { avatarUrl } }`,

@@ -1,9 +1,9 @@
 # `accounts` — Deliverable Specification
 
-**Worktree / branch:** `phase-2a-accounts` · **Base:** `phase-1-foundation`
+**Worktree / branch:** `phase-2a-accounts` · **Base:** `main` (`phase-1-foundation` until 2026-11-27, when the scaffolding and trading were merged)
 **Deliverable:** Step 2a, the accounts service complete against its [service specification](../project/services/accounts.md)
 **Project Owner / Deliverable Owner:** @zazzcode · **Lead Agent:** the coordinator of Step 2
-**Review artifact:** one draft PR against `phase-1-foundation`, this specification as its first commit
+**Review artifact:** one draft PR against `main`, this specification as its first commit
 **Shared run log:** `.zazz/ephemeral/002a-accounts-run-log.md` (local only, ignored by Git)
 **Drafted:** 2026-11-27. Standards index: none adopted — AGENTS.md stands in.
 
@@ -31,7 +31,7 @@ Written: `apps/accounts/`, `postman/accounts/`, `docs/vulnerabilities/{auth,cryp
 4. **Seeded password hashes** are scrypt with a salt fixed per user (derived from the fixed identifiers), so every run loads identical records; runtime paths that create or change a password use a random salt.
 5. **PROTO observability**: pollution is observed through the service, by a GraphQL argument the caller omitted gaining a value (`Object.prototype.role`, `Object.prototype.limit`). The two PROTO tests are the last of their file and use different keys.
 6. **SSRF-002's observer** is an HTTP stub the test starts on loopback (ephemeral port); the documentation names the lab's own `http://127.0.0.1:3102/internal/health` as the in-lab target. No other service runs.
-7. **Rate limit** (`@fastify/rate-limit`, 10/min) is scoped to `POST /internal/sessions/typed`; the test that exhausts it runs last in its file.
+7. **Rate limit** (`@fastify/rate-limit`, 10/min) is scoped to `POST /internal/sessions/typed`, declared once, in `apps/accounts/src/platform.module.ts`; the test that counts its ten runs in a file of its own (change log, 9).
 8. **Documentation reproductions** run against the HTTP/1.1 relay with `RELAY` exported (`http://127.0.0.1:4111` under the builder's port set; `3201` on the defaults) and are recorded in the run log.
 
 ## 5. Agent implementation rules
@@ -120,4 +120,10 @@ Built as specified, with these deviations, each observed while testing:
 5. **FS-001 resolves the caller's name against the process's working directory**. In the tests the service runs from `apps/accounts`, so `..%2F..%2Fpackage.json` is the repository manifest, exactly as the table says; under the start command the services run from the repository root, so the same route reaches it as `package.json` (the documentation shows both).
 6. **RE-001's payload is twenty-nine `A`s and `!`** (about two seconds steady state, about seven on a cold engine on this machine; thirty runs to minutes). The test asserts the vulnerable mutation takes at least a second and each counterpart answers the same refusal in under one.
 
-Safe operations: all 41 of §7 are built and covered by `test/functional.int-spec.ts`; none was left out, so the ratio stands at 41 safe to 28 vulnerable.
+Found by the review of 2026-11-27 and closed on the branch by the lead:
+
+7. **The review base moved from `phase-1-foundation` to `main`**, when the scaffolding and trading were merged. `main` was merged into this branch at `ced531a` (merge base `bf180a3`), which brought trading's files with it; scope is read as `git diff origin/main...HEAD`.
+8. **The allowlisted avatar fetch takes its allowlist from validated configuration**, `AVATAR_ALLOWED_ORIGINS`, comma-separated, the lab's own fake avatar host by default. Built first with the allowlist fixed in code to that host over `https`, the direction that fetches and stores could not run on loopback, and no test reached it: a protected counterpart whose only exercise was its refusal. `test/avatar-fetch.int-spec.ts` starts the service with the allowlist on a loopback stub and proves the fetch, the stored URL, and three refusals, each with the reason of the rule that refused it, where all three had said "not on the allowlist". The claim is unchanged: the origin is compared as written before any request, and a redirect is not followed.
+9. **The typed sign-in's rate limit is declared once.** A `@RouteConfig({ rateLimit })` on the route itself was never read: with its limit set to one, four attempts were answered. It is removed. The proof of the ten moved from the last test of `auth.int-spec.ts` to `test/rate-limit.int-spec.ts`, a service of its own, because the limiter counts every call from the same address and three earlier tests of that file had already spent three of the ten.
+
+Safe operations: all 41 of §7 are built and none was left out, so the ratio stands at 41 safe to 28 vulnerable. Forty are covered by `test/functional.int-spec.ts`; the allowlisted avatar fetch by `test/avatar-fetch.int-spec.ts`, in a service started with the allowlist on loopback (change log, 8).

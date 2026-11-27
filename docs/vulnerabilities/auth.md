@@ -104,7 +104,7 @@ The same unsigned token to `me`: `UNAUTHENTICATED`. To `introspect` (with a real
 | Sink | No failure counting and no rate limit; the password is written to the log, in `apps/accounts/src/legacy/legacy-auth.resolvers.ts` |
 | Flow | five wrong passwords, then the right one → a token, and each attempt logged with its password |
 | Counterparts | `apps/accounts/src/auth/auth.resolver.ts` (`signIn` locks the account after five failures), `apps/accounts/src/auth/auth.controller.ts` (`POST /internal/sessions/typed`, ten attempts a minute through `@fastify/rate-limit`) |
-| Tests | `apps/accounts/test/scenarios/auth.int-spec.ts` |
+| Tests | `apps/accounts/test/scenarios/auth.int-spec.ts`, `apps/accounts/test/rate-limit.int-spec.ts` |
 | Expected finding | Yes, CWE-307, SAST |
 
 ### AUTH-003 — student guide
@@ -140,7 +140,9 @@ Six attempts, no lock. The password in the log (INFO-001 is the same line). Afte
 
 ### AUTH-003 — tests
 
-`apps/accounts/test/scenarios/auth.int-spec.ts`, `AUTH-003`: the sixth `quickSignIn` answers a token after five wrong passwords; `signIn` refuses the sixth after its own five; the typed route answers 429 once its ten are spent (last test of the file).
+`apps/accounts/test/scenarios/auth.int-spec.ts`, `AUTH-003`: the sixth `quickSignIn` answers a token after five wrong passwords; `signIn` refuses the sixth after its own five.
+
+`apps/accounts/test/rate-limit.int-spec.ts`: the typed route lets ten attempts through and answers the eleventh and twelfth with 429. The file starts a service of its own, because the limiter counts every call from the same address and the ten can be counted from zero only there.
 
 ## AUTH-004 — the legacy sign-out revokes nothing
 

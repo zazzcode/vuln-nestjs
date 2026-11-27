@@ -615,24 +615,3 @@ describe('GQL-005: the password hash is a field of the record', () => {
     expect(errorCode(asAdmin)).toBe('GRAPHQL_VALIDATION_FAILED');
   });
 });
-
-describe('AUTH-003, protected 2: the typed sign-in is rate limited', () => {
-  test('twelve attempts in a minute: the last ones are refused with 429', async () => {
-    const statuses: number[] = [];
-    for (let attempt = 0; attempt < 12; attempt += 1) {
-      const response = await call(lab, '/internal/sessions/typed', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          email: 'erin@vcx.exchange',
-          password: 'not-the-password',
-        }),
-      });
-      statuses.push(response.status);
-    }
-
-    // refused: the eleventh and twelfth attempts never reach the store
-    expect(statuses[0]).toBe(401);
-    expect(statuses.at(-1)).toBe(429);
-  });
-});
