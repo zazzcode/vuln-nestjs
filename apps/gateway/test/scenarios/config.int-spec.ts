@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { runSecret, sessionToken } from '@zazzles/exchange-testing';
+import { runSecret } from '@zazzles/exchange-testing';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -19,17 +19,11 @@ import { standInSubgraphs } from '../subgraphs.js';
 describe('the configuration scenarios', () => {
   let app: NestFastifyApplication;
   let subgraphs: Awaited<ReturnType<typeof standInSubgraphs>>;
-  let admin: string;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = runSecret();
     process.env.INTERNAL_SERVICE_TOKEN = runSecret();
     process.env.PARTNER_ORIGINS = 'http://127.0.0.1:4021';
-    admin = sessionToken(process.env.JWT_SECRET as string, {
-      sub: 'u-admin',
-      sid: 's-admin',
-      role: 'ADMIN',
-    });
     subgraphs = await standInSubgraphs();
     app = (
       await Test.createTestingModule({ imports: [AppModule] }).compile()
@@ -112,5 +106,44 @@ describe('the configuration scenarios', () => {
     expect(
       response.headers['access-control-allow-credentials'],
     ).toBeUndefined();
+  });
+
+  // CONFIG-002 — the public scope serves its pages with no security headers.
+  test('CONFIG-002: the public status page carries no CSP, no nosniff, no frame options', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/public/status',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('text/html');
+    // What was gained: the page reaches a browser with nothing that constrains
+    // what may be done with it — no CSP, no MIME pinning, no frame policy.
+    expect(response.headers['content-security-policy']).toBeUndefined();
+    expect(response.headers['x-content-type-options']).toBeUndefined();
+    expect(response.headers['x-frame-options']).toBeUndefined();
+  });
+
+  test('CONFIG-002 counterpart 1: health answers with helmet on', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-security-policy']).toBeDefined();
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBeDefined();
+  });
+
+  test('CONFIG-002 counterpart 2: the status page sets the same headers by hand', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/status',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-security-policy']).toBe(
+      "default-src 'self'",
+    );
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.headers['x-frame-options']).toBe('DENY');
   });
 });
