@@ -79,7 +79,10 @@
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
                   "pm.test(\"joins trading's order to accounts' user, and adds notifications' announcement\", () =>",
                   "  pm.expect(body.data).to.eql({",
-                  "    orders: [{ id: '1', symbol: 'BTC-USD', user: { id: 'u-alice', email: 'alice@vcx.exchange' } }],",
+                  "    orders: [",
+                  "      { id: '1', symbol: 'BTC-USD', user: { id: 'u-alice', email: 'alice@vcx.exchange' } },",
+                  "      { id: '6', symbol: 'SOL-USD', user: { id: 'u-alice', email: 'alice@vcx.exchange' } },",
+                  "    ],",
                   "    announcements: [{ id: '1', title: 'Welcome to VCX' }],",
                   "  }));"
                 ]

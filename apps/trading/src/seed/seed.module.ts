@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { OrdersModule } from '../orders/orders.module.js';
+import { ReportsModule } from '../reports/reports.module.js';
 import { SeedService } from './seed.service.js';
 
 @Module({
-  imports: [OrdersModule],
+  imports: [ReportsModule],
   providers: [SeedService],
   exports: [SeedService],
 })

@@ -10,6 +10,9 @@ import {
 } from '@zazzles/exchange-graphql';
 import { TokenVerifier, graphContext } from '@zazzles/exchange-internal-auth';
 import { fileURLToPath } from 'node:url';
+import { registerGraphEnums } from './enums.js';
+
+registerGraphEnums();
 
 /** The generated schema of this subgraph, at `apps/trading/schema.gql` whatever the working directory. */
 export const SCHEMA_FILE = fileURLToPath(
