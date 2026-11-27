@@ -101,6 +101,22 @@ describe('the administrator operations refuse a user and no token', () => {
     expect((await call(alice())).status).toBe(403);
     expect((await call(undefined)).status).toBe(401);
   });
+
+  test('POST /internal/announcements/send', async () => {
+    const body = JSON.stringify({ title: 'T', body: 'B' });
+    const call = (token: string | undefined) =>
+      request(`${service.url}/internal/announcements/send`, {
+        method: 'POST',
+        headers: {
+          ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
+          'content-type': 'application/json',
+        },
+        body,
+      });
+
+    expect((await call(alice())).status).toBe(403);
+    expect((await call(undefined)).status).toBe(401);
+  });
 });
 
 describe('the own-data operations', () => {
