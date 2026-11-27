@@ -1,0 +1,5 @@
+{
+  "generatedFrom": "catalog/catalog.json",
+  "scopeNote": "Per-source expectations for scanner evaluations. expectedFinding=true rows must be flagged (a miss is a false negative). expectedFinding=false rows are scoped claims: the file should NOT be flagged for the listed CWE, the flaw it is the registered safe control for; findings for unrelated issues are out of scope for this lab. Regenerate with: pnpm scenario:update",
+  "sources": []
+}

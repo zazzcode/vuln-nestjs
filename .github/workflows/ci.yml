@@ -1,0 +1,115 @@
+# Three jobs, as the testing strategy asks.
+#
+# test          everything that starts the lab: install, build, static, unit, integration,
+#               end to end, Newman. They share one cache of the two database binaries, so
+#               paying six installs to split them would gain nothing.
+# ground-truth  the scenario and the audit snapshots, against the catalogue and the registry.
+#               Its own job, so that a new upstream advisory is visible and stops nothing else.
+# audit         the raw production audit, never blocking. Its nonzero exit is the lab working.
+#
+# Every job that starts the lab checks afterwards that no database engine is left running.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A newer push to the same branch or pull request replaces the run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Install, build, static, unit, integration, end to end, Newman
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # The version comes from "packageManager" in package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      # Where the two packages keep the binaries they download. Neither reads a setting for it.
+      - name: The two database binaries, downloaded once
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/mongodb-binaries
+            /tmp/mysqlmsn/binaries
+          key: database-binaries-mongodb-8.2.6-mysql-8.4.9
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Before the lint: a workspace's typecheck reads the built types of the libraries it uses,
+      # so on a fresh checkout there is nothing to read until this has run.
+      - name: Build
+        run: pnpm build
+
+      - name: Lint, with every workspace's typecheck
+        run: pnpm lint
+
+      - name: Format
+        run: pnpm format:check
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: Integration tests, each service alone
+        run: pnpm test:int
+
+      - name: The whole lab, end to end
+        run: pnpm test:e2e
+
+      - name: The Postman collections, under Newman
+        run: pnpm test:api
+
+      - name: No database engine is left running
+        if: always()
+        run: |
+          if pgrep -x mongod || pgrep -x mysqld; then
+            echo "::error::A database engine that the lab started is still running"
+            exit 1
+          fi
+
+  ground-truth:
+    name: The scenario and the audit snapshots
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: The catalogue, the registered files and the audit
+        run: pnpm scenario:check && pnpm audit:check
+
+  audit:
+    name: The raw audit, as information
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # A nonzero exit means advisories were found. That is a finding the lab designed.
+      - name: The production audit
+        run: pnpm audit --prod
+        continue-on-error: true

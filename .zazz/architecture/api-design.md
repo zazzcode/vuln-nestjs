@@ -7,11 +7,11 @@
 | Service | Operations defined in |
 | --- | --- |
 | `accounts` | [services/accounts.md](../project/services/accounts.md#4-api): 21 safe and 15 vulnerable GraphQL operations, 20 safe and 12 vulnerable REST endpoints |
-| `trading` | [services/trading.md](../project/services/trading.md#4-api): 26 safe and 14 vulnerable GraphQL operations, 9 safe and 3 vulnerable REST endpoints |
+| `trading` | [services/trading.md](../project/services/trading.md#4-api): 29 safe and 17 vulnerable GraphQL operations, 9 safe and 3 vulnerable REST endpoints |
 | `notifications` | [services/notifications.md](../project/services/notifications.md#4-api): 20 safe and 6 vulnerable GraphQL operations, 9 safe and 3 vulnerable REST endpoints |
 | `gateway` | [services/gateway.md](../project/services/gateway.md#4-api): 13 safe and 7 vulnerable endpoints of its own, and the pass-through |
 
-In all: 74 deliberate weaknesses on 62 vulnerable operations, and 118 safe operations. About 1.9 safe for every vulnerable one. The gateway holds the difference: five of its weaknesses are settings a process cannot have twice.
+In all: 77 deliberate weaknesses on 65 vulnerable operations, and 121 safe operations. About 1.9 safe for every vulnerable one. The gateway holds the difference: five of its weaknesses are settings a process cannot have twice.
 
 ## 2. Surface map
 

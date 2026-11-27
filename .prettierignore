@@ -1,0 +1,13 @@
+# The documentation is hand-formatted Markdown with tables.
+*.md
+.zazz/
+docs/
+.agents/
+
+# Written by tools, never edited.
+pnpm-lock.yaml
+tests/expected-*.json
+postman/*.json
+
+# Build output.
+**/dist/

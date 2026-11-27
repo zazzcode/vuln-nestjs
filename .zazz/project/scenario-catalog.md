@@ -11,7 +11,7 @@ IDs are final in the design. They become permanent when a scenario ships and get
 - **ID:** `<FAMILY>-<number>`. One scenario can share an operation with another, when one operation carries two weaknesses.
 - **A scenario is an operation**: a GraphQL field, a REST endpoint, or a process-wide setting.
 - **Vulnerable and protected are separate operations.** A protected counterpart receives the identical payload and stays inert. Where a second technique exists, there is a second counterpart.
-- **About two safe operations for every vulnerable one.** 118 safe, 62 vulnerable.
+- **About two safe operations for every vulnerable one.** 121 safe, 65 vulnerable.
 - **Scanner:** `SAST` for weaknesses in application code, `SCA` for vulnerable dependency versions.
 - **Names in code are neutral.** The specifications and this catalogue hold the answer. The vulnerable line carries a marker.
 - **OWASP column:** OWASP Top 10 (2021) and OWASP API Security Top 10 (2023), as `A03 · API3`.
@@ -23,7 +23,7 @@ IDs are final in the design. They become permanent when a scenario ships and get
 | `AUTH` | Authentication and sessions | A02, A07 | API2 | 5 | accounts |
 | `CRYPTO` | Weak hashing, weak randomness, hard-coded secrets | A02 | — | 3 | accounts |
 | `ACCESS` | Authorization: object, function and property level; trusted headers | A01 | API1, API3, API5, API10 | 10 | accounts, trading, notifications |
-| `SQL` | SQL injection through TypeORM and MySQL | A03 | API3 | 4 | trading |
+| `SQL` | SQL injection: template literals taken for prepared statements, through TypeORM and MySQL | A03 | API3 | 7 | trading |
 | `MONGO` | NoSQL operator injection | A03 | API3 | 6 | accounts |
 | `PROTO` | Prototype pollution | A08 | — | 3 | accounts, notifications |
 | `XSS` | Stored and reflected cross-site scripting | A03 | — | 4 | accounts, notifications, gateway |
@@ -42,7 +42,7 @@ IDs are final in the design. They become permanent when a scenario ships and get
 | `INFO` | Information exposure through logs and errors | A09, A05 | API8 | 2 | accounts, gateway |
 | `SCA` | Vulnerable dependency versions | A06 | — | 8 | one workspace each |
 
-**74 application scenarios and 8 dependency pins.** Every category of both OWASP lists is covered.
+**77 application scenarios and 8 dependency pins.** Every category of both OWASP lists is covered.
 
 ## `AUTH` — accounts
 
@@ -81,10 +81,17 @@ IDs are final in the design. They become permanent when a scenario ships and get
 
 | ID | Scenario | Vulnerable operation | OWASP |
 | --- | --- | --- | --- |
-| SQL-001 | String interpolation in `DataSource.query()` | `orderLookup` | A03 · API3 |
+The same mistake in seven pieces of code: a template literal taken for a prepared statement. The [trading specification](services/trading.md#sql--sql-injection) says what each author believed.
+
+| ID | Scenario | Vulnerable operation | OWASP |
+| --- | --- | --- | --- |
+| SQL-001 | An untagged template literal, written as if the backticks bound the value | `orderLookup` | A03 · API3 |
 | SQL-002 | Query builder `where` built by concatenation | `tradeHistory` | A03 · API3 |
 | SQL-003 | `LIKE` pattern concatenated | `searchMarkets` | A03 · API3 |
 | SQL-004 | Caller-controlled sort column | `tradesSorted` | A03 · API3 |
+| SQL-005 | A tag that escapes quotes and joins, taken for one that parameterizes | `volumeFor` | A03 · API3 |
+| SQL-006 | `execute()` on a string built with a template literal: no placeholder, no parameter | `feesPaid` | A03 · API3 |
+| SQL-007 | An `IN (…)` list joined from the caller's ids | `ordersByIds` | A03 · API3 |
 
 ## `MONGO` — accounts
 
@@ -198,10 +205,10 @@ Eight pins, one workspace each. The advisories, checked against the GitHub Advis
 | Service | Vulnerable operations | Safe operations | Safe per vulnerable |
 | --- | --- | --- | --- |
 | accounts | 28 | 41 | 1.5 |
-| trading | 17 | 35 | 2.1 |
+| trading | 20 | 38 | 1.9 |
 | notifications | 9 | 29 | 3.2 |
 | gateway | 8 | 13 | 1.6 |
-| **All** | **62** | **118** | **1.9** |
+| **All** | **65** | **121** | **1.9** |
 
 The Project Owner asked for about two safe for every vulnerable one, or one to one if two is harder. The lab reaches 1.9. The gateway is where it falls short, because five of its weaknesses are settings a process cannot have twice.
 

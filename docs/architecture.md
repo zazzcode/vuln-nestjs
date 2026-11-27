@@ -1,6 +1,6 @@
 # Architecture
 
-How Zazzles Exchange is put together, and why. The design records with their options and consequences are in [`.zazz/architecture/`](../.zazz/architecture/README.md); this page is the summary for readers of the lab.
+How VCX (Vulnerable Crypto Exchange) is put together, and why. The design records with their options and consequences are in [`.zazz/architecture/`](../.zazz/architecture/README.md); this page is the summary for readers of the lab.
 
 ## It is a sample that is started, seeded and stopped
 
@@ -31,7 +31,7 @@ What it still does: bind to loopback only, stop cleanly, and write its functiona
 | `trading` | Fastify | Markets, prices, wallets, deposits, orders, trades, reports | MySQL, in memory | `127.0.0.1:3102`, HTTP/2 |
 | `notifications` | Express | Price alerts, webhook deliveries, announcements | SQLite, in memory | `127.0.0.1:3103`, HTTP/1.1 |
 
-Three processes use the Fastify adapter and one uses the Express adapter, so that a scanner is tested against both. Each service is the only user of its store.
+Three processes use the Fastify adapter and one uses the Express adapter, so that a scanner is tested against both. Each service is the only user of its store. `accounts` reaches MongoDB through the native driver, with plain JSON documents; `trading` and `notifications` reach their stores through TypeORM ([ADR-011](../.zazz/architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)).
 
 ## How they talk
 

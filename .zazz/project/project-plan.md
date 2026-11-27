@@ -47,7 +47,7 @@ The existing [vuln-nextjs](https://github.com/zazzcode/vuln-nextjs) lab covers N
 | SC2 | Every active scenario has an ID, a catalogue entry, documentation with a verified reproduction, a test proving the exploit, and — where meaningful — a counterpart asserted inert for the identical payload | `pnpm scenario:check` and the test suites in CI |
 | SC3 | Ground truth is generated from one source: source hashes, scanner expectations and the dependency-audit snapshot. Drift fails CI | `pnpm scenario:check`, `pnpm audit:check` |
 | SC4 | Every OWASP Top 10 (2021) category and every OWASP API Security Top 10 (2023) category has at least one scenario | The OWASP column of the [scenario catalogue](scenario-catalog.md) |
-| SC5 | The planned size is 82 scenarios: 74 in application code on 62 vulnerable operations, and 8 vulnerable dependency pins. There are 118 safe operations. A step may move the number by about ten percent and records the change in the catalogue | The catalogue |
+| SC5 | The planned size is 85 scenarios: 77 in application code on 65 vulnerable operations, and 8 vulnerable dependency pins. There are 121 safe operations. (It was 82, 74, 62 and 118 until 2026-11-26, when the Project Owner asked for three more SQL scenarios.) A step may move the number by about ten percent and records the change in the catalogue | The catalogue |
 | SC9 | Every service is built and tested on its own, with no other service running | The test suite of each service |
 | SC10 | No service calls another service | Review, and a lint rule that forbids a service from importing the HTTP client of another |
 | SC6 | A scanner run can be scored without reading the repository: every `expectedFinding: true` row it misses is a false negative, and every `expectedFinding: false` row it flags for the listed CWE is a false positive | `tests/expected-scanner-findings.json` |
@@ -60,7 +60,7 @@ The existing [vuln-nextjs](https://github.com/zazzcode/vuln-nextjs) lab covers N
 
 - The application is a **sample, not a running service**. It is started, preloaded with fake data, exercised, and shut down. The whole of it is ephemeral.
 - Because the application is ephemeral, the databases are in memory. `mongodb-memory-server` and `mysql-memory-server` were named as options.
-- NestJS with the Fastify adapter, built idiomatically; TypeScript; TypeORM. One backend service may use the Express adapter instead of Fastify.
+- NestJS with the Fastify adapter, built idiomatically; TypeScript; TypeORM. One backend service may use the Express adapter instead of Fastify. Refined by the Project Owner on 2026-11-26: MongoDB is reached through the native driver, and TypeORM is for the relational stores ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)).
 - Microservices communicating through GraphQL federation and through HTTP/2.
 - Services do not call each other. The gateway talks to every service, so that each can be built and tested on its own.
 - Every OWASP Top 10 weakness, with SQL injection, NoSQL injection, prototype pollution and stored XSS included. About two safe operations for every vulnerable one, or one to one where two is harder.
@@ -146,8 +146,8 @@ Rules:
 
 | ID | Risk | Likelihood | Mitigation |
 | --- | --- | --- | --- |
-| R1 | TypeORM's documentation calls its MongoDB support basic. The `accounts` service may hit a gap in TypeORM 1.1.3 | Medium | Validate in the scaffolding, with one real entity. Fallback: the native `mongodb` driver behind the same repositories |
-| R2 | The Apollo gateway on the Fastify adapter with an HTTP/2 data source | Closed | **Verified** by a spike on 2026-11-26: the gateway composed a Fastify subgraph and an Express subgraph, and the Fastify one received every request over `HTTP/2.0`. The spike did not cover the code-first schema generator with TypeScript 6, or TypeORM against MongoDB. The scaffolding checks both first |
+| R1 | TypeORM's documentation calls its MongoDB support basic. The `accounts` service may hit a gap in TypeORM 1.1.3 | Closed | **Closed by decision** on 2026-11-26: the Project Owner chose the native `mongodb` driver for `accounts` before the proof ran ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
+| R2 | The Apollo gateway on the Fastify adapter with an HTTP/2 data source | Closed | **Verified** by a spike on 2026-11-26: the gateway composed a Fastify subgraph and an Express subgraph, and the Fastify one received every request over `HTTP/2.0`. The scaffolding checked the code-first generator with TypeScript 6 the same day, and it works. TypeORM against MongoDB is no longer used ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)) |
 | R3 | `mysql-memory-server` downloads a large binary from MySQL's CDN. A slow or failed download breaks CI | Medium | Pin the MySQL version, cache the binary in CI, and give the trading tests a generous start timeout |
 | R4 | A vulnerable pin may not install under pnpm 12, or may break the service that uses it | Medium | Pins are chosen without install scripts. Each is validated in Step 4; the dependency document lists replacements |
 | R5 | New advisories appear for pinned libraries and change the audit snapshot | High, over time | `pnpm audit:update` adds advisories freely. Only removal needs a named retirement |

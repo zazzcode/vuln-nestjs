@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "The scenario catalogue",
+  "description": "The shape of catalog/catalog.json: one entry per scenario. It is validated by scripts/check-scenarios.mjs, which reads this file and enforces the keywords used here.",
+  "type": "array",
+  "items": { "$ref": "#/$defs/scenario" },
+  "$defs": {
+    "scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "status",
+        "scanner",
+        "cwe",
+        "owasp",
+        "service",
+        "surface",
+        "operation",
+        "source",
+        "flow",
+        "documentation",
+        "test",
+        "expectedFinding"
+      ],
+      "properties": {
+        "id": {
+          "description": "Permanent once shipped: FAMILY-number, as in .zazz/project/scenario-catalog.md.",
+          "type": "string",
+          "pattern": "^[A-Z]+-[0-9]{3}$"
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "status": { "const": "active" },
+        "scanner": {
+          "description": "The kind of tool that must report it.",
+          "enum": ["SAST", "SCA"]
+        },
+        "cwe": { "type": "string", "pattern": "^CWE-[0-9]+$" },
+        "owasp": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["top10"],
+          "properties": {
+            "top10": { "type": "string", "pattern": "^A[0-9]{2}$" },
+            "api": { "type": "string", "pattern": "^API[0-9]+$" }
+          }
+        },
+        "service": {
+          "description": "The workspace that carries the weakness.",
+          "enum": ["accounts", "trading", "notifications", "gateway"]
+        },
+        "surface": {
+          "description": "Where the operation is reached: a GraphQL field, a REST route, a process-wide setting, or a dependency version.",
+          "enum": ["graphql", "rest", "setting", "dependency"]
+        },
+        "operation": {
+          "description": "The vulnerable operation: its signature, its route, or the setting's name.",
+          "type": "string",
+          "minLength": 1
+        },
+        "source": {
+          "description": "The file that carries the weakness. For a dependency, the manifest that declares its version.",
+          "type": "string",
+          "pattern": "^(apps|libs|scripts)/.+$"
+        },
+        "flow": {
+          "description": "From where the input enters to where it does its damage.",
+          "type": "string",
+          "minLength": 1
+        },
+        "safeControl": {
+          "description": "A protected counterpart: the file of an operation that receives the identical payload and stays inert.",
+          "type": "string",
+          "pattern": "^(apps|libs|scripts)/.+$"
+        },
+        "safeControls": {
+          "description": "Further protected counterparts, one per technique.",
+          "type": "array",
+          "items": { "type": "string", "pattern": "^(apps|libs|scripts)/.+$" },
+          "uniqueItems": true
+        },
+        "hardenedValue": {
+          "description": "For a process-wide setting, which has no counterpart: the value that closes the weakness.",
+          "type": "string",
+          "minLength": 1
+        },
+        "documentation": {
+          "type": "string",
+          "pattern": "^docs/vulnerabilities/[a-z0-9-]+\\.md$"
+        },
+        "test": {
+          "description": "The test that proves the exploit and the counterparts inert.",
+          "type": "string",
+          "pattern": "\\.(int|e2e)-spec\\.ts$"
+        },
+        "expectedFinding": { "type": "boolean" }
+      }
+    }
+  }
+}

@@ -1,0 +1,177 @@
+{
+  "info": {
+    "_postman_id": "873d38a2-8010-4b50-b0a5-a7771fa95d4c",
+    "name": "VCX: trading",
+    "description": "The trading microservice, called on its own address. tradingUrl is the relay the start command opens in front of it: the service speaks HTTP/2 in cleartext, which Postman and Newman cannot send, and the relay carries each request to it over HTTP/2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "The service",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"trading\",\"store\":{\"engine\":\"mysql\",\"connected\":true}}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{tradingUrl}}/internal/health"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"trading\"}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset, refused without the service token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"message\":\"A valid service token is required\",\"error\":\"Unauthorized\",\"statusCode\":401}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "The caller's orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('answers with the orders the caller placed', () =>",
+                  "  pm.expect(body.data).to.eql({ orders: [{ id: '2', userId: 'u-bob' }] }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ orders { id userId } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "The orders, asked for without a caller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('orders is refused, with its code', () => {",
+                  "  pm.expect(body.errors[0].path).to.eql(['orders']);",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('UNAUTHENTICATED');",
+                  "});",
+                  "pm.test('and with no orders', () => pm.expect(body.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ orders { id userId } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

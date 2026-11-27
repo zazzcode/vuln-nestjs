@@ -1,6 +1,8 @@
 # vuln-nestjs
 
-A deliberately vulnerable NestJS application for testing the tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). The application is **Zazzles Exchange**, a small fake cryptocurrency exchange built as NestJS microservices: one gateway that serves a federated GraphQL schema, and three backend services for accounts, trading and notifications.
+A deliberately vulnerable NestJS application for testing the tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). The application is **VCX (Vulnerable Crypto Exchange)**, a small fake cryptocurrency exchange built as NestJS microservices: one gateway that serves a federated GraphQL schema, and three backend services for accounts, trading and notifications.
+
+VCX is the application's name, whatever it is written in. This repository, `vuln-nestjs`, is its NestJS implementation.
 
 > ⚠️ **This application is intentionally vulnerable.** It is a sample that is started, preloaded with fake data, exercised, and shut down. Run it only on a machine you control, on `127.0.0.1`, and stop it afterwards. Never deploy it or expose it on a network.
 
@@ -10,7 +12,7 @@ A scanner is only as good as the evidence behind it. The objective of this repos
 
 - every deliberate weakness has a stable ID and a documented expected finding;
 - every one has an automated test proving it is exploitable;
-- every one has a protected counterpart that handles the identical payload safely, and the lab keeps about two safe operations for every vulnerable one;
+- every one has a protected counterpart that handles the identical payload safely, and the lab keeps about one and a half safe operations for every vulnerable one;
 - the source hashes, the scanner expectations and the dependency audit are committed as ground truth, so a miss is a false negative and a report against clean code is a false positive.
 
 The application uses the stack the scanner is being tested against: [NestJS](https://docs.nestjs.com/) ([source on GitHub](https://github.com/nestjs)) with the Fastify adapter and the Express adapter, [GraphQL federation](https://docs.nestjs.com/graphql/federation), HTTP/2 between the gateway and the Fastify services, TypeORM, MongoDB, MySQL and SQLite.
@@ -44,7 +46,7 @@ The design and its reasoning are in [`docs/architecture.md`](docs/architecture.m
 
 ## What it will cover
 
-74 designed weaknesses across the OWASP Top 10 and the OWASP API Security Top 10, with SQL injection, NoSQL injection, prototype pollution and stored XSS among them. Plus 8 libraries pinned to vulnerable versions, one service at a time, so a scanner has to say which service is affected.
+77 designed weaknesses across the OWASP Top 10 and the OWASP API Security Top 10, with SQL injection, NoSQL injection, prototype pollution and stored XSS among them. Plus 8 libraries pinned to vulnerable versions, one service at a time, so a scanner has to say which service is affected.
 
 - **Injection** — SQL injection through TypeORM, NoSQL operator injection, command and argument injection, template injection, unsafe deserialization, `eval`, spreadsheet formulas, log lines.
 - **Prototype pollution** — a dotted path walked without checks, a parsed string deep-merged, a vulnerable library.
@@ -60,12 +62,12 @@ The IDs are in [`.zazz/project/scenario-catalog.md`](.zazz/project/scenario-cata
 
 ## Status
 
-**Designed, not built.** There is no application code in this repository and nothing that can be run. The plan, the architecture, a specification for each service with its designed weaknesses, and the build order are written.
+**The scaffolding is built; the scenarios are being built.** The application starts, loads its fake data, answers and stops cleanly. It holds none of its designed weaknesses yet: each arrives with the service it belongs to, in that service's pull request.
 
 | Milestone | Step | Status |
 | --- | --- | --- |
-| M1 Running skeleton | 1, the scaffolding | Not started. Next |
-| M2 The services | 2, one sub-agent per service | Not started |
+| M1 Running skeleton | 1, the scaffolding | Built. Open as a draft for review: [pull request 2](https://github.com/zazzcode/vuln-nestjs/pull/2) |
+| M2 The services | 2, one sub-agent per service | In progress. One branch and one draft pull request per service |
 | M3 Measurable | 3, integration | Not started |
 | M4 Complete vulnerability lab | 4, the dependency pins | Not started |
 | M5 Released | 5 | Not started |
@@ -104,13 +106,16 @@ The layout the repository will have after the scaffolding is in [`.zazz/architec
 
 ## Setup and run
 
-There is nothing to install or run yet. The scaffolding adds the application, the one-command start and stop, and the tests, and records every command in `docs/setup-and-testing.md` after it has been run.
-
-Today the repository can only be read:
-
 ```bash
 git clone https://github.com/zazzcode/vuln-nestjs.git
+cd vuln-nestjs
+pnpm install --frozen-lockfile
+pnpm build
+git config core.hooksPath .githooks
+pnpm start
 ```
+
+It needs Node 24.11 or later and pnpm 12.23.0. The `git config` line enables a pre-push hook that refuses a push failing lint, the format check or the unit tests. `pnpm start` starts the lab and stops it on Ctrl-C, leaving nothing behind. Every command, with what it printed, is in [`docs/setup-and-testing.md`](docs/setup-and-testing.md).
 
 ## How the work is organized
 

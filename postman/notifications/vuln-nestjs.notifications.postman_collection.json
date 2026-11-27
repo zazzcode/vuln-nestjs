@@ -1,0 +1,131 @@
+{
+  "info": {
+    "_postman_id": "a9525b93-deda-43cf-bbed-739958ede9c6",
+    "name": "VCX: notifications",
+    "description": "The notifications microservice, called on its own address. It speaks HTTP/1.1, so no relay stands in front of it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "The service",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"notifications\",\"store\":{\"engine\":\"sqlite\",\"connected\":true}}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{notificationsUrl}}/internal/health"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"notifications\"}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset, refused without the service token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"message\":\"A valid service token is required\",\"error\":\"Unauthorized\",\"statusCode\":401}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Announcements",
+      "item": [
+        {
+          "name": "The announcements",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('answers with the seeded announcement, to anyone', () =>",
+                  "  pm.expect(body.data).to.eql({ announcements: [{ id: '1', title: 'Welcome to VCX' }] }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ announcements { id title } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

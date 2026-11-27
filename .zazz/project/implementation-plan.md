@@ -30,7 +30,7 @@ Step 2 is parallel because the services never call each other. Each one is built
 | Libraries | `libs/config` (typed environment, the service registry), `libs/http2` (the HTTP/2 fetch and the JSON client), `libs/internal-auth` (the guards and decorators), `libs/lab-data` (the fixed identifiers of the fake users, and the markets' starting prices, shared by every seed module), `libs/testing` (start and stop the lab from a test) |
 | Four applications | For each of `gateway`, `accounts`, `trading`, `notifications`: `main.ts`, `app.module.ts`, configuration, the store's start and stop, health and reset on `/internal/*`, the GraphQL module, one feature module as the pattern to copy, a unit test and an integration test |
 | The graph | The gateway composes the three subgraphs and answers a query whose fields come from all three |
-| Stores | MongoDB, MySQL and SQLite in memory, each with one real entity, seeded at start |
+| Stores | MongoDB, MySQL and SQLite in memory, each with one real record seeded at start: a collection of documents in `accounts`, a table in `trading` and in `notifications` |
 | Ground truth | `catalog/catalog.json` with its schema, `pnpm scenario:check`, `scenario:update`, `audit:check`, `audit:update` |
 | Tests | Unit, integration and end-to-end suites run with one command each. The end-to-end suite proves the HTTP versions and a clean stop |
 | Running | `pnpm start` starts the lab in order and stops it, engines included |
@@ -42,23 +42,25 @@ Step 2 is parallel because the services never call each other. Each one is built
 
 ### Ownership
 
-A sub-agent writes only inside its own service:
+A sub-agent writes only inside what is its own:
 
 | Sub-agent | May write | Reads, never writes |
 | --- | --- | --- |
-| accounts | `apps/accounts/`, `docs/vulnerabilities/` modules for its scenarios | everything else |
-| trading | `apps/trading/`, its documentation modules | everything else |
-| notifications | `apps/notifications/`, its documentation modules | everything else |
-| gateway | `apps/gateway/`, its documentation modules | everything else |
+| accounts | `apps/accounts/`, `postman/accounts/`, its deliverable specification, `docs/vulnerabilities/` modules for its scenarios | everything else |
+| trading | `apps/trading/`, `postman/trading/`, its specification, its documentation modules | everything else |
+| notifications | `apps/notifications/`, `postman/notifications/`, its specification, its documentation modules | everything else |
+| gateway | `apps/gateway/`, `postman/gateway/`, its specification, its documentation modules | everything else |
 
-The lead agent owns everything shared: `libs/`, `catalog/`, `tests/`, `postman/`, `scripts/`, the root configuration, `AGENTS.md`. A sub-agent that needs a change there stops and asks. This is what makes four parallel sub-agents safe: no two of them ever edit the same file.
+The lead agent owns everything shared: `libs/`, `catalog/`, `tests/`, the Postman environment, `scripts/`, the root configuration, `AGENTS.md`. A sub-agent that needs a change there stops and asks, with two exceptions it makes by command and never by editing a file: `pnpm install`, after adding a dependency its specification names, and `pnpm audit:update` after it. This is what makes parallel sub-agents safe: no two of them ever edit the same file. `AGENTS.md` has the full rule.
+
+The four branches will each change `pnpm-lock.yaml` and `tests/expected-audit.json`, and will disagree with each other on both. Reconciling them at merge is the lead's work: install again from the merged manifests, then re-snapshot.
 
 The gateway's pass-through controllers need the `/internal/*` contract of the other three. They are written from the service specifications, not from the other sub-agents' code. The gateway's own tests mock the services. Its end-to-end tests wait for Step 3.
 
 ### Order of work inside a service
 
-1. **Store, fake data, health.** The entities, the seed module, `GET /internal/health`, `POST /internal/lab/reset`. An integration test proves a round trip to the store.
-2. **Safe operations.** Every safe operation in the specification's API tables, with a functional test for each.
+1. **Store, fake data, health.** The entities (collections, in `accounts`), the seed module, `GET /internal/health`, `POST /internal/lab/reset`. An integration test proves a round trip to the store.
+2. **Safe operations.** The protected counterparts first, every one its specification names, with a functional test for each. Then the other safe operations, the most needed first, until the service has about one and a half safe operations for every vulnerable one ([ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md)). A counterpart outranks the ratio.
 3. **Vulnerable operations.** Every vulnerable operation, with a both-directions test for each of its scenarios.
 4. **Documentation and catalogue.** One documentation module per scenario, with a reproduction that has been run. Catalogue entries for every scenario, counterpart included. Snapshots regenerated.
 
@@ -112,5 +114,7 @@ Things learned that the scaffolding needs:
 | Apollo Server returns a stack trace in every error unless `NODE_ENV` is `production` | True from the first line of gateway code. It is scenario GQL-004 |
 | NestJS's Express adapter creates an `http` or an `https` server and nothing else | The Express service speaks HTTP/1.1 |
 | With `http2: true`, `request.raw.httpVersion` is `"2.0"` | That is how a test proves the protocol |
+| The GraphQL driver writes no schema file unless `autoSchemaFile` has a `path` | Each service sets one, resolved from its own directory, so the file lands at `apps/<service>/schema.gql` whatever the working directory |
+| `accounts` does not use TypeORM | Decided by the Project Owner on 2026-11-26 ([ADR-011](../architecture/decisions/ADR-011-native-mongodb-driver-for-accounts.md)). MongoDB is reached through the native `mongodb` driver, so nothing has to be proven about TypeORM and MongoDB |
 
-The spike used schema-first GraphQL definitions. The lab is code first. Whether the code-first generator works with TypeScript 6 has not been checked; the scaffolding finds out first.
+The spike used schema-first GraphQL definitions. The lab is code first. The scaffolding checked the code-first generator with TypeScript 6.0.3 on 2026-11-26: it works, and no fallback to TypeScript 5.9.3 is needed.
