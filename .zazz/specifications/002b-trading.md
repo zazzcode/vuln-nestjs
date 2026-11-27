@@ -183,7 +183,16 @@ Return PASS/FAIL per AC with evidence."
 
 ## 13. Implementation and review change log
 
-No changes recorded.
+**2026-11-27, the build.** The counts of D-8 held exactly: 31 safe operations built (29 counterparts, `orders`, `cancelOrder`), 20 vulnerable ones, 21 scenarios. What the build changed or found:
+
+- **ACCESS-010's `PUT /internal/orders/:id` whitelists by name, not by a DTO pipe.** The foundation's `EnvironmentModule` registers a global `ValidationPipe` with `forbidNonWhitelisted`, so a route-level whitelist pipe still answers 400 to extra properties. The route reads `body.memo` by name and nothing else of the body, which keeps the tested claim ("200, only `memo` is written; `OPEN` and `u-alice` stay") and the baseline's allowlist-of-names pattern; a silently stripping route cannot exist beside the global pipe.
+- **`updateOrder`'s refusal happens at the GraphQL schema, before class-validator.** Apollo's variable coercion rejects the payload with `BAD_USER_INPUT` and "Field \"status\" is not defined by type \"UpdateOrderInput\"" — the same claim the scenario makes, one layer earlier than the validation pipe the plan assumed.
+- **An invalid enum value is refused the same way**, by Apollo's variable coercion with `BAD_USER_INPUT` rather than `GRAPHQL_VALIDATION_FAILED` (SQL-003's `marketsByAssets`, SQL-004's `trades(orderBy)`).
+- **Every `@InputType` field carries a class-validator decorator**, because the same global whitelist pipe would otherwise refuse the field itself (`PlaceOrderInput.quantity` was caught by exactly that).
+- **`convertExact`'s rounding is proven with USD 8.205**, a half cent that rounds half up to 8.21: the shared `Decimal` scalar caps input at eight fractional digits, so a coin amount has nothing to round at its own scale.
+- **The Postman collection carries one request per scenario, and the two races carry their end-state assertions in Vitest only**, as the testing strategy's Newman section prescribes; the collection's scripts say so next to the requests they belong to.
+- **The skeleton's order-count expectations follow the seed.** The tests of section 7 were kept as written, but `app.int-spec.ts`'s caller's-orders expectations and the collection's skeleton request each knew one order per caller where the seed gives two (Alice 1 and 6, Bob 2 and 7); the expectations were updated to the seed, the queries were not.
+- **Cross-branch, for the lead:** `postman/gateway/`'s skeleton request "A query answered from three services" expects Alice's orders to be `[{id: "1"}]`; the trading seed gives her orders 1 and 6. The file belongs to the gateway builder, so it was left alone and `pnpm test:api` fails on that one request on this branch. Everything else in the run passes, including the whole trading collection.
 
 Not built, by D-8: `market(symbol)`, `orderBook(symbol)`, `prices(symbol, limit)`, `User.wallets`, `User.trades`, `User.ledger`, `GET /internal/reports`. With them the counts would be 38 safe and 20 vulnerable (1.9); as built, 31 and 20 (1.55).
 
