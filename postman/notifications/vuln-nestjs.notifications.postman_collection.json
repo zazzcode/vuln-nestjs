@@ -576,6 +576,104 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-001: an announcement page that serves script",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the announcement is stored with the script as its body', () =>",
+                  "  pm.expect(body.data.broadcastAnnouncement.id).to.eql('2'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: AnnouncementInput!) { broadcastAnnouncement(input: $input) { id } }\",\n  \"variables\": {\n    \"input\": {\n      \"title\": \"A picture\",\n      \"body\": \"<img src=x onerror=\\\"window.__zazzles='zazzles-lab-marker'\\\">\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-001: the page the script lives in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('served as html with no policy', () => {",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.contain('text/html');",
+                  "  const policy = pm.response.headers.get('content-security-policy');",
+                  "  pm.expect(policy === undefined || policy === null).to.be.true;",
+                  "});",
+                  "pm.test('the stored script is the page own markup', () =>",
+                  "  pm.expect(pm.response.text()).to.contain(\"<img src=x onerror=\\\"window.__zazzles='zazzles-lab-marker'\\\">\")",
+                  "    .and.to.contain('</p>'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{notificationsUrl}}/internal/announcements/2/html"
+          },
+          "response": []
         }
       ]
     }
