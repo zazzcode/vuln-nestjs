@@ -10,14 +10,31 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
+import { openDoor } from './door.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 export const repositoryRoot = path.resolve(here, '..');
 
 /**
+ * @typedef {object} Service
+ * @property {string} name
+ * @property {number} port Where the service listens by default.
+ * @property {string} portVariable The variable that moves it.
+ * @property {'http1' | 'http2'} transport What its listener speaks.
+ * @property {number} [doorPort] Where a door in front of it listens by default. Set for a service on HTTP/2 only.
+ * @property {string} [doorPortVariable] The variable that moves the door.
+ * @property {string} health The path that answers 200 once the service is up.
+ */
+
+/**
  * The services, in the order they start. The gateway composes the graph at
  * start, so the others are healthy before it boots. Each speaks on its own
  * listener: HTTP/2 cleartext or HTTP/1.1, which decides how its health is asked.
+ * A service on HTTP/2 has a door in front of it, a listener on HTTP/1.1 that
+ * carries each request to it: curl, Postman, Newman and Burp do not speak HTTP/2
+ * without TLS.
+ *
+ * @type {readonly Service[]}
  */
 export const START_ORDER = Object.freeze([
   Object.freeze({
@@ -25,6 +42,8 @@ export const START_ORDER = Object.freeze([
     port: 3101,
     portVariable: 'ACCOUNTS_PORT',
     transport: 'http2',
+    doorPort: 3201,
+    doorPortVariable: 'ACCOUNTS_DOOR_PORT',
     health: '/internal/health',
   }),
   Object.freeze({
@@ -32,6 +51,8 @@ export const START_ORDER = Object.freeze([
     port: 3102,
     portVariable: 'TRADING_PORT',
     transport: 'http2',
+    doorPort: 3202,
+    doorPortVariable: 'TRADING_DOOR_PORT',
     health: '/internal/health',
   }),
   Object.freeze({
@@ -73,6 +94,16 @@ export function generateRunSecrets() {
 /** The port a service listens on: its own variable, else its default. */
 export function portOf(service, environment = process.env) {
   return Number(environment[service.portVariable] ?? service.port);
+}
+
+/** The services that speak HTTP/2, and so have a door in front of them, in start order. */
+export const SERVICES_WITH_A_DOOR = Object.freeze(
+  START_ORDER.filter((service) => service.doorPort !== undefined),
+);
+
+/** The port a service's door listens on: its own variable, else its default. */
+export function doorPortOf(service, environment = process.env) {
+  return Number(environment[service.doorPortVariable] ?? service.doorPort);
 }
 
 /** The services whose built entry point is missing, in start order. */
@@ -239,13 +270,14 @@ export async function waitForHealth(
 
 /**
  * Starts the lab as four processes, in start order, each healthy before the
- * next. Stops everything if a service fails to come up. Returns the gateway's
- * address, the secrets of the run, the processes, what they printed, and a
- * `stop` function that stops the gateway first, then checks that nothing was
+ * next, with a door in front of each service on HTTP/2. Stops everything if a
+ * service fails to come up. Returns the gateway's address, the secrets of the
+ * run, the doors, the processes, what they printed, and a `stop` function that
+ * closes the doors first, stops the gateway next, then checks that nothing was
  * left behind.
  *
  * @param {LabOptions} [options]
- * @returns {Promise<{ url: string, secrets: { JWT_SECRET: string, INTERNAL_SERVICE_TOKEN: string }, children: Map<string, import('node:child_process').ChildProcess>, printed: () => string, stop: () => Promise<StopOutcome> }>}
+ * @returns {Promise<{ url: string, secrets: { JWT_SECRET: string, INTERNAL_SERVICE_TOKEN: string }, doors: import('./door.mjs').Door[], children: Map<string, import('node:child_process').ChildProcess>, printed: () => string, stop: () => Promise<StopOutcome> }>}
  */
 export async function startLab({
   cwd = repositoryRoot,
@@ -262,6 +294,7 @@ export async function startLab({
     directories: temporaryDirectories(),
   };
   const children = new Map();
+  const doors = [];
   const forced = [];
   const printed = [];
 
@@ -289,6 +322,8 @@ export async function startLab({
   };
 
   const stop = async () => {
+    // The doors first, then the gateway: each is a caller of the services.
+    await Promise.all(doors.map((door) => door.close()));
     // The gateway first: it is the one that talks to the others.
     for (const service of [...START_ORDER].reverse()) {
       await stopOne(service);
@@ -329,6 +364,19 @@ export async function startLab({
   onStop?.(stop);
 
   try {
+    // A door is open before its service is, and carries a request to a service that is not up as a 502.
+    for (const service of SERVICES_WITH_A_DOOR) {
+      log(
+        `${service.name}: a door on 127.0.0.1:${doorPortOf(service, environment)}, speaking HTTP/1.1`,
+      );
+      doors.push(
+        await openDoor({
+          service: service.name,
+          port: doorPortOf(service, environment),
+          target: `http://127.0.0.1:${portOf(service, environment)}`,
+        }),
+      );
+    }
     for (const service of START_ORDER) {
       // Interrupted while coming up: nothing more is started.
       if (signal?.aborted) {
@@ -380,6 +428,7 @@ export async function startLab({
     url: `http://127.0.0.1:${portOf(START_ORDER.at(-1), environment)}`,
     stop,
     secrets,
+    doors,
     children,
     printed: () => printed.join(''),
   };
@@ -461,7 +510,19 @@ async function main() {
   }
 
   console.log(
-    `\nThe lab is up, on loopback only. Stop it with Ctrl-C.\n  GraphQL   POST ${lab.url}/graphql\n  Health    GET  ${lab.url}/api/v1/health\n  Reset     POST ${lab.url}/api/v1/lab/reset\n`,
+    [
+      '',
+      'The lab is up, on loopback only. Stop it with Ctrl-C.',
+      `  GraphQL   POST ${lab.url}/graphql`,
+      `  Health    GET  ${lab.url}/api/v1/health`,
+      `  Reset     POST ${lab.url}/api/v1/lab/reset`,
+      // A tool that does not speak HTTP/2 without TLS reaches these two through their doors.
+      ...lab.doors.map(
+        (door) =>
+          `  Door      ${door.service}: HTTP/1.1 on ${door.url}, carried to the service over HTTP/2`,
+      ),
+      '',
+    ].join('\n'),
   );
 
   // A service that dies takes the lab with it: it is started again as a whole.

@@ -1,7 +1,7 @@
 import { connect } from 'node:http2';
 import { networkInterfaces } from 'node:os';
 import type { ServiceName } from '@zazzles/exchange-config';
-import { request } from '@zazzles/exchange-testing';
+import { request, sessionToken } from '@zazzles/exchange-testing';
 import { useLab } from './lab.js';
 
 const lab = useLab();
@@ -50,11 +50,7 @@ async function nobodyAnswers(
   }
 }
 
-const healthUrl = (
-  service: ServiceName,
-  host = '127.0.0.1',
-  port: number,
-): string =>
+const healthUrl = (service: string, host = '127.0.0.1', port: number): string =>
   `http://${host.includes(':') ? `[${host}]` : host}:${port}${service === 'gateway' ? '/api/v1/health' : '/internal/health'}`;
 
 const PORTS: Record<ServiceName, number> = {
@@ -62,6 +58,12 @@ const PORTS: Record<ServiceName, number> = {
   accounts: 3101,
   trading: 3102,
   notifications: 3103,
+};
+
+/** Where the doors listen, in front of accounts and trading. */
+const DOORS: Partial<Record<ServiceName, number>> = {
+  accounts: 3201,
+  trading: 3202,
 };
 
 describe('the transports between the processes', () => {
@@ -129,13 +131,25 @@ describe('the transports between the processes', () => {
       )?.address;
     const of = (service: ServiceName): Protocol =>
       service === 'accounts' || service === 'trading' ? 'http2' : 'http1';
+    // Every listener of the lab: the four services, and a door in front of each on HTTP/2.
+    const listeners: [string, number, Protocol][] = [
+      ...(Object.entries(PORTS) as [ServiceName, number][]).map(
+        ([service, port]): [string, number, Protocol] => [
+          service,
+          port,
+          of(service),
+        ],
+      ),
+      ...(Object.entries(DOORS) as [ServiceName, number][]).map(
+        ([service, port]): [string, number, Protocol] => [
+          `${service}, through its door`,
+          port,
+          'http1',
+        ],
+      ),
+    ];
 
-    for (const [service, port] of Object.entries(PORTS) as [
-      ServiceName,
-      number,
-    ][]) {
-      const protocol = of(service);
-
+    for (const [service, port, protocol] of listeners) {
       expect({
         service,
         refused: await nobodyAnswers(healthUrl(service, '::1', port), protocol),
@@ -151,5 +165,79 @@ describe('the transports between the processes', () => {
         }).toEqual({ service, refused: true });
       }
     }
+  });
+});
+
+describe('the doors in front of the services on HTTP/2', () => {
+  /** Asks a service, over HTTP/1.1, for a query in a JSON body, with a caller or without one. */
+  const query = (url: string, token?: string) =>
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ query: '{ orders { id userId } }' }),
+    });
+
+  test('answer HTTP/1.1, and nothing else', async () => {
+    for (const port of Object.values(DOORS)) {
+      const url = `http://127.0.0.1:${port}/internal/health`;
+
+      expect(await nobodyAnswers(url, 'http2')).toBe(true);
+      expect(await ask(url, 'http1')).toBe(200);
+    }
+  });
+
+  // The service cannot tell a request the door carried from one the gateway sent: it arrives over HTTP/2.
+  test('reach each service, which answers for itself', async () => {
+    for (const service of ['accounts', 'trading'] as const) {
+      const response = await fetch(
+        `${lab().http1Url(service)}/internal/health`,
+      );
+
+      expect(response.status).toBe(200);
+      expect(await response.json()).toMatchObject({
+        status: 'ok',
+        service,
+      });
+    }
+  });
+
+  // The token travels with the request, and the service judges it, as it does for the gateway.
+  test('carry a query with its JSON body and the caller, so the service judges the caller itself', async () => {
+    const url = `${lab().http1Url('trading')}/graphql`;
+    const refused = await query(url).then((response) => response.json());
+
+    expect(refused.errors?.[0]?.extensions?.code).toBe('UNAUTHENTICATED');
+    expect(refused.data).toBeNull();
+
+    const bob = sessionToken(lab().secrets.JWT_SECRET, {
+      sub: 'u-bob',
+      sid: 's-u-bob',
+      role: 'USER',
+    });
+    const answered = await query(url, bob);
+
+    expect(answered.status).toBe(200);
+    expect(await answered.json()).toEqual({
+      data: { orders: [{ id: '2', userId: 'u-bob' }] },
+    });
+  });
+
+  test('answer 502, in the shape the lab uses, once their service is gone', async () => {
+    // The one test in this file that takes the lab apart, so it runs last.
+    await lab().stopService('accounts');
+
+    const response = await fetch(
+      `${lab().http1Url('accounts')}/internal/health`,
+    );
+
+    expect(response.status).toBe(502);
+    expect(await response.json()).toEqual({
+      statusCode: 502,
+      error: 'Bad Gateway',
+      message: 'accounts did not answer',
+    });
   });
 });
