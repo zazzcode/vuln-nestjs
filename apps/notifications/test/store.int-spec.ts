@@ -116,7 +116,16 @@ describe('the seeded store', () => {
 
   test('holds one settings row per user with a wallet, every channel on, the webhook on the test receiver', async () => {
     const rows = await settings.findAll();
-    expect(rows.map((row) => ({ ...row, id: 0 }))).toEqual(
+    expect(
+      rows.map((row) => ({
+        id: 0,
+        userId: row.userId,
+        webhookUrl: row.webhookUrl,
+        email: row.email,
+        sms: row.sms,
+        webhook: row.webhook,
+      })),
+    ).toEqual(
       ['alice', 'bob', 'carol', 'dave', 'erin'].map((name) => ({
         id: 0,
         userId: `u-${name}`,

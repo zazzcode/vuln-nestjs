@@ -17,6 +17,11 @@ export class CreateRuleAlertResolver {
     @UserId() caller: string,
     @Args('rule', { type: () => RuleInput }) rule: RuleInput,
   ): Promise<Alert> {
-    return this.alerts.create(caller, { ...rule, label: null });
+    return this.alerts.create(caller, {
+      symbol: rule.symbol,
+      direction: rule.direction,
+      threshold: rule.threshold,
+      label: null,
+    });
   }
 }
