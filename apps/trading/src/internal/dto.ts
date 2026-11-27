@@ -1,8 +1,9 @@
-import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
+import { IsOptional, IsString, MinLength } from 'class-validator';
 
 /** A deposit the system makes to a user's wallet. */
 export class DepositDto {
-  @IsUUID()
+  @IsString()
+  @MinLength(3)
   userId!: string;
 
   @IsString()
