@@ -256,6 +256,113 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "OS-001: a title that reaches a shell",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('the announcement is stored with the title as sent', () =>",
+                  "  pm.expect(body.announcement.title).to.eql('Maintenance\"; echo zazzles-lab-marker; echo \"'));",
+                  "pm.test('the delivery record holds the planted command output', () => {",
+                  "  pm.sendRequest({",
+                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
+                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
+                  "  }, (error, response) => {",
+                  "    pm.expect(error).to.be.undefined;",
+                  "    const records = response.json();",
+                  "    const record = records[records.length - 1];",
+                  "    pm.expect(record.responseBody.split('\\n')).to.contain('zazzles-lab-marker');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/announcements/send",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Maintenance\\\"; echo zazzles-lab-marker; echo \\\"\",\n  \"body\": \"Scheduled maintenance at 02:00 UTC.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OS-002: an option where a URL was expected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the record holds what curl printed for an option', () => {",
+                  "  pm.sendRequest({",
+                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
+                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
+                  "  }, (error, response) => {",
+                  "    pm.expect(error).to.be.undefined;",
+                  "    const records = response.json();",
+                  "    const record = records[records.length - 1];",
+                  "    pm.expect(record.responseBody).to.contain('Usage: curl');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($url: String!) { pingWebhook(url: $url) { status attempts lastError } }\",\n  \"variables\": {\n    \"url\": \"-h\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     }
