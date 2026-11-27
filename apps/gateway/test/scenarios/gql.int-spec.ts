@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { runSecret } from '@zazzles/exchange-testing';
+import { runSecret, sessionToken } from '@zazzles/exchange-testing';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -19,10 +19,16 @@ import { standInSubgraphs } from '../subgraphs.js';
 describe('the GraphQL scenarios', () => {
   let app: NestFastifyApplication;
   let subgraphs: Awaited<ReturnType<typeof standInSubgraphs>>;
+  let alice: string;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = runSecret();
     process.env.INTERNAL_SERVICE_TOKEN = runSecret();
+    alice = sessionToken(process.env.JWT_SECRET as string, {
+      sub: 'u-alice',
+      sid: 's-alice',
+      role: 'USER',
+    });
     subgraphs = await standInSubgraphs();
     app = (
       await Test.createTestingModule({ imports: [AppModule] }).compile()
@@ -74,5 +80,41 @@ describe('the GraphQL scenarios', () => {
     expect(response.headers['content-type']).toContain('text/html');
     // What was gained: the IDE itself, ready to run queries against the graph.
     expect(response.body).toContain('<title>GraphiQL</title>');
+  });
+
+  // GQL-002 — no depth or complexity limit. The document is nested twelve
+  // deep: every user of the seed has two orders, so deeper walks fan out
+  // exponentially and twelve already proves no limit stands in the way (the
+  // hardened value is five).
+  test('GQL-002: a query nested far past any limit is accepted and answered with data', async () => {
+    const depth = 12;
+    let source = 'me { displayName ';
+    for (let level = 0; level < depth; level++) {
+      source += 'orders { id user { id ';
+    }
+    source += '}'.repeat(depth * 2) + ' }';
+    source = `query { ${source} }`;
+
+    const response = await post(
+      { query: source },
+      {
+        authorization: `Bearer ${alice}`,
+      },
+    );
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    expect(body.errors).toBeUndefined();
+    // What was gained: the graph plans and runs a query of unbounded depth —
+    // one request is a walk of every order of the caller, twelve levels deep.
+    let level: unknown = body.data.me;
+    for (let walked = 0; walked < depth; walked++) {
+      level = (
+        (level as { orders?: unknown[] }).orders?.[0] as {
+          user?: unknown;
+        }
+      ).user;
+      expect(level).toMatchObject({ id: 'u-alice' });
+    }
   });
 });

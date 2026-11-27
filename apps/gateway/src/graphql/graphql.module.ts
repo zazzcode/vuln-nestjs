@@ -51,6 +51,9 @@ function subgraphsOf(environment: Environment) {
           server: {
             // The lab's error codes, in `extensions.code`.
             formatError: formatGraphQLError,
+            // GQL-002 / CWE-770: no `validationRules`, so no depth or
+            // complexity limit: a query nested to any depth is accepted and
+            // planned. Hardened value: a depth rule with a limit of 5.
             // What identifies the caller travels to the service that owns each field.
             context: (request: { headers: Record<string, string> }) => ({
               headers: request.headers,
