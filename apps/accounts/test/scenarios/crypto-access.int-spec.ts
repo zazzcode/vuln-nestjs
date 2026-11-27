@@ -118,3 +118,63 @@ describe("ACCESS-003: a user's token opens an administrator's account", () => {
     expect(response.status).toBe(403);
   });
 });
+
+describe("ACCESS-004: the body of the legacy profile editor is the change", () => {
+  const payload = () => ({
+    displayName: 'Alice Patched',
+    role: 'ADMIN',
+  });
+
+  test('PATCH /internal/profile writes the role the body carries', async () => {
+    const response = await call(lab, '/internal/profile', {
+      method: 'PATCH',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload()),
+    });
+    const patched = (await response.json()) as { id: string; role: string };
+
+    // gained: Alice's own record says she is an administrator now
+    expect(response.status).toBe(200);
+    expect(patched).toEqual({ ...patched, id: 'u-alice', role: 'ADMIN' });
+
+    // the store agrees, and the lab is put back as it was
+    const stored = await gql(
+      lab,
+      'query ($id: ID!) { user(id: $id) { id role } }',
+      { token: lab.adminToken, variables: { id: 'u-alice' } },
+    );
+    expect(stored.data).toEqual({ user: { id: 'u-alice', role: 'ADMIN' } });
+    await call(lab, '/internal/lab/reset', {
+      method: 'POST',
+      headers: { 'x-internal-token': lab.serviceToken },
+    });
+  });
+
+  test('updateProfile refuses the same body: the input is typed', async () => {
+    const refused = await gql(
+      lab,
+      'mutation ($input: UpdateProfileInput!) { updateProfile(input: $input) { id } }',
+      { token: lab.aliceToken, variables: { input: payload() as never } },
+    );
+
+    // refused: `role` is not a field of the input, so it is refused, not written
+    expect(errorCode(refused)).toBe('BAD_USER_INPUT');
+  });
+
+  test('PUT /internal/profile refuses it too: the whitelist is on', async () => {
+    const response = await call(lab, '/internal/profile', {
+      method: 'PUT',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(payload()),
+    });
+
+    // refused: the DTO declares two fields, and a third one is an error
+    expect(response.status).toBe(400);
+  });
+});

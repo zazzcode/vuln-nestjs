@@ -7,6 +7,7 @@ import { UsersLookupResolver } from './users-lookup.resolver.js';
 import { UsersPreferencesResolver } from './users-preferences.resolver.js';
 import { AccountCreationResolver } from './account-creation.resolver.js';
 import { UsersFilterController } from './users-filter.controller.js';
+import { LegacyProfileController } from './legacy-profile.controller.js';
 import { PreferencesBulkResolver } from './preferences-bulk.resolver.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -24,6 +25,6 @@ import { AuthFeatureModule } from '../auth/auth.module.js';
     AccountCreationResolver,
     PreferencesBulkResolver,
   ],
-  controllers: [LegacySessionsController, UsersFilterController],
+  controllers: [LegacySessionsController, UsersFilterController, LegacyProfileController],
 })
 export class LegacyModule {}
