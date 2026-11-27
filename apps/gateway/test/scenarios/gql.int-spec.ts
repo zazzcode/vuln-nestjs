@@ -141,4 +141,26 @@ describe('the GraphQL scenarios', () => {
       { id: '1', title: 'Welcome to VCX' },
     ]);
   });
+
+  // GQL-004 — a stack trace in every error.
+  test("GQL-004: a validation error answers the server's stack in extensions.stacktrace", async () => {
+    const response = await post(
+      { query: '{ me { nope } }' },
+      { authorization: `Bearer ${alice}` },
+    );
+
+    // Apollo answers a validation failure with 400; the answer carries the
+    // stack all the same, which is what the scenario is about.
+    expect(response.statusCode).toBe(400);
+    const body = response.json();
+    expect(body.errors).toHaveLength(1);
+    const error = body.errors[0];
+    expect(error.message).toContain('nope');
+    // What was gained: the server's own stack, frames and file paths of the
+    // process included, returned to whoever sent the bad query.
+    expect(Array.isArray(error.extensions?.stacktrace)).toBe(true);
+    const stack = error.extensions.stacktrace as string[];
+    expect(stack.length).toBeGreaterThan(3);
+    expect(stack.join('\n')).toMatch(/\sat\s/);
+  });
 });

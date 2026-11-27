@@ -58,6 +58,10 @@ function subgraphsOf(environment: Environment) {
             // operations, answered as an array, so a brute force fits in a
             // single call. Hardened value: `allowBatchedHttpRequests: false`.
             allowBatchedHttpRequests: true,
+            // GQL-004 / CWE-209: every error carries the server's stack, in
+            // `extensions.stacktrace`. Hardened value:
+            // `includeStacktraceInErrorResponses: false`.
+            includeStacktraceInErrorResponses: true,
             // What identifies the caller travels to the service that owns each field.
             context: (request: { headers: Record<string, string> }) => ({
               headers: request.headers,
