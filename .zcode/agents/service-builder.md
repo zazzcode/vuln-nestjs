@@ -31,6 +31,10 @@ They are in `.agents/skills/`, and you read one when you reach its step: `spec-b
 - Another builder may be working at the same time. You run only your service's tests. The root `pnpm start`, `pnpm test:e2e`, `pnpm test:api` and `pnpm test:int` take every port of the lab: you run them only with the port variables the brief gives you.
 - Nothing is left running when you stop: no database engine, no listener, no temporary directory.
 
+## Your run log
+
+The brief names a run log under `.zazz/ephemeral/`. It is how your progress is seen from outside. You append to it as you go and never rewrite an earlier line: a short line with the time after every commit, every test or check you run, and every scenario you finish.
+
 ## Your final report
 
 It is your last message, and `.zazz/ephemeral/002<letter>-<service>-report.md`, in the form the brief gives.
