@@ -990,6 +990,32 @@
       "name": "INJECT",
       "item": [
         {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
           "name": "INJECT-001 the raw export writes the memo as a formula",
           "event": [
             {
@@ -1026,6 +1052,32 @@
       "name": "FS",
       "item": [
         {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
           "name": "FS-004 the traversal reads this service\u2019s manifest",
           "event": [
             {
@@ -1060,6 +1112,32 @@
     {
       "name": "RES",
       "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
         {
           "name": "RES-002 allTrades answers an unbounded limit",
           "event": [
@@ -1105,6 +1183,32 @@
     {
       "name": "GQL",
       "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
         {
           "name": "GQL-006 giftOrder points the order\u2019s user at the caller\u2019s choice",
           "event": [
