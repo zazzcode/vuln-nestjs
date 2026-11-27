@@ -53,7 +53,11 @@ export class NotificationSettingsResolver {
     source: Record<string, unknown>,
   ): void {
     for (const [key, value] of Object.entries(source)) {
-      if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      if (
+        value !== null &&
+        typeof value === 'object' &&
+        !Array.isArray(value)
+      ) {
         target[key] ??= {};
         this.merge(
           target[key] as Record<string, unknown>,
