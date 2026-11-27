@@ -11,6 +11,7 @@ import { OrdersService } from './orders.service.js';
 const aliceOrder: OrderEntity = {
   id: 1,
   userId: 'u-alice',
+  reference: 'ord-1',
   symbol: 'BTC-USD',
   side: OrderSide.BUY,
   type: OrderType.LIMIT,
@@ -40,9 +41,14 @@ describe('OrdersService', () => {
       id: '1',
       userId: 'u-alice',
       symbol: 'BTC-USD',
+      side: OrderSide.BUY,
+      type: OrderType.LIMIT,
       limitPrice: '64000.00',
       quantity: '0.50000000',
+      memo: null,
       status: OrderStatus.OPEN,
+      createdAt: labStart,
+      user: { id: 'u-alice', orders: [] },
     });
   });
 
@@ -50,13 +56,20 @@ describe('OrdersService', () => {
     const bobsOrder: OrderEntity = Object.assign(
       new OrderEntity(),
       aliceOrder,
-      { id: 2, userId: 'u-bob' },
+      {
+        id: 2,
+        userId: 'u-bob',
+        side: OrderSide.SELL,
+        memo: 'stop loss above entry',
+      },
     );
     const orders = await new OrdersService(
       repositoryHolding([aliceOrder, bobsOrder]),
     ).byUser('u-bob');
 
     expect(orders.map((order) => order.id)).toEqual(['2']);
+    expect(orders[0]?.side).toBe(OrderSide.SELL);
+    expect(orders[0]?.memo).toBe('stop loss above entry');
   });
 
   it('answers nothing for an order that is not stored', async () => {
