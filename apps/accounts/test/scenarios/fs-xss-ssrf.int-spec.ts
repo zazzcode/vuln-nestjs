@@ -241,3 +241,78 @@ describe('XSS-002: the stored upload served inline as its stored type', () => {
     expect(asImage.status).toBe(415);
   });
 });
+
+describe('XSS-004: a stored display name rendered unescaped', () => {
+  const storedName = () =>
+    'Alice<script>window.__zazzles = "zazzles-lab-marker"</script>';
+
+  test('GET /internal/admin/users-html renders the stored markup as markup', async () => {
+    await call(lab, '/internal/profile', {
+      method: 'PATCH',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ displayName: storedName() }),
+    });
+
+    const response = await call(lab, '/internal/admin/users-html', {
+      headers: bearer(lab.adminToken),
+    });
+    const page = await response.text();
+
+    // gained: the stored script reaches the administrator's browser as part
+    // of the page, unescaped, with nothing telling the browser not to run it
+    expect(response.status).toBe(200);
+    expect(page).toContain(storedName());
+    expect(page).not.toContain('&lt;script&gt;');
+
+    // the lab is put back as it was
+    await call(lab, '/internal/lab/reset', {
+      method: 'POST',
+      headers: { 'x-internal-token': lab.serviceToken },
+    });
+  });
+
+  test('the JSON users route answers data, and says nosniff', async () => {
+    const response = await call(lab, '/internal/admin/users', {
+      headers: bearer(lab.adminToken),
+    });
+    const users = (await response.json()) as { displayName: string }[];
+
+    // refused as a page: the display names are data in JSON, and the header
+    // says the browser may not read the answer as anything else
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(
+      users.some((user) => user.displayName.includes('<script>')),
+    ).toBe(false);
+  });
+
+  test('the directory page escapes every value and allows nothing', async () => {
+    await call(lab, '/internal/profile', {
+      method: 'PATCH',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ displayName: storedName() }),
+    });
+    const response = await call(lab, '/internal/admin/directory', {
+      headers: bearer(lab.adminToken),
+    });
+    const page = await response.text();
+
+    // refused: the template escapes what it shows, and the page's content
+    // security policy allows no script at all
+    expect(response.headers.get('content-security-policy')).toContain(
+      "script-src 'none'",
+    );
+    expect(page).toContain('&lt;script&gt;');
+    expect(page).not.toContain(storedName());
+
+    await call(lab, '/internal/lab/reset', {
+      method: 'POST',
+      headers: { 'x-internal-token': lab.serviceToken },
+    });
+  });
+});
