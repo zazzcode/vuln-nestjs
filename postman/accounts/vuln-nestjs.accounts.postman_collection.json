@@ -1646,6 +1646,407 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "FS",
+      "item": [
+        {
+          "name": "FS-001: the file name is the path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the repository manifest answers through a document route', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().name).to.eql('vuln-nestjs');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents/file/package.json"
+          },
+          "response": [],
+          "description": "The start command runs the services from the repository root, so the manifest is one name away; a test running in apps/accounts spells it ..%2F..%2Fpackage.json."
+        },
+        {
+          "name": "FS-001: the by-name counterpart refuses the climb",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no document carries that name, and the path would be checked', () =>",
+                  "  pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents/by-name/..%2F..%2Fpackage.json"
+          },
+          "response": []
+        },
+        {
+          "name": "FS-002: the upload is stored under its own name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the destination is the caller\\'s, outside the documents directory', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  pm.expect(pm.response.json().originalName).to.eql('../marker.html');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "multipart/form-data; boundary=----vcxpostman"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents/legacy?name=..%2Fmarker.html",
+            "body": {
+              "mode": "raw",
+              "raw": "------vcxpostman\r\ncontent-disposition: form-data; name=\"file\"; filename=\"marker.html\"\r\ncontent-type: text/html\r\n\r\n<script>window.__zazzles = \"zazzles-lab-marker\"</script>\r\n------vcxpostman--\r\n"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "FS-003: any type accepted, HTML included",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the HTML upload is accepted with its content type', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const answer = pm.response.json();",
+                  "  pm.expect(answer.originalName).to.eql('marker.html');",
+                  "  pm.expect(answer.mimeType).to.eql('text/html');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "multipart/form-data; boundary=----vcxpostman"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents/legacy",
+            "body": {
+              "mode": "raw",
+              "raw": "------vcxpostman\r\ncontent-disposition: form-data; name=\"file\"; filename=\"marker.html\"\r\ncontent-type: text/html\r\n\r\n<script>window.__zazzles = \"zazzles-lab-marker\"</script>\r\n------vcxpostman--\r\n"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "FS-003: the safe upload refuses the extension",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the allowlist refuses HTML', () => {",
+                  "  pm.response.to.have.status(400);",
+                  "  pm.expect(pm.response.json().message).to.contain('A document ends in');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "multipart/form-data; boundary=----vcxpostman"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents",
+            "body": {
+              "mode": "raw",
+              "raw": "------vcxpostman\r\ncontent-disposition: form-data; name=\"file\"; filename=\"marker.html\"\r\ncontent-type: text/html\r\n\r\n<script>window.__zazzles = \"zazzles-lab-marker\"</script>\r\n------vcxpostman--\r\n"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "XSS",
+      "item": [
+        {
+          "name": "XSS-002: the stored upload served inline as text/html",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the marker rides to the browser as a page of this origin', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.eql('text/html');",
+                  "  pm.expect(pm.response.headers.get('content-disposition')).to.not.exist;",
+                  "  pm.expect(pm.response.text()).to.contain('window.__zazzles');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/documents/file/marker.html/view"
+          },
+          "response": [],
+          "description": "The FS-003 request above stored marker.html; this serves it."
+        },
+        {
+          "name": "XSS-004: a stored display name rendered unescaped",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the raw-body route stores the markup', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().displayName).to.contain('<script>');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"displayName\": \"Alice<script>window.__zazzles = \\\"zazzles-lab-marker\\\"</script>\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-004: the console page renders it",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the stored script reaches the page verbatim', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.text()).to.contain('<script>window.__zazzles');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/admin/users-html"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-004: the directory page escapes it",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('escaped, and the CSP allows nothing', () => {",
+                  "  pm.expect(pm.response.text()).to.contain('&lt;script&gt;');",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.contain(\"script-src 'none'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/admin/directory"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-004: the store back as it was",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the display name is the fake data again', () =>",
+                  "  pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "SSRF",
+      "item": [
+        {
+          "name": "SSRF-002: the avatar URL is fetched wherever it points",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the service fetched the URL the caller chose', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().stored).to.eql(true);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/profile/avatar",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"url\": \"{{gatewayUrl}}/api/v1/health\"}"
+            }
+          },
+          "response": [],
+          "description": "gatewayUrl is the lab health route of its own HTTP/1.1 listener: the fetch is observed by the lab itself answering it."
+        },
+        {
+          "name": "SSRF-002: the allowlisted fetch refuses the same URL",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the origin is not on the allowlist, so nothing was fetched', () => {",
+                  "  pm.expect(pm.response.json().stored).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/profile/avatar/fetch",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"url\": \"{{gatewayUrl}}/api/v1/health\"}"
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
