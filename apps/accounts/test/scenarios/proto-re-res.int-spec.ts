@@ -37,11 +37,9 @@ describe('RES-001: no ceiling on the page the caller asks for', () => {
   });
 
   test('the REST search refuses it too, through its DTO', async () => {
-    const response = await call(
-      lab,
-      '/internal/users/search?q=&limit=100000',
-      { headers: bearer(lab.adminToken) },
-    );
+    const response = await call(lab, '/internal/users/search?q=&limit=100000', {
+      headers: bearer(lab.adminToken),
+    });
 
     // refused: the DTO caps the limit at one hundred
     expect(response.status).toBe(400);
@@ -72,7 +70,10 @@ describe('RE-001: the display-name pattern backtracks', () => {
     const refused = await gql(
       lab,
       'mutation ($input: UpdateProfileInput!) { updateProfile(input: $input) { id } }',
-      { token: lab.aliceToken, variables: { input: { displayName: payload() } } },
+      {
+        token: lab.aliceToken,
+        variables: { input: { displayName: payload() } },
+      },
     );
     const elapsed = performance.now() - before;
 
@@ -169,6 +170,71 @@ describe('PROTO-002: the settings string is parsed and deep-merged', () => {
       status: 'resumed',
       userId: 'u-admin',
       theme: 'dark',
+    });
+  });
+});
+
+describe('PROTO-001: the dotted path is walked without checks', () => {
+  // The last describe of the file: its exploit leaves a value on the
+  // prototype of every object in the service, and nothing takes it off.
+  // The key differs from PROTO-002's, so the two observations do not meet.
+  const path = () => '__proto__.theme';
+
+  test('setPreference refuses the value: an enum names the one key it writes', async () => {
+    const refused = await gql(
+      lab,
+      'mutation { setPreference(name: THEME, value: "zazzles-lab-marker") { id preferences } }',
+      { token: lab.aliceToken },
+    );
+
+    // refused: writing the caller's own theme is exactly what this mutation
+    // is for — and it is all it can write
+    expect(refused.errors).toBeUndefined();
+    expect(refused.data).toEqual({
+      setPreference: {
+        id: 'u-alice',
+        preferences: {
+          theme: 'zazzles-lab-marker',
+          language: 'en',
+          currency: 'USD',
+          marketingEmails: 'false',
+        },
+      },
+    });
+  });
+
+  test('setPreferencePath refuses the same path: the segments are allowlisted', async () => {
+    const refused = await gql(
+      lab,
+      'mutation { setPreferencePath(path: "__proto__.theme", value: "zazzles-lab-marker") { id } }',
+      { token: lab.aliceToken },
+    );
+
+    // refused: `__proto__` is not a preference name, and the walk happens
+    // over a map with no prototype
+    expect(errorCode(refused)).toBe('BAD_USER_INPUT');
+  });
+
+  test('setPreferenceByPath pollutes the prototype, and an omitted theme gains a value', async () => {
+    const polluted = await gql(
+      lab,
+      'mutation { setPreferenceByPath(path: "__proto__.theme", value: "zazzles-lab-marker") { id } }',
+      { token: lab.aliceToken },
+    );
+    expect(polluted.errors).toBeUndefined();
+
+    // The cookie names a user and no theme: the resumed answer gains one,
+    // because every object in the service now answers the marker for a
+    // theme it never had
+    const response = await call(lab, '/internal/sessions/resume-legacy', {
+      method: 'POST',
+      headers: { cookie: 'vcx_remember={"userId":"u-alice"}' },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      status: 'resumed',
+      userId: 'u-alice',
+      theme: 'zazzles-lab-marker',
     });
   });
 });

@@ -8,6 +8,7 @@ import { UsersPreferencesResolver } from './users-preferences.resolver.js';
 import { AccountCreationResolver } from './account-creation.resolver.js';
 import { DisplayNameResolver } from './display-name.resolver.js';
 import { NotificationSettingsResolver } from './notification-settings.resolver.js';
+import { PreferencesPathResolver } from './preferences-path.resolver.js';
 import { UsersFilterController } from './users-filter.controller.js';
 import { LegacyProfileController } from './legacy-profile.controller.js';
 import { LegacyMeController } from './legacy-me.controller.js';
@@ -28,6 +29,7 @@ import { AuthFeatureModule } from '../auth/auth.module.js';
     AccountCreationResolver,
     DisplayNameResolver,
     NotificationSettingsResolver,
+    PreferencesPathResolver,
     PreferencesBulkResolver,
   ],
   controllers: [
