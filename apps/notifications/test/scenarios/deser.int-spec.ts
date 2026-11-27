@@ -71,13 +71,15 @@ const lastAlertOf = async (): Promise<{
   return alerts.at(-1)!;
 };
 
-/** Alice's delivery records: one per delivery the evaluation made for her. */
-const aliceRecords = async (): Promise<{ alertId: number | null }[]> =>
+/** Alice's delivery records, whole: what a run printed or was sent is the evidence. */
+const aliceRecords = async (): Promise<
+  { alertId: number | null; responseBody: string | null }[]
+> =>
   (await (
     await request(`${service.url}/internal/deliveries`, {
       headers: { authorization: `Bearer ${alice()}` },
     })
-  ).json()) as { alertId: number | null }[];
+  ).json()) as { alertId: number | null; responseBody: string | null }[];
 
 describe('DESER-002: an alert expression that is code', () => {
   // One attacker value: an expression that rewrites the row it runs against.
@@ -187,5 +189,71 @@ describe('DESER-002: an alert expression that is code', () => {
     // The rule does not have the property: input coercion refuses it by name.
     expect(errorCode(refused)).toBe('BAD_USER_INPUT');
     expect(refused.errors?.[0]?.message).toContain('"expression"');
+  });
+});
+
+describe('DESER-003: an announcement body that is a template', () => {
+  // One attacker value: a body whose tags are compiled, not printed.
+  const title = 'Scheduled maintenance';
+  const body = 'Scheduled maintenance at 02:00 UTC. <%= 7*7 %>';
+
+  test('the exploit: POST /internal/announcements/send renders the tags', async () => {
+    await reset();
+
+    const response = await request(
+      `${service.url}/internal/announcements/send`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${admin()}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ title, body }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    const [record] = (await aliceRecords()).slice(-1);
+    // The tags were compiled: what the record holds is their value, not the text.
+    expect(record?.responseBody).toContain('49');
+    expect(record?.responseBody).not.toContain('<%= 7*7 %>');
+  });
+
+  test('counterpart 1: broadcastAnnouncement keeps the body data, tags and all', async () => {
+    await reset();
+
+    const sent = await query(
+      'mutation($input: AnnouncementInput!) { broadcastAnnouncement(input: $input) { title } }',
+      { token: admin(), variables: { input: { title, body } } },
+    );
+    expect(sent.errors).toBeUndefined();
+
+    const [record] = (await aliceRecords()).slice(-1);
+    // A fixed template renders the body as data: the tags are printed as text.
+    expect(record?.responseBody).toContain('<%= 7*7 %>');
+    expect(record?.responseBody).not.toContain('49');
+  });
+
+  test('counterpart 2: POST /internal/announcements/notify sends the body as plain text', async () => {
+    await reset();
+    receiver.reset();
+
+    const response = await request(
+      `${service.url}/internal/announcements/notify`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${admin()}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ title, body }),
+      },
+    );
+
+    expect(response.status).toBe(201);
+    const toAlice = receiver.requestsTo('/webhook/alice').at(-1);
+    // No template engine at all: the receiver was sent the tags as text.
+    expect(toAlice?.rawBody).toContain('<%= 7*7 %>');
+    expect(toAlice?.rawBody).not.toContain('49');
   });
 });
