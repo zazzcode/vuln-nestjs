@@ -34,7 +34,8 @@ export interface Reached {
 export interface StandIn {
   readonly service: 'accounts' | 'trading' | 'notifications';
   readonly server: Server | Http2Server;
-  readonly port: number;
+  /** Known once the server listens. */
+  port: number;
   readonly reached: Reached[];
   /** The federation queries refuse a caller without the internal token: GQL-007's subgraph half. */
   requireInternalToken: boolean;
@@ -116,9 +117,15 @@ function schemaOf(service: 'accounts' | 'trading' | 'notifications') {
         typeDefs: parse(ACCOUNTS),
         resolvers: {
           Query: {
-            me: (_: unknown, __: unknown, context: { headers?: Record<string, string | string[] | undefined> }) => {
+            me: (
+              _: unknown,
+              __: unknown,
+              context: {
+                headers?: Record<string, string | string[] | undefined>;
+              },
+            ) => {
               const caller = callerOf(context.headers ?? {});
-              return caller ? users[caller] ?? null : null;
+              return caller ? (users[caller] ?? null) : null;
             },
             user: (_: unknown, { id }: { id: string }) => users[id] ?? null,
           },
@@ -136,7 +143,13 @@ function schemaOf(service: 'accounts' | 'trading' | 'notifications') {
         typeDefs: parse(TRADING),
         resolvers: {
           Query: {
-            orders: (_: unknown, __: unknown, context: { headers?: Record<string, string | string[] | undefined> }) => {
+            orders: (
+              _: unknown,
+              __: unknown,
+              context: {
+                headers?: Record<string, string | string[] | undefined>;
+              },
+            ) => {
               const caller = callerOf(context.headers ?? {});
               return caller ? ordersOf(caller) : [];
             },
@@ -167,9 +180,7 @@ function schemaOf(service: 'accounts' | 'trading' | 'notifications') {
       typeDefs: parse(NOTIFICATIONS),
       resolvers: {
         Query: {
-          announcements: () => [
-            { id: '1', title: 'Welcome to VCX' },
-          ],
+          announcements: () => [{ id: '1', title: 'Welcome to VCX' }],
         },
         Announcement: {
           __resolveReference: (reference: { id: string }) => ({
@@ -190,9 +201,7 @@ async function standIn(
 ): Promise<StandIn> {
   const schema = schemaOf(service);
   const transport =
-    service === 'notifications'
-      ? ('http1' as const)
-      : ('http2' as const);
+    service === 'notifications' ? ('http1' as const) : ('http2' as const);
   const server: Server | Http2Server =
     transport === 'http2' ? createHttp2Server() : createHttpServer();
   const reached: Reached[] = [];
@@ -205,7 +214,10 @@ async function standIn(
     async stop() {
       await new Promise<void>((resolve, reject) => {
         server.close((error) => (error ? reject(error) : resolve()));
-        server.closeAllConnections?.();
+        // An HTTP/1.1 server holds idle connections to close; an HTTP/2 server has no such method.
+        if ('closeAllConnections' in server) {
+          server.closeAllConnections();
+        }
       });
     },
   };
@@ -257,13 +269,18 @@ async function standIn(
         response.writeHead(403, { 'content-type': 'application/json' });
         response.end(
           JSON.stringify({
-            errors: [{ message: `${service} refuses an unauthenticated federation query` }],
+            errors: [
+              {
+                message: `${service} refuses an unauthenticated federation query`,
+              },
+            ],
           }),
         );
         return;
       }
 
-      graphql({
+      // The answer is written when it arrives; this listener goes on to the next request.
+      void graphql({
         schema,
         source: query,
         variableValues: (body as { variables?: Record<string, unknown> })

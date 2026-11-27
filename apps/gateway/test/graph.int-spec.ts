@@ -1,5 +1,8 @@
 import { runSecret, sessionToken } from '@zazzles/exchange-testing';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { AppModule } from '../src/app.module.js';
@@ -49,7 +52,10 @@ describe('the federated graph over three stand-ins', () => {
   test('answers a query whose fields come from all three services', async () => {
     const answer = await query(
       '{ orders { id symbol user { id email } } announcements { id title } }',
-      { authorization: `Bearer ${alice}`, 'x-request-id': 'zazzles-lab-marker' },
+      {
+        authorization: `Bearer ${alice}`,
+        'x-request-id': 'zazzles-lab-marker',
+      },
     );
 
     expect(answer.errors).toBeUndefined();
