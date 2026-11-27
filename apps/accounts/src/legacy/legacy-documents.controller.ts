@@ -1,22 +1,40 @@
 import {
   Controller,
   Get,
+  HttpCode,
   Injectable,
   NotFoundException,
   Param,
+  Post,
+  Req,
   Res,
+  UnsupportedMediaTypeException,
 } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import {
+  CurrentUser,
+  type TokenPayload,
+} from '@zazzles/exchange-internal-auth';
+import type { DocumentRecord } from '../documents/document.record.js';
+import { DocumentsRepository } from '../documents/documents.repository.js';
+import { toStored, type StoredDocument } from '../documents/documents.service.js';
+import { UploadsStore } from '../documents/uploads.store.js';
 
 /**
  * The file serving of the old console: it kept its documents where the
- * service ran and served them by name, exactly as the console spelled it.
+ * service ran, stored uploads under the names the uploaders gave, and served
+ * both back exactly as they were.
  */
 @Injectable()
 @Controller('internal/documents')
 export class LegacyDocumentsController {
+  constructor(
+    private readonly uploads: UploadsStore,
+    private readonly documents: DocumentsRepository,
+  ) {}
+
   /** Serves a file by its name, resolved against the directory the service runs in. */
   @Get('file/:name')
   async file(
@@ -32,4 +50,53 @@ export class LegacyDocumentsController {
     reply.header('content-type', 'text/plain');
     return contents;
   }
+
+  /**
+   * Stores an upload where the console's uploader said to put it: the `name`
+   * field of the request names the destination file, and the upload's own
+   * content type is stored with it, whatever either of them is.
+   */
+  @Post('legacy')
+  @HttpCode(201)
+  async uploadLegacy(
+    @CurrentUser() caller: TokenPayload,
+    @Req() request: FastifyRequest,
+  ): Promise<StoredDocument> {
+    const file = await readUpload(request);
+    const query = request.query as { name?: string };
+    // FS-002 / CWE-22: the caller's name is the stored name, joined to the
+    // documents directory exactly as spelled — `..` writes outside it
+    // FS-003 / CWE-434: nothing is checked — the extension and the content
+    // type are the caller's word, and both are stored as given
+    const storedName = query.name ?? file.filename;
+    const record: DocumentRecord = {
+      _id: `d-${crypto.randomUUID()}`,
+      userId: caller.sub,
+      storedName,
+      originalName: storedName,
+      mimeType: file.mimetype,
+      size: file.contents.length,
+      createdAt: new Date(),
+    };
+    await this.uploads.write(record.storedName, file.contents);
+    await this.documents.insert(record);
+    return toStored(record);
+  }
+}
+
+/** Reads the one file a small upload carries. */
+async function readUpload(
+  request: FastifyRequest,
+): Promise<{ filename: string; mimetype: string; contents: Buffer }> {
+  const file = await request.file();
+  if (file === undefined) {
+    throw new UnsupportedMediaTypeException(
+      'An upload is multipart with one file',
+    );
+  }
+  return {
+    filename: file.filename,
+    mimetype: file.mimetype,
+    contents: await file.toBuffer(),
+  };
 }
