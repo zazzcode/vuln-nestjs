@@ -96,7 +96,10 @@ Every scenario of §6 built, exploitable and refused by its counterparts in a pa
 
 ## 11. Open questions
 
-None blocking. Resolved during the work, recorded here and in the run log: none yet.
+None blocking. Resolved during the work, recorded here and in the run log:
+
+- **Where the PROTO observation reads the polluted key** (decision 5 said "a GraphQL argument the caller omitted"). Polluting `Object.prototype.limit` or `.role` crashes class-validator's metadata grouping — `grouped[metadata.propertyName].push is not a function` — on every route that validates a DTO with that field name, before any resolver reads anything: a 500, not a gain. The observation therefore reads the polluted key off the plain object the legacy resume route unserializes (`updateNotificationSettings` pollutes `userId`, `setPreferenceByPath` pollutes `theme` — still different keys, still both "an omitted field gains a value", still the last tests of their file).
+- **SSRF-002's in-lab documentation target** (decision 6 named `http://127.0.0.1:3102/internal/health`): the backend services speak HTTP/2 in cleartext, which `node-fetch` cannot fetch, so the named target answers 500, not proof. The documentation reproduces against the lab's own HTTP/1.1 health route (the gateway's); the test observes with its own loopback stub and proves the redirect with a 302 from that stub, as decided.
 
 ## 12. Run log protocol
 
@@ -108,4 +111,13 @@ The brief that launched this agent, in `.zazz/ephemeral/`, is the prompt; the le
 
 ## 14. Implementation and review change log
 
-No changes recorded.
+Built as specified, with these deviations, each observed while testing:
+
+1. **CRYPTO's tests live in `test/scenarios/auth.int-spec.ts`**, not `crypto-access.int-spec.ts` as the §6 table says. The ACCESS family has that file; CRYPTO's three scenarios were written beside AUTH's in the first scenario slice and stay there. The table's other column entries stand.
+2. **ACCESS-004's sink is the raw request body**, not "a DTO without `whitelist`" as the service specification words it: this service's global `ValidationPipe` has `whitelist: true, forbidNonWhitelisted: true`, so no DTO can carry an extra property through — the old editor's route takes no DTO at all and assigns the body property by property. The weakness (caller-named properties written) is the one the scenario names; the counterpart claims are unchanged.
+3. **PROTO-002's first counterpart is refused at the transport**: Fastify's body parser rejects a JSON body carrying an own `__proto__` key, so `updatePreferences` cannot even be handed the parsed document (`400, Body is not valid JSON`). The second counterpart (`importSettings`) receives the same text, parses it, and its typed input's transformation drops the key: the preferences answer unchanged. Both are honest refusals for the identical payload; neither is the `BAD_USER_INPUT` the other families show.
+4. **FS-002's destination name rides the request's `name` field** (a query parameter), because `@fastify/multipart` strips path characters from the file's own name: an upload named `../x.txt` arrives as `x.txt`. The console's uploader "named the destination itself", which is feature-plausible and carries the traversal.
+5. **FS-001 resolves the caller's name against the process's working directory**. In the tests the service runs from `apps/accounts`, so `..%2F..%2Fpackage.json` is the repository manifest, exactly as the table says; under the start command the services run from the repository root, so the same route reaches it as `package.json` (the documentation shows both).
+6. **RE-001's payload is twenty-nine `A`s and `!`** (about two seconds steady state, about seven on a cold engine on this machine; thirty runs to minutes). The test asserts the vulnerable mutation takes at least a second and each counterpart answers the same refusal in under one.
+
+Safe operations: all 41 of §7 are built and covered by `test/functional.int-spec.ts`; none was left out, so the ratio stands at 41 safe to 28 vulnerable.
