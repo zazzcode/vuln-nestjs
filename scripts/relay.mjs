@@ -1,7 +1,7 @@
-// An HTTP/1.1 door in front of a listener that speaks HTTP/2 cleartext.
+// An HTTP/1.1 relay in front of a listener that speaks HTTP/2 cleartext.
 //
 // curl, Postman, Newman and Burp negotiate HTTP/2 only over TLS, and the lab has
-// no TLS, so none of them reaches a service that speaks HTTP/2. A door listens
+// no TLS, so none of them reaches a service that speaks HTTP/2. A relay listens
 // on loopback, carries each request to the service over HTTP/2 with prior
 // knowledge, and streams the answer back. It decides nothing: the method, the
 // path, the headers and the body are the caller's, and the status, the headers
@@ -10,7 +10,7 @@
 // which is what it sees when the gateway calls.
 //
 // The launcher opens one for each service on HTTP/2 and closes it before
-// anything else stops: a door is a caller of the services, like the gateway.
+// anything else stops: a relay is a caller of the services, like the gateway.
 import { createServer } from 'node:http';
 import { connect } from 'node:http2';
 import { connect as connectSocket } from 'node:net';
@@ -48,9 +48,9 @@ const carried = (headers, except = new Set()) =>
   );
 
 /**
- * @typedef {object} Door
- * @property {string} service The service the door leads to.
- * @property {number} port Where the door listens, on 127.0.0.1.
+ * @typedef {object} Relay
+ * @property {string} service The service the relay leads to.
+ * @property {number} port Where the relay listens, on 127.0.0.1.
  * @property {string} url `http://127.0.0.1:<port>`.
  * @property {string} target The service's own address, where it speaks HTTP/2.
  * @property {() => number} openSessions The connections to the service that a request has not finished with.
@@ -58,7 +58,7 @@ const carried = (headers, except = new Set()) =>
  */
 
 /**
- * Opens a door.
+ * Opens a relay.
  *
  * Every request gets a connection of its own to the service, closed once the
  * answer has been read to its end. A connection closed over an unread answer
@@ -66,9 +66,9 @@ const carried = (headers, except = new Set()) =>
  * A caller that goes away before the answer is over has its request closed.
  *
  * @param {{ service: string, port: number, target: string }} options
- * @returns {Promise<Door>} Rejects when nothing can listen on the port.
+ * @returns {Promise<Relay>} Rejects when nothing can listen on the port.
  */
-export function openDoor({ service, port, target }) {
+export function openRelay({ service, port, target }) {
   const url = new URL(target);
   const sessions = new Set();
 
@@ -77,7 +77,7 @@ export function openDoor({ service, port, target }) {
     sessions.add(session);
     session.once('close', () => sessions.delete(session));
 
-    // The caller addressed the door. The service is asked for its own address, which is what it is asked for when the gateway calls.
+    // The caller addressed the relay. The service is asked for its own address, which is what it is asked for when the gateway calls.
     const headers = { ...request.headers };
     delete headers.host;
     const stream = session.request({
@@ -135,7 +135,7 @@ export function openDoor({ service, port, target }) {
     const refused = (error) =>
       reject(
         new Error(
-          `The door to ${service} could not listen on 127.0.0.1:${port}: ${error.message}`,
+          `The relay to ${service} could not listen on 127.0.0.1:${port}: ${error.message}`,
         ),
       );
     server.once('error', refused);
@@ -149,7 +149,7 @@ export function openDoor({ service, port, target }) {
         openSessions: () => sessions.size,
         // Asked for a second time, it finds nothing left to close and changes nothing.
         close: async () => {
-          // Every connection to the service is ended, and known to be ended, before the door is said to be closed.
+          // Every connection to the service is ended, and known to be ended, before the relay is said to be closed.
           const ended = [...sessions].map(
             (session) =>
               new Promise((resolve) => {
@@ -159,7 +159,7 @@ export function openDoor({ service, port, target }) {
           );
           const listening = new Promise((resolve) => {
             server.close(() => resolve());
-            // A caller may hold a connection open for its next request. The door is closing: it does not wait for it.
+            // A caller may hold a connection open for its next request. The relay is closing: it does not wait for it.
             server.closeAllConnections();
           });
           await Promise.all([listening, ...ended]);

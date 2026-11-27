@@ -5,7 +5,7 @@ import {
   assertFootprintGone,
   databaseFootprint,
 } from '@zazzles/exchange-testing';
-import { answersOn } from '../../scripts/door.mjs';
+import { answersOn } from '../../scripts/relay.mjs';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 const GATEWAY = 'http://127.0.0.1:3000';
@@ -108,11 +108,11 @@ describe('the start command', () => {
         await delay(50);
       }
 
-      // A door reaches its service, which speaks HTTP/2, for a caller on HTTP/1.1.
-      const throughTheDoor = await fetch(
+      // A relay reaches its service, which speaks HTTP/2, for a caller on HTTP/1.1.
+      const throughTheRelay = await fetch(
         'http://127.0.0.1:3201/internal/health',
       ).then((response) => response.json());
-      expect(throughTheDoor).toMatchObject({
+      expect(throughTheRelay).toMatchObject({
         status: 'ok',
         service: 'accounts',
       });
@@ -124,12 +124,12 @@ describe('the start command', () => {
       expect(announced('trading')).toBeGreaterThan(announced('accounts'));
       expect(announced('notifications')).toBeGreaterThan(announced('trading'));
       expect(announced('gateway')).toBeGreaterThan(announced('notifications'));
-      // The doors are named with the addresses a person uses.
+      // The relays are named with the addresses a person uses.
       expect(printed).toContain(
-        'Door      accounts: HTTP/1.1 on http://127.0.0.1:3201, carried to the service over HTTP/2',
+        'Relay     accounts: HTTP/1.1 on http://127.0.0.1:3201, carried to the service over HTTP/2',
       );
       expect(printed).toContain(
-        'Door      trading: HTTP/1.1 on http://127.0.0.1:3202, carried to the service over HTTP/2',
+        'Relay     trading: HTTP/1.1 on http://127.0.0.1:3202, carried to the service over HTTP/2',
       );
       // The secrets of the run are passed to the processes and never printed.
       expect(printed).not.toMatch(
@@ -145,7 +145,7 @@ describe('the start command', () => {
       expect(outcome).toEqual({ code: 0, signal: null });
       expect(stoppedAfter).toBeLessThan(20_000);
       expect(await gatewayHealth()).toBeNull();
-      // The doors closed with the rest: nothing listens where they were.
+      // The relays closed with the rest: nothing listens where they were.
       for (const port of [3201, 3202]) {
         expect({ port, listening: await answersOn(port) }).toEqual({
           port,

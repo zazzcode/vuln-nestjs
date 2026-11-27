@@ -12,10 +12,10 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import {
   ENGINES,
   HEALTH_TIMEOUT_MS,
-  SERVICES_WITH_A_DOOR,
+  SERVICES_WITH_A_RELAY,
   START_ORDER,
   STOP_GRACE_MS,
-  doorPortOf,
+  relayPortOf,
   generateRunSecrets,
   isHealthy,
   leftovers,
@@ -120,14 +120,14 @@ describe('where a service is reached', () => {
   });
 });
 
-describe('the doors in front of the services on HTTP/2', () => {
+describe('the relays in front of the services on HTTP/2', () => {
   test('one in front of each of them, and in front of no service on HTTP/1.1', () => {
-    expect(SERVICES_WITH_A_DOOR.map((service) => service.name)).toEqual([
+    expect(SERVICES_WITH_A_RELAY.map((service) => service.name)).toEqual([
       'accounts',
       'trading',
     ]);
     for (const service of START_ORDER) {
-      expect(service.doorPort !== undefined).toBe(
+      expect(service.relayPort !== undefined).toBe(
         service.transport === 'http2',
       );
     }
@@ -136,16 +136,16 @@ describe('the doors in front of the services on HTTP/2', () => {
   test('each on a port of its own, away from the services, named by a variable of its own', () => {
     const ports = [
       ...START_ORDER.map((service) => service.port),
-      ...SERVICES_WITH_A_DOOR.map((service) => service.doorPort),
+      ...SERVICES_WITH_A_RELAY.map((service) => service.relayPort),
     ];
 
     expect(new Set(ports).size).toBe(
-      START_ORDER.length + SERVICES_WITH_A_DOOR.length,
+      START_ORDER.length + SERVICES_WITH_A_RELAY.length,
     );
-    const accounts = SERVICES_WITH_A_DOOR[0];
-    expect(accounts.doorPortVariable).toBe('ACCOUNTS_DOOR_PORT');
-    expect(doorPortOf(accounts, { ACCOUNTS_DOOR_PORT: '4201' })).toBe(4201);
-    expect(doorPortOf(accounts, {})).toBe(3201);
+    const accounts = SERVICES_WITH_A_RELAY[0];
+    expect(accounts.relayPortVariable).toBe('ACCOUNTS_RELAY_PORT');
+    expect(relayPortOf(accounts, { ACCOUNTS_RELAY_PORT: '4201' })).toBe(4201);
+    expect(relayPortOf(accounts, {})).toBe(3201);
   });
 });
 

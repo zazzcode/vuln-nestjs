@@ -2,7 +2,7 @@ import type { ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import type { ServiceName } from '@zazzles/exchange-config';
 import { START_ORDER, portOf, startLab } from '../../scripts/start.mjs';
-import { answersOn, type Door } from '../../scripts/door.mjs';
+import { answersOn, type Relay } from '../../scripts/relay.mjs';
 import { elsewhere, outboundReports, type OutboundReport } from './outbound.js';
 
 /** Loaded into each service's process, before the service, so that it reports its outgoing connections when it stops. */
@@ -25,7 +25,7 @@ export interface LabRun {
   readonly secrets: { JWT_SECRET: string; INTERNAL_SERVICE_TOKEN: string };
   /** The address of a service, on its own port. A test calls a service directly only when its listener is the point. */
   serviceUrl(service: ServiceName): string;
-  /** The address a tool on HTTP/1.1 reaches a service by: its own listener, or the door in front of it. */
+  /** The address a tool on HTTP/1.1 reaches a service by: its own listener, or the relay in front of it. */
   http1Url(service: ServiceName): string;
   /** The process of a service, for a test that needs to take one down. */
   process(service: ServiceName): ChildProcess;
@@ -52,7 +52,7 @@ export interface LabRun {
  */
 export function useLab(): () => LabRun {
   let run: LabRun | undefined;
-  let doors: readonly Door[] = [];
+  let relays: readonly Relay[] = [];
   let stop:
     (() => Promise<{ forced: string[]; leftBehind: unknown }>) | undefined;
   let printed: () => string = () => '';
@@ -66,7 +66,7 @@ export function useLab(): () => LabRun {
     });
     stop = lab.stop;
     printed = lab.printed;
-    doors = lab.doors;
+    relays = lab.relays;
     const definitionOf = (service: ServiceName) => {
       const definition = START_ORDER.find(
         (candidate) => candidate.name === service,
@@ -83,9 +83,9 @@ export function useLab(): () => LabRun {
       secrets: lab.secrets,
       serviceUrl: (service) =>
         `http://127.0.0.1:${portOf(definitionOf(service))}`,
-      // A service on HTTP/2 is reached through the door the launcher opened in front of it.
+      // A service on HTTP/2 is reached through the relay the launcher opened in front of it.
       http1Url: (service) =>
-        doors.find((door) => door.service === service)?.url ??
+        relays.find((relay) => relay.service === service)?.url ??
         `http://127.0.0.1:${portOf(definitionOf(service))}`,
       process: childOf,
       stopService: async (service) => {
@@ -107,12 +107,12 @@ export function useLab(): () => LabRun {
     const outcome = await stop();
     expect(outcome.forced).toEqual([]);
     expect(outcome.leftBehind).toEqual({ processes: [], directories: [] });
-    // A door is a listener the run opened in this process. Nothing listens where it was.
-    for (const door of doors) {
+    // A relay is a listener the run opened in this process. Nothing listens where it was.
+    for (const relay of relays) {
       expect(
-        { service: door.service, listening: await answersOn(door.port) },
-        door.url,
-      ).toEqual({ service: door.service, listening: false });
+        { service: relay.service, listening: await answersOn(relay.port) },
+        relay.url,
+      ).toEqual({ service: relay.service, listening: false });
     }
 
     const reports = outboundReports(printed());

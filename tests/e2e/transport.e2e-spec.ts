@@ -60,8 +60,8 @@ const PORTS: Record<ServiceName, number> = {
   notifications: 3103,
 };
 
-/** Where the doors listen, in front of accounts and trading. */
-const DOORS: Partial<Record<ServiceName, number>> = {
+/** Where the relays listen, in front of accounts and trading. */
+const RELAYS: Partial<Record<ServiceName, number>> = {
   accounts: 3201,
   trading: 3202,
 };
@@ -131,7 +131,7 @@ describe('the transports between the processes', () => {
       )?.address;
     const of = (service: ServiceName): Protocol =>
       service === 'accounts' || service === 'trading' ? 'http2' : 'http1';
-    // Every listener of the lab: the four services, and a door in front of each on HTTP/2.
+    // Every listener of the lab: the four services, and a relay in front of each on HTTP/2.
     const listeners: [string, number, Protocol][] = [
       ...(Object.entries(PORTS) as [ServiceName, number][]).map(
         ([service, port]): [string, number, Protocol] => [
@@ -140,9 +140,9 @@ describe('the transports between the processes', () => {
           of(service),
         ],
       ),
-      ...(Object.entries(DOORS) as [ServiceName, number][]).map(
+      ...(Object.entries(RELAYS) as [ServiceName, number][]).map(
         ([service, port]): [string, number, Protocol] => [
-          `${service}, through its door`,
+          `${service}, through its relay`,
           port,
           'http1',
         ],
@@ -168,7 +168,7 @@ describe('the transports between the processes', () => {
   });
 });
 
-describe('the doors in front of the services on HTTP/2', () => {
+describe('the relays in front of the services on HTTP/2', () => {
   /** Asks a service, over HTTP/1.1, for a query in a JSON body, with a caller or without one. */
   const query = (url: string, token?: string) =>
     fetch(url, {
@@ -181,7 +181,7 @@ describe('the doors in front of the services on HTTP/2', () => {
     });
 
   test('answer HTTP/1.1, and nothing else', async () => {
-    for (const port of Object.values(DOORS)) {
+    for (const port of Object.values(RELAYS)) {
       const url = `http://127.0.0.1:${port}/internal/health`;
 
       expect(await nobodyAnswers(url, 'http2')).toBe(true);
@@ -189,7 +189,7 @@ describe('the doors in front of the services on HTTP/2', () => {
     }
   });
 
-  // The service cannot tell a request the door carried from one the gateway sent: it arrives over HTTP/2.
+  // The service cannot tell a request the relay carried from one the gateway sent: it arrives over HTTP/2.
   test('reach each service, which answers for itself', async () => {
     for (const service of ['accounts', 'trading'] as const) {
       const response = await fetch(
