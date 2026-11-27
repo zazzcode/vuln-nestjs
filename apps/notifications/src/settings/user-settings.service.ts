@@ -77,6 +77,11 @@ export class UserSettingsService {
     return toUserSettings(await this.repository.save(settings));
   }
 
+  /** Saves the row as it stands, whatever wrote it. */
+  async saveRow(row: UserSettingsEntity): Promise<UserSettings> {
+    return toUserSettings(await this.repository.save(row));
+  }
+
   /** Writes only the channels the input names. */
   async setChannels(
     userId: string,

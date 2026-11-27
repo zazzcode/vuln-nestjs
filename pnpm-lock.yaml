@@ -555,6 +555,9 @@ importers:
       cookie-parser:
         specifier: 1.4.7
         version: 1.4.7
+      dot-prop:
+        specifier: 4.1.0
+        version: 4.1.0
       ejs:
         specifier: 3.1.6
         version: 3.1.6
@@ -2681,6 +2684,10 @@ packages:
   dezalgo@1.0.4:
     resolution: {integrity: sha512-rXSP0bf+5n0Qonsb+SVVfNfIsimO4HEtmnIpPHY8Q1UCzKlQrDMfdobr8nJOOsRgWCyMRqeSBQzmWUMq7zvVig==}
 
+  dot-prop@4.1.0:
+    resolution: {integrity: sha512-BNePUcWcC/5tptTk3XpN6A5IeGnhFTlKQSIskjRDH0VJBdOAKSe7vhHWgBJ+IMEHAXRhybq3bdFnvgdyXyqCvQ==}
+    engines: {node: '>=4'}
+
   dotenv-expand@13.0.0:
     resolution: {integrity: sha512-aBfBS8eYIeXmpHI9ThIlA7/WLq+SLt18iXUZhb52rW89QLKQFoIpPG1bPeewoPZsTyjSSO3T7234FBVUM1V2rA==}
     engines: {node: '>=12'}
@@ -3164,6 +3171,10 @@ packages:
   is-number-object@1.1.1:
     resolution: {integrity: sha512-lZhclumE1G6VYD8VHe35wFaIif+CTy5SJIi5+3y4psDgWu4wPDoBhF8NxUOinEc7pHgiTsT6MaBb92rKhhD+Xw==}
     engines: {node: '>= 0.4'}
+
+  is-obj@1.0.1:
+    resolution: {integrity: sha512-l4RyHgRqGN4Y3+9JHVrNqO+tN0rV5My76uW5/nuO4K1b6vw5G8d/cmFjP9tRfEsdhZNt0IFdZuK/c2Vr4Nb+Qg==}
+    engines: {node: '>=0.10.0'}
 
   is-promise@4.0.0:
     resolution: {integrity: sha512-hvpoI6korhJMnej285dSg6nu1+e6uxs7zG3BYAm5byqDsgJNWwxzM6z6iZiAgQR4TJ30JmBTOwqZUw3WlyH3AQ==}
@@ -6350,6 +6361,10 @@ snapshots:
       asap: 2.0.6
       wrappy: 1.0.2
 
+  dot-prop@4.1.0:
+    dependencies:
+      is-obj: 1.0.1
+
   dotenv-expand@13.0.0:
     dependencies:
       dotenv: 17.4.2
@@ -6889,6 +6904,8 @@ snapshots:
     dependencies:
       call-bound: 1.0.4
       has-tostringtag: 1.0.2
+
+  is-obj@1.0.1: {}
 
   is-promise@4.0.0: {}
 

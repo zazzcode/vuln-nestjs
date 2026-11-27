@@ -154,6 +154,28 @@
       "github_advisory_id": "GHSA-49j4-86m8-q2jw",
       "url": "https://github.com/advisories/GHSA-49j4-86m8-q2jw"
     },
+    "1102328": {
+      "findings": [
+        {
+          "version": "4.1.0",
+          "paths": [
+            "apps__notifications>dot-prop"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1102328,
+      "title": "dot-prop Prototype Pollution vulnerability",
+      "module_name": "dot-prop",
+      "vulnerable_versions": "<4.2.1",
+      "patched_versions": ">=4.2.1",
+      "severity": "high",
+      "cwe": "CWE-425, CWE-471, CWE-1321",
+      "github_advisory_id": "GHSA-ff7x-qrg7-qggm",
+      "url": "https://github.com/advisories/GHSA-ff7x-qrg7-qggm"
+    },
     "1153173": {
       "findings": [
         {
@@ -346,13 +368,13 @@
       "info": 0,
       "low": 0,
       "moderate": 4,
-      "high": 8,
+      "high": 9,
       "critical": 3
     },
-    "dependencies": 527,
+    "dependencies": 529,
     "devDependencies": 0,
     "optionalDependencies": 19,
-    "totalDependencies": 546
+    "totalDependencies": 548
   },
   "retired": []
 }
