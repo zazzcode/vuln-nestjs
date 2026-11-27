@@ -126,6 +126,138 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Scenarios",
+      "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-001: a webhook posted inside the lab",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('one attempt was made to the internal address', () =>",
+                  "  pm.expect(body.data.testWebhook).to.include({ attempts: 1, url: pm.variables.get('notificationsUrl') + '/internal/health' }));",
+                  "pm.test('the internal router answered, and the record read its answer back', () => {",
+                  "  pm.sendRequest({",
+                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
+                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
+                  "  }, (error, response) => {",
+                  "    pm.expect(error).to.be.undefined;",
+                  "    const records = response.json();",
+                  "    const record = records[records.length - 1];",
+                  "    pm.expect(record.url).to.contain('/internal/health');",
+                  "    pm.expect(record.responseBody).to.contain('Cannot POST /internal/health');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($url: String!) { testWebhook(url: $url) { url status attempts lastError } }\",\n  \"variables\": {\n    \"url\": \"{{notificationsUrl}}/internal/health\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-003: a URL fetched and read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('the internal endpoint was read from inside the machine', () => {",
+                  "  pm.expect(body.status).to.eql(200);",
+                  "  pm.expect(body.body).to.contain('\"service\":\"notifications\"');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/alerts/fetch",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"{{notificationsUrl}}/internal/health\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
