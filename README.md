@@ -111,10 +111,11 @@ git clone https://github.com/zazzcode/vuln-nestjs.git
 cd vuln-nestjs
 pnpm install --frozen-lockfile
 pnpm build
+git config core.hooksPath .githooks
 pnpm start
 ```
 
-It needs Node 24.11 or later and pnpm 12.23.0. `pnpm start` starts the lab and stops it on Ctrl-C, leaving nothing behind. Every command, with what it printed, is in [`docs/setup-and-testing.md`](docs/setup-and-testing.md).
+It needs Node 24.11 or later and pnpm 12.23.0. The `git config` line enables a pre-push hook that refuses a push failing lint, the format check or the unit tests. `pnpm start` starts the lab and stops it on Ctrl-C, leaving nothing behind. Every command, with what it printed, is in [`docs/setup-and-testing.md`](docs/setup-and-testing.md).
 
 ## How the work is organized
 
