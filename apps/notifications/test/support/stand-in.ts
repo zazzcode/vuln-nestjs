@@ -82,6 +82,11 @@ export class StandInListener {
     return [...this.received];
   }
 
+  /** Forgets what it saw, so the next test observes only its own requests. */
+  forget(): void {
+    this.received.length = 0;
+  }
+
   sawRequestTo(path: string): boolean {
     return this.received.some((request) => request.path === path);
   }

@@ -7,6 +7,7 @@ import { DeliveriesRepository } from './deliveries.repository.js';
 import { DeliveryService } from './delivery.service.js';
 import { OutboundGuardModule } from './outbound-guard.module.js';
 import { PreviewWebhookResolver } from './preview-webhook.resolver.js';
+import { TestWebhookResolver } from './test-webhook.resolver.js';
 import { WebhookClientService } from './webhook-client.service.js';
 import { WebhooksTestController } from './webhooks-test.controller.js';
 
@@ -22,6 +23,7 @@ import { WebhooksTestController } from './webhooks-test.controller.js';
     WebhookClientService,
     DeliveryService,
     PreviewWebhookResolver,
+    TestWebhookResolver,
   ],
   controllers: [WebhooksTestController, DeliveriesController],
   exports: [

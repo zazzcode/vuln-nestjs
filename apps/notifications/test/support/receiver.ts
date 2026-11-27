@@ -56,6 +56,12 @@ export class WebhookReceiver {
           );
           return;
         }
+        // A redirect to the webhook path, so a client's behaviour on one is observable.
+        if ((request.url ?? '').startsWith('/redirect')) {
+          response.writeHead(302, { location: '/webhook/alice' });
+          response.end();
+          return;
+        }
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end('{"received":true}');
       });

@@ -1,17 +1,40 @@
 {
-  "advisories": {},
+  "advisories": {
+    "1095073": {
+      "findings": [
+        {
+          "version": "2.6.6",
+          "paths": [
+            "apps__notifications>node-fetch"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1095073,
+      "title": "node-fetch forwards secure headers to untrusted sites",
+      "module_name": "node-fetch",
+      "vulnerable_versions": "<2.6.7",
+      "patched_versions": ">=2.6.7",
+      "severity": "high",
+      "cwe": "CWE-173, CWE-200, CWE-601",
+      "github_advisory_id": "GHSA-r683-j2x4-v87g",
+      "url": "https://github.com/advisories/GHSA-r683-j2x4-v87g"
+    }
+  },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
       "low": 0,
       "moderate": 0,
-      "high": 0,
+      "high": 1,
       "critical": 0
     },
-    "dependencies": 512,
+    "dependencies": 513,
     "devDependencies": 0,
     "optionalDependencies": 16,
-    "totalDependencies": 528
+    "totalDependencies": 529
   },
   "retired": []
 }

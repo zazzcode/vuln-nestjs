@@ -56,6 +56,18 @@ export class DeliveryService {
     });
   }
 
+  /** What one POST to whatever a URL says ended as, recorded for one user. The client decides nothing. */
+  async deliverToUnchecked(
+    input: { alertId: number | null; userId: string; url: string },
+    payload: unknown,
+  ): Promise<DeliveryEntity> {
+    const attempt = await this.client.send(input.url, payload);
+    return this.record({
+      ...input,
+      ...WebhookClientService.outcomeOf(attempt),
+    });
+  }
+
   /**
    * Sends to every user whose webhook channel is on and who has a URL: one
    * record per recipient, whatever each attempt ended as.
