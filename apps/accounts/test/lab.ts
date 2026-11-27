@@ -64,6 +64,24 @@ export const bearer = (token: string): Record<string, string> => ({
   authorization: `Bearer ${token}`,
 });
 
+/** The access token a sign-in answered, or a clear failure when it did not. */
+export async function signInFor(
+  lab: Lab,
+  email: string,
+  password: string,
+): Promise<string> {
+  const response = await gql(
+    lab,
+    'mutation ($email: String!, $password: String!) { signIn(email: $email, password: $password) { accessToken user { id } } }',
+    { variables: { email, password } },
+  );
+  if (response.errors !== undefined) {
+    throw new Error(`signIn failed: ${JSON.stringify(response.errors)}`);
+  }
+  return (response.data as { signIn: { accessToken: string } }).signIn
+    .accessToken;
+}
+
 /** One GraphQL operation against the service. */
 export function gql(
   lab: Lab,
@@ -83,7 +101,10 @@ export function call(
     body?: string | Buffer;
   } = {},
 ) {
-  return request(`${lab.url}${path}`, init);
+  return request(`${lab.url}${path}`, {
+    ...init,
+    body: init.body === undefined ? undefined : (init.body as BodyInit),
+  });
 }
 
 /** A multipart body carrying one file, as an upload sends it. */

@@ -6,7 +6,6 @@ import {
   IsOptional,
   IsString,
   Matches,
-  MaxLength,
   MinLength,
 } from 'class-validator';
 import { Roles } from '@zazzles/exchange-internal-auth';

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { APP_GUARD } from '@nestjs/core';
 import { AuthResolver } from './auth.resolver.js';
 import { AuthController } from './auth.controller.js';
 import { TokenKeys } from './token-keys.js';

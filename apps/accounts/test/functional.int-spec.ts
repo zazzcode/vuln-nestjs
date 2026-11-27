@@ -6,6 +6,7 @@ import {
   call,
   gql,
   multipart,
+  signInFor,
   startLab,
   tokenFor,
   userById,
@@ -110,14 +111,7 @@ describe('the safe operations, each doing what its row says', () => {
   });
 
   test("sessionInfo and sessions answer the caller's own sessions, and signOut ends the one it carries", async () => {
-    const signed = await gql(
-      lab,
-      `mutation {
-      signIn(email: "dave@vcx.exchange", password: "dave-lab-only") { accessToken }
-    }`,
-    );
-    const token = (signed.data?.signIn as unknown as { accessToken: string })
-      .accessToken;
+    const token = await signInFor(lab, 'dave@vcx.exchange', 'dave-lab-only');
 
     const info = await gql(
       lab,
@@ -389,8 +383,9 @@ describe('the safe operations, each doing what its row says', () => {
     expect(response.status).toBe(200);
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Strict');
-    expect(((await response.json()) as { accessToken: string }).accessToken)
-      .toHaveLength > 0;
+    expect(
+      ((await response.json()) as { accessToken: string }).accessToken,
+    ).toHaveLength(3);
   });
 
   test('the signed REST session sets a signed, lax, http-only cookie', async () => {

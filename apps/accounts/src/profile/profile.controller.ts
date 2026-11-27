@@ -1,5 +1,4 @@
-import { Body, Controller, HttpCode, Post, Put, Res } from '@nestjs/common';
-import type { FastifyReply } from 'fastify';
+import { Body, Controller, HttpCode, Post, Put } from '@nestjs/common';
 import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 import {
   CurrentUser,
