@@ -134,3 +134,64 @@ describe('FS-002: the upload is stored under its own name', () => {
     expect(existsSync(join(root, 'checked-zazzles.txt'))).toBe(false);
   });
 });
+
+describe('FS-003: any type accepted, HTML included', () => {
+  const upload = () =>
+    multipart(
+      'file',
+      'marker.html',
+      '<script>window.__zazzles = "zazzles-lab-marker"</script>\n',
+      'text/html',
+    );
+
+  test('POST /internal/documents/legacy accepts the HTML upload', async () => {
+    const { headers, body } = upload();
+    const response = await call(lab, '/internal/documents/legacy', {
+      method: 'POST',
+      headers: { ...bearer(lab.aliceToken), ...headers },
+      body,
+    });
+
+    // gained: an HTML document is stored, its content type the uploader's word
+    expect(response.status).toBe(201);
+    const answer = (await response.json()) as {
+      originalName: string;
+      mimeType: string;
+    };
+    expect(answer.originalName).toBe('marker.html');
+    expect(answer.mimeType).toBe('text/html');
+  });
+
+  test('the safe upload refuses the extension', async () => {
+    const { headers, body } = upload();
+    const response = await call(lab, '/internal/documents', {
+      method: 'POST',
+      headers: { ...bearer(lab.aliceToken), ...headers },
+      body,
+    });
+
+    // refused: the allowlist is png, jpg, pdf and txt — nothing else
+    expect(response.status).toBe(400);
+    const refusal = (await response.json()) as { message: string };
+    expect(refusal.message).toContain('A document ends in');
+  });
+
+  test('the checked route refuses a lying extension too', async () => {
+    const png = multipart(
+      'file',
+      'marker.png',
+      '<script>window.__zazzles = "zazzles-lab-marker"</script>\n',
+      'image/png',
+    );
+    const response = await call(lab, '/internal/documents/checked', {
+      method: 'POST',
+      headers: { ...bearer(lab.aliceToken), ...png.headers },
+      body: png.body,
+    });
+
+    // refused: the bytes must start with the signature the extension claims
+    expect(response.status).toBe(400);
+    const refusal = (await response.json()) as { message: string };
+    expect(refusal.message).toContain('signature');
+  });
+});
