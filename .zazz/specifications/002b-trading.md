@@ -1,7 +1,7 @@
 # The `trading` service — Deliverable Specification
 
 **Worktree / branch:** `vuln-nestjs-wt/trading` / `phase-2b-trading`
-**Feature:** the services of Zazzles Exchange · **Milestone:** Step 2 of the implementation plan
+**Feature:** the services of VCX · **Milestone:** Step 2 of the implementation plan
 **Deliverable:** the `trading` service, finished: 21 scenarios, each built, with its test passing
 **Project Owner / Deliverable Owner:** the Project Owner · **Drafted:** 2026-11-27
 **Delivery topology:** single-deliverable branch · **Review artifact:** one draft pull request to `phase-1-foundation`
