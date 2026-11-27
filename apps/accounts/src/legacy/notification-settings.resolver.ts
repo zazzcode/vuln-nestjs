@@ -1,4 +1,5 @@
-import { Args, BadRequestException, Mutation, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Resolver } from '@nestjs/graphql';
+import { BadRequestException } from '@nestjs/common';
 import {
   CurrentUser,
   type TokenPayload,
