@@ -59,10 +59,10 @@ export class RedactSecretsInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest<{
       body?: Record<string, unknown>;
     }>();
-    const body = request.body ?? {};
-    this.logger.log(
-      `sign-in attempted as ${String(body.email ?? 'an unknown email')}`,
-    );
+    const body = request.body === undefined ? {} : request.body;
+    const email =
+      typeof body.email === 'string' ? body.email : 'an unknown email';
+    this.logger.log(`sign-in attempted as ${email}`);
     return next.handle().pipe(
       map((value) => {
         this.logger.log('sign-in answered');

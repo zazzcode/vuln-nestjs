@@ -1,0 +1,16 @@
+import { Module } from '@nestjs/common';
+import { LegacyTokenGuard } from './legacy-token.guard.js';
+import { WhoAmIResolver } from './whoami.resolver.js';
+import { LegacyAuthResolver } from './legacy-auth.resolvers.js';
+import { LegacySessionsController } from './legacy-sessions.controller.js';
+import { SessionsModule } from '../sessions/sessions.module.js';
+import { UsersModule } from '../users/users.module.js';
+import { AuthFeatureModule } from '../auth/auth.module.js';
+
+/** The legacy token path: the aliases and endpoints the old clients still call. */
+@Module({
+  imports: [SessionsModule, UsersModule, AuthFeatureModule],
+  providers: [LegacyTokenGuard, WhoAmIResolver, LegacyAuthResolver],
+  controllers: [LegacySessionsController],
+})
+export class LegacyModule {}

@@ -85,6 +85,16 @@ export class UsersService {
   async update(id: string, changes: Record<string, unknown>): Promise<void> {
     await this.repository.update(id, changes);
   }
+
+  /** Stores a document an operation of this service has already built. */
+  async createWithDocument(document: UserDocument): Promise<void> {
+    await this.repository.insert([document]);
+  }
+
+  /** The legacy sign-in's match: the filter as the legacy route built it. */
+  findOneWhere(filter: Record<string, unknown>): Promise<UserDocument | null> {
+    return this.repository.findOneWhere(filter);
+  }
 }
 
 export function defaultPreferences(): Preferences {

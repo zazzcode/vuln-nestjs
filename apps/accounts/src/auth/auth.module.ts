@@ -10,5 +10,6 @@ import { UsersModule } from '../users/users.module.js';
   imports: [SessionsModule, UsersModule],
   providers: [AuthResolver, TokenKeys],
   controllers: [AuthController],
+  exports: [TokenKeys],
 })
 export class AuthFeatureModule {}

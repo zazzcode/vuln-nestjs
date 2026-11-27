@@ -55,6 +55,11 @@ export class UsersRepository {
     return this.users.findOne({ email });
   }
 
+  /** The filter as a caller of the legacy sign-in built it. No other caller. */
+  findOneWhere(filter: Record<string, unknown>): Promise<UserDocument | null> {
+    return this.users.findOne(filter);
+  }
+
   /** Every user, by email. */
   findAll(): Promise<UserDocument[]> {
     return this.users.find().sort({ email: 1 }).toArray();

@@ -4,6 +4,7 @@ import { errorCode } from '@zazzles/exchange-testing';
 import {
   bearer,
   call,
+  field,
   gql,
   multipart,
   signInFor,
@@ -35,10 +36,10 @@ describe('the safe operations, each doing what its row says', () => {
     );
 
     expect(response.errors).toBeUndefined();
-    const payload = response.data?.signIn as unknown as {
-      accessToken: string;
-      user: { id: string };
-    };
+    const payload = field<{ accessToken: string; user: { id: string } }>(
+      response,
+      'signIn',
+    );
     expect(payload.accessToken.split('.')).toHaveLength(3);
     expect(payload.user.id).toBe('u-alice');
   });
@@ -244,9 +245,9 @@ describe('the safe operations, each doing what its row says', () => {
     );
 
     expect(changed.data).toEqual({ changePassword: true });
-    expect(
-      (reSigned.data?.signIn as unknown as { user: { id: string } }).user.id,
-    ).toBe('u-erin');
+    expect(field<{ user: { id: string } }>(reSigned, 'signIn').user.id).toBe(
+      'u-erin',
+    );
 
     await call(lab, '/internal/lab/reset', {
       method: 'POST',
@@ -283,9 +284,9 @@ describe('the safe operations, each doing what its row says', () => {
     }`,
       { variables: { password: password.data?.resetPassword } },
     );
-    expect(
-      (reSigned.data?.signIn as unknown as { user: { id: string } }).user.id,
-    ).toBe('u-bob');
+    expect(field<{ user: { id: string } }>(reSigned, 'signIn').user.id).toBe(
+      'u-bob',
+    );
 
     await call(lab, '/internal/lab/reset', {
       method: 'POST',
@@ -359,9 +360,9 @@ describe('the safe operations, each doing what its row says', () => {
       { token: lab.adminToken },
     );
 
-    expect(
-      (created.data?.createUser as unknown as { email: string }).email,
-    ).toBe('zoe@vcx.exchange');
+    expect(field<{ email: string }>(created, 'createUser').email).toBe(
+      'zoe@vcx.exchange',
+    );
 
     await call(lab, '/internal/lab/reset', {
       method: 'POST',
@@ -384,8 +385,9 @@ describe('the safe operations, each doing what its row says', () => {
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Strict');
     expect(
-      ((await response.json()) as { accessToken: string }).accessToken
-        .split('.'),
+      ((await response.json()) as { accessToken: string }).accessToken.split(
+        '.',
+      ),
     ).toHaveLength(3);
   });
 
@@ -412,8 +414,7 @@ describe('the safe operations, each doing what its row says', () => {
       signIn(email: "alice@vcx.exchange", password: "alice-lab-only") { accessToken }
     }`,
     );
-    const token = (signed.data?.signIn as unknown as { accessToken: string })
-      .accessToken;
+    const token = field<{ accessToken: string }>(signed, 'signIn').accessToken;
 
     const live = await call(lab, '/internal/sessions/introspect', {
       method: 'POST',
@@ -481,10 +482,13 @@ describe('the safe operations, each doing what its row says', () => {
     const response = await call(lab, '/internal/sessions/public-key');
 
     expect(response.status).toBe(200);
-    expect(await response.json()).toMatchObject({
-      alg: 'RS256',
-      publicKey: expect.stringMatching(/^-----BEGIN PUBLIC KEY-----/),
-    });
+    const published = (await response.json()) as {
+      alg: string;
+      publicKey: string;
+    };
+    expect(published.alg).toBe('RS256');
+    expect(published.publicKey).toMatch(/^[A-Za-z0-9+/]+={0,2}$/);
+    expect(published.publicKey).not.toContain('BEGIN');
   });
 
   test('the documents routes store under a generated name and serve as attachments', async () => {
@@ -506,7 +510,7 @@ describe('the safe operations, each doing what its row says', () => {
       token: lab.aliceToken,
     });
     expect(
-      (listed.data?.documents as unknown as { originalName: string }[])
+      field<{ originalName: string }[]>(listed, 'documents')
         .map((document) => document.originalName)
         .sort(),
     ).toEqual(['avatar.png', 'notes.txt', 'statement.pdf']);
@@ -732,8 +736,10 @@ describe('own data: the operations that read by identifier answer only their own
       signIn(email: "bob@vcx.exchange", password: "bob-lab-only") { accessToken }
     }`,
     );
-    const bobToken = (signed.data?.signIn as unknown as { accessToken: string })
-      .accessToken;
+    const bobToken = field<{ accessToken: string }>(
+      signed,
+      'signIn',
+    ).accessToken;
 
     const someoneElses = await gql(
       lab,

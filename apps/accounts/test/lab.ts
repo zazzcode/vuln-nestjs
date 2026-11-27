@@ -82,6 +82,19 @@ export async function signInFor(
     .accessToken;
 }
 
+/** A field of a GraphQL response, or a clear failure when the operation errored. */
+export function field<T>(
+  response: { data?: Record<string, unknown> | null; errors?: unknown },
+  name: string,
+): T {
+  if (response.data === null || response.data === undefined) {
+    throw new Error(
+      `the operation errored: ${JSON.stringify(response.errors)}`,
+    );
+  }
+  return response.data[name] as T;
+}
+
 /** One GraphQL operation against the service. */
 export function gql(
   lab: Lab,
