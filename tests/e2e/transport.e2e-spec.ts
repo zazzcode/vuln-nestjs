@@ -117,7 +117,7 @@ describe('the transports between the processes', () => {
     expect(response.status).toBe(200);
     expect(await response.json()).toEqual({
       data: {
-        announcements: [{ id: '1', title: 'Welcome to Zazzles Exchange' }],
+        announcements: [{ id: '1', title: 'Welcome to VCX' }],
       },
     });
   });

@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-config",
   "version": "0.0.0",
-  "description": "Typed environment, the service registry and the loopback assertion of Zazzles Exchange",
+  "description": "Typed environment, the service registry and the loopback assertion of VCX",
   "private": true,
   "license": "MIT",
   "type": "module",

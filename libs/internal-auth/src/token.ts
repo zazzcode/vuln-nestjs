@@ -17,7 +17,7 @@ export const JWT_SECRET = 'JWT_SECRET';
 export const INTERNAL_SERVICE_TOKEN = 'INTERNAL_SERVICE_TOKEN';
 
 /** The cookie checked when a request carries no bearer token. */
-export const SESSION_COOKIE = 'zazzles_session';
+export const SESSION_COOKIE = 'vcx_session';
 
 /** The header a call made on the system's behalf presents. */
 export const SERVICE_TOKEN_HEADER = 'x-internal-token';

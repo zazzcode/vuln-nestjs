@@ -1,6 +1,8 @@
 # vuln-nestjs
 
-A deliberately vulnerable NestJS application for testing the tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). The application is **Zazzles Exchange**, a small fake cryptocurrency exchange built as NestJS microservices: one gateway that serves a federated GraphQL schema, and three backend services for accounts, trading and notifications.
+A deliberately vulnerable NestJS application for testing the tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). The application is **VCX (Vulnerable Crypto Exchange)**, a small fake cryptocurrency exchange built as NestJS microservices: one gateway that serves a federated GraphQL schema, and three backend services for accounts, trading and notifications.
+
+VCX is the application's name, whatever it is written in. This repository, `vuln-nestjs`, is its NestJS implementation.
 
 > ⚠️ **This application is intentionally vulnerable.** It is a sample that is started, preloaded with fake data, exercised, and shut down. Run it only on a machine you control, on `127.0.0.1`, and stop it afterwards. Never deploy it or expose it on a network.
 

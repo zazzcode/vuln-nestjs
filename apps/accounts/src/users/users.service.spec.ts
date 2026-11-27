@@ -6,7 +6,7 @@ import { UsersService } from './users.service.js';
 
 const alice: UserDocument = {
   _id: 'u-alice',
-  email: 'alice@zazzles.exchange',
+  email: 'alice@vcx.exchange',
   displayName: 'Alice',
   role: Role.USER,
   createdAt: labStart,
@@ -29,7 +29,7 @@ describe('UsersService', () => {
 
     expect(user).toEqual({
       id: 'u-alice',
-      email: 'alice@zazzles.exchange',
+      email: 'alice@vcx.exchange',
       displayName: 'Alice',
       role: Role.USER,
       createdAt: labStart,

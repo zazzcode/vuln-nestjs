@@ -4,7 +4,7 @@
 
 ## 1. What this system is
 
-Zazzles Exchange is a **short-lived sample application**. It is started, preloaded with fake data, exercised by a test, a scanner or a person, and shut down. Nothing in it is meant to survive: there is no data worth keeping, no user depending on it, and no deployment.
+VCX (Vulnerable Crypto Exchange) is a **short-lived sample application**. It is started, preloaded with fake data, exercised by a test, a scanner or a person, and shut down. Nothing in it is meant to survive: there is no data worth keeping, no user depending on it, and no deployment.
 
 That single fact drives most of the design below, so it is worth stating what follows from it.
 

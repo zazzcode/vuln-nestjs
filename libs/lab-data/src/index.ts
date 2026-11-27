@@ -23,7 +23,7 @@ export interface LabMarket {
 
 export const administrator: LabUser = {
   id: 'u-admin',
-  email: 'admin@zazzles.exchange',
+  email: 'admin@vcx.exchange',
   displayName: 'Admin',
   password: 'admin-lab-only',
   role: 'ADMIN',
@@ -35,7 +35,7 @@ export const labUsers: readonly LabUser[] = [
   administrator,
   {
     id: 'u-alice',
-    email: 'alice@zazzles.exchange',
+    email: 'alice@vcx.exchange',
     displayName: 'Alice',
     password: 'alice-lab-only',
     role: 'USER',
@@ -43,7 +43,7 @@ export const labUsers: readonly LabUser[] = [
   },
   {
     id: 'u-bob',
-    email: 'bob@zazzles.exchange',
+    email: 'bob@vcx.exchange',
     displayName: 'Bob',
     password: 'bob-lab-only',
     role: 'USER',
@@ -51,7 +51,7 @@ export const labUsers: readonly LabUser[] = [
   },
   {
     id: 'u-carol',
-    email: 'carol@zazzles.exchange',
+    email: 'carol@vcx.exchange',
     displayName: 'Carol',
     password: 'carol-lab-only',
     role: 'USER',
@@ -59,7 +59,7 @@ export const labUsers: readonly LabUser[] = [
   },
   {
     id: 'u-dave',
-    email: 'dave@zazzles.exchange',
+    email: 'dave@vcx.exchange',
     displayName: 'Dave',
     password: 'dave-lab-only',
     role: 'USER',
@@ -67,7 +67,7 @@ export const labUsers: readonly LabUser[] = [
   },
   {
     id: 'u-erin',
-    email: 'erin@zazzles.exchange',
+    email: 'erin@vcx.exchange',
     displayName: 'Erin',
     password: 'erin-lab-only',
     role: 'USER',

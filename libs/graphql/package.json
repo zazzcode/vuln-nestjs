@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-graphql",
   "version": "0.0.0",
-  "description": "The scalars every subgraph of Zazzles Exchange shares, and the pagination limit",
+  "description": "The scalars every subgraph of VCX shares, and the pagination limit",
   "private": true,
   "license": "MIT",
   "type": "module",

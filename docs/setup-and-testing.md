@@ -93,7 +93,7 @@ $ curl -sS --max-time 5 http://127.0.0.1:4503/internal/health
 {"status":"ok","service":"notifications","store":{"engine":"sqlite","connected":true}}
 
 $ curl -sS --max-time 5 -X POST http://127.0.0.1:4500/graphql -H 'content-type: application/json' -d '{"query":"{ announcements { id title } }"}'
-{"data":{"announcements":[{"id":"1","title":"Welcome to Zazzles Exchange"}]}}
+{"data":{"announcements":[{"id":"1","title":"Welcome to VCX"}]}}
 
 $ curl -sS --max-time 5 -X POST http://127.0.0.1:4500/graphql -H 'content-type: application/json' -d '{"query":"{ orders { id } }"}'
 {"errors":[{"message":"Authentication required","path":["orders"],"extensions":{"code":"UNAUTHENTICATED","stacktrace":["…"]}}]}
@@ -259,5 +259,6 @@ The start command then names `http://127.0.0.1:4100`, `http://127.0.0.1:4111` an
 | `The relay to accounts could not listen on 127.0.0.1:3201` | Something else listens there | [Move the lab](#8-moving-the-lab-to-other-ports) |
 | Another lab, or a test that starts one, is already using these ports | The lab takes all of its ports | Stop the other one, or [move this one](#8-moving-the-lab-to-other-ports) |
 | `The lab did not stop cleanly: <service> had to be killed` | A service did not stop within ten seconds of the interrupt | The start command stops what the service left behind and says so; open an issue with what it printed |
+| After Ctrl-C, `pnpm start` ended by the interrupt (`SIGINT`), not with exit code 0 | On the Linux runner of GitHub Actions, with pnpm's own binary, `pnpm` ends by the interrupt itself while the launcher is still stopping the lab. The lab stopped cleanly. On macOS the command exits 0 | Nothing to do. To be sure: `pgrep -lx mongod` and `pgrep -lx mysqld` print nothing |
 | `pnpm audit:check` fails with `The audit differs` | A dependency changed, or the registry published an advisory | Read what it says differs, review, then `pnpm audit:update` |
 | `pnpm scenario:check` fails | A registered file changed, or the catalogue is not right | Review, then `pnpm scenario:update` |

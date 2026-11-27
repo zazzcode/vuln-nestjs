@@ -4,7 +4,7 @@ import { createDB } from 'mysql-memory-server';
 /** The MySQL release every machine runs. Pinned: the package would otherwise pick one by the machine's own version of itself. */
 export const MYSQL_VERSION = '8.4.9';
 
-export const DATABASE_NAME = 'zazzles_trading';
+export const DATABASE_NAME = 'vcx_trading';
 
 /** How TypeORM is told to reach the engine this store started. */
 export interface MysqlConnection {

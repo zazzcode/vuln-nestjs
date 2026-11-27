@@ -1,10 +1,10 @@
-# Zazzles Exchange — project orientation
+# VCX — project orientation
 
 ## Purpose
 
 This repository is a deliberately vulnerable application for testing tools that find security weaknesses in source code and in running web applications (SAST, SCA and DAST). It exists because a scanner is only as good as the evidence behind it: every weakness in this application has a stable ID, a documented expected finding, an automated test proving it is exploitable, and a protected counterpart that handles the identical payload safely.
 
-The application is **Zazzles Exchange**, a small fake cryptocurrency exchange. It is functional enough to behave like real software (accounts, wallets, an order book, price alerts), because weaknesses that sit in plausible features are the ones scanners meet in practice. It is built the way a current NestJS system is built, so the framework idioms are real and not improvised.
+The application is **VCX (Vulnerable Crypto Exchange)**, a small fake cryptocurrency exchange. VCX is its name whatever it is written in; this repository is its NestJS implementation. It is functional enough to behave like real software (accounts, wallets, an order book, price alerts), because weaknesses that sit in plausible features are the ones scanners meet in practice. It is built the way a current NestJS system is built, so the framework idioms are real and not improvised.
 
 ## Operating model: started, preloaded, exercised, stopped
 

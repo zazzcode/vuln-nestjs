@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "a9525b93-deda-43cf-bbed-739958ede9c6",
-    "name": "Zazzles Exchange: notifications",
+    "name": "VCX: notifications",
     "description": "The notifications microservice, called on its own address. It speaks HTTP/1.1, so no relay stands in front of it.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -98,7 +98,7 @@
                   "const body = pm.response.json();",
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
                   "pm.test('answers with the seeded announcement, to anyone', () =>",
-                  "  pm.expect(body.data).to.eql({ announcements: [{ id: '1', title: 'Welcome to Zazzles Exchange' }] }));"
+                  "  pm.expect(body.data).to.eql({ announcements: [{ id: '1', title: 'Welcome to VCX' }] }));"
                 ]
               }
             }

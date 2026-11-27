@@ -172,7 +172,7 @@ The rules that make this hold, and the places the scenarios deliberately break t
 
 ## 7. Outbound: webhooks
 
-`notifications` delivers to the webhook URL a user saved. Behind the functional baseline a URL must pass an outbound guard: `http` or `https`, a host that resolves to loopback, a port on `WEBHOOK_ALLOWED_ORIGINS`, no redirects, a 5 second timeout. The delivery is signed (`X-Zazzles-Signature`, HMAC-SHA256 over the raw body). The client is `node-fetch` 2.7.0 over HTTP/1.1.
+`notifications` delivers to the webhook URL a user saved. Behind the functional baseline a URL must pass an outbound guard: `http` or `https`, a host that resolves to loopback, a port on `WEBHOOK_ALLOWED_ORIGINS`, no redirects, a 5 second timeout. The delivery is signed (`X-VCX-Signature`, HMAC-SHA256 over the raw body). The client is `node-fetch` 2.7.0 over HTTP/1.1.
 
 ## 8. Startup order
 

@@ -87,7 +87,7 @@ describe('the notifications service, started alone', () => {
         announcements: [
           {
             id: '1',
-            title: 'Welcome to Zazzles Exchange',
+            title: 'Welcome to VCX',
             body: 'This is a sample exchange. Every account and every coin on it is invented.',
             authorId: 'u-admin',
             createdAt: labStart.toISOString(),
@@ -113,7 +113,7 @@ describe('the notifications service, started alone', () => {
     );
 
     expect(response.data).toEqual({
-      _entities: [{ id: '1', title: 'Welcome to Zazzles Exchange' }],
+      _entities: [{ id: '1', title: 'Welcome to VCX' }],
     });
   });
 
@@ -137,7 +137,7 @@ describe('the notifications service, started alone', () => {
       ).status,
     ).toBe(200);
     expect((await query('{ announcements { id title } }')).data).toEqual({
-      announcements: [{ id: '1', title: 'Welcome to Zazzles Exchange' }],
+      announcements: [{ id: '1', title: 'Welcome to VCX' }],
     });
   });
 
