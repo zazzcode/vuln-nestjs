@@ -181,7 +181,10 @@ export class ProfileResolver {
       throw new BadRequestException('The settings are not valid JSON');
     }
     const input = plainToInstance(UpdatePreferencesInput, parsed);
-    if (validateSync(input).length > 0) {
+    if (
+      validateSync(input, { whitelist: true, forbidNonWhitelisted: true })
+        .length > 0
+    ) {
       throw new BadRequestException(
         'The settings hold a property or a value the preferences do not accept',
       );

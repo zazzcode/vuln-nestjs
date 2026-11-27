@@ -19,7 +19,7 @@ export class AuthResolver {
 
   /** Open. Locks the account for a minute after five failures, and answers a wrong email and a wrong password the same way. */
   @Public()
-  @Query(() => AuthPayload)
+  @Mutation(() => AuthPayload)
   signIn(
     @Args('email') email: string,
     @Args('password') password: string,
