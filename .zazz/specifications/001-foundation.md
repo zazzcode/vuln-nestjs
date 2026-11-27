@@ -658,7 +658,7 @@ Session start protocol:
 Paste this into a fresh implementation session:
 
 ```text
-You are starting fresh in the worktree at /Users/michael/Dev/zazzcode/vuln-nestjs, on
+You are starting fresh in the root checkout of the repository, on
 branch phase-1-foundation. Your task is to implement Step 1 of vuln-nestjs, the scaffolding.
 
 Specification: .zazz/specifications/001-foundation.md
@@ -695,7 +695,7 @@ ORDER OF WORK
 VERIFIER SUB-AGENT
 After your own DoD checklist is green, dispatch a fresh sub-agent:
 
-  "You are verifying Step 1 of vuln-nestjs in /Users/michael/Dev/zazzcode/vuln-nestjs on
+  "You are verifying Step 1 of vuln-nestjs in its root checkout, on
   branch phase-1-foundation. Read AGENTS.md and the specification at
   .zazz/specifications/001-foundation.md. For each acceptance criterion AC1 to AC19,
   independently verify it by running the cited test or command. Confirm with
