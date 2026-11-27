@@ -57,7 +57,12 @@ function subgraphsOf(environment: Environment) {
               const subgraph = subgraphs.find(
                 (candidate) => candidate.name === name,
               ) as (typeof subgraphs)[number];
-              return new SubgraphDataSource(subgraph.name, subgraph.url, http2);
+              return new SubgraphDataSource(
+                subgraph.name,
+                subgraph.url,
+                http2,
+                environment.INTERNAL_SERVICE_TOKEN,
+              );
             },
           },
         };
