@@ -1,5 +1,11 @@
 import { Body, Controller, HttpCode, Post, Put } from '@nestjs/common';
-import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+} from 'class-validator';
 import {
   CurrentUser,
   type TokenPayload,
@@ -11,7 +17,9 @@ import { AvatarClient } from './avatar.client.js';
 export class UpdateProfileDto {
   @IsOptional()
   @IsString()
-  @MaxLength(80)
+  @Matches(/^[a-zA-Z0-9_ ]{1,80}$/, {
+    message: 'A display name is 1 to 80 letters, digits, underscores or spaces',
+  })
   displayName?: string;
 
   @IsOptional()
