@@ -674,6 +674,517 @@
             "url": "{{notificationsUrl}}/internal/announcements/2/html"
           },
           "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-003: the channel is off first",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the webhook channel is off on the row', () =>",
+                  "  pm.expect(body.data.setChannel.webhook).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation { setChannel(name: WEBHOOK, enabled: false) { email sms webhook } }\",\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-003: a path that reaches every object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('the path is accepted and walked', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test(\"the row's own channel did not move: the write went somewhere else\", () =>",
+                  "  pm.expect(body.data.setChannelByPath.webhook).to.eql(false));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($path: String!, $enabled: Boolean!) { setChannelByPath(path: $path, enabled: $enabled) { email sms webhook } }\",\n  \"variables\": {\n    \"path\": \"__proto__.webhook\",\n    \"enabled\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-003: the enum refuses the same value",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 400, the value cannot be coerced', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('refused as a channel name the enum does not have', () => {",
+                  "  pm.expect(body.errors).to.not.be.undefined;",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('BAD_USER_INPUT');",
+                  "  pm.expect(body.errors[0].message).to.contain('ChannelName');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($name: ChannelName!, $enabled: Boolean!) { setChannel(name: $name, enabled: $enabled) { webhook } }\",\n  \"variables\": {\n    \"name\": \"__proto__.webhook\",\n    \"enabled\": true\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PROTO-003: the typed input refuses both properties",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 400, the input cannot be coerced', () => pm.response.to.have.status(400));",
+                  "const body = pm.response.json();",
+                  "pm.test('refused as a property the input does not have', () => {",
+                  "  pm.expect(body.errors).to.not.be.undefined;",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('BAD_USER_INPUT');",
+                  "  pm.expect(body.errors[0].message).to.contain('path');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: ChannelsInput!) { setChannels(input: $input) { webhook } }\",\n  \"variables\": {\n    \"input\": {\n      \"path\": \"__proto__.webhook\",\n      \"enabled\": true\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INJECT-002: a label that forges a log line",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the label is stored as it was sent, newline and forged action in it', () =>",
+                  "  pm.expect(body.data.createLabeledAlert.label).to.eql('BTC above 70k\\n[admin] creditWallet u-bob amount=1000.00 status=ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($label: String!, $symbol: String!, $direction: AlertDirection!, $threshold: Decimal!) { createLabeledAlert(label: $label, symbol: $symbol, direction: $direction, threshold: $threshold) { id userId label } }\",\n  \"variables\": {\n    \"label\": \"BTC above 70k\\n[admin] creditWallet u-bob amount=1000.00 status=ok\",\n    \"symbol\": \"BTC-USD\",\n    \"direction\": \"ABOVE\",\n    \"threshold\": \"70000.00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "INJECT-002: the counterpart carries the same label as data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the same label is stored, carried inside a value', () =>",
+                  "  pm.expect(body.data.createAlert.label).to.eql('BTC above 70k\\n[admin] creditWallet u-bob amount=1000.00 status=ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($input: CreateAlertInput!) { createAlert(input: $input) { id userId label } }\",\n  \"variables\": {\n    \"input\": {\n      \"symbol\": \"BTC-USD\",\n      \"direction\": \"ABOVE\",\n      \"threshold\": \"70000.00\",\n      \"label\": \"BTC above 70k\\n[admin] creditWallet u-bob amount=1000.00 status=ok\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-006: another user's alerts by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test(\"Alice is answered Bob's alert by naming his id\", () => {",
+                  "  const alerts = body.data.alertsOf;",
+                  "  pm.expect(alerts).to.have.lengthOf(1);",
+                  "  pm.expect(alerts[0].userId).to.eql('u-bob');",
+                  "  pm.expect(alerts[0].symbol).to.eql('ETH-USD');",
+                  "  pm.expect(alerts[0].direction).to.eql('BELOW');",
+                  "  pm.expect(alerts[0].threshold).to.eql('3000.00');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($userId: ID!) { alertsOf(userId: $userId) { userId symbol direction threshold label } }\",\n  \"variables\": {\n    \"userId\": \"u-bob\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-006: the caller's own list",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('only the caller own alerts, and Bob is absent', () => {",
+                  "  const alerts = body.data.alerts;",
+                  "  pm.expect(alerts).to.have.lengthOf(1);",
+                  "  pm.expect(alerts[0].userId).to.eql('u-alice');",
+                  "  pm.expect(alerts.some((a) => a.userId === 'u-bob')).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ alerts { userId symbol } }\",\n  \"variables\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-006: the entity field refuses Alice on Bob's representation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('refused: the caller own user, or an administrator', () => {",
+                  "  pm.expect(body.errors).to.not.be.undefined;",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('FORBIDDEN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($representations: [_Any!]!) { _entities(representations: $representations) { ... on User { alerts { userId symbol } } } }\",\n  \"variables\": {\n    \"representations\": [\n      {\n        \"__typename\": \"User\",\n        \"id\": \"u-bob\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-006: Bob's own representation answers Bob",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test(\"Bob's own representation answers his alerts\", () => {",
+                  "  const entities = body.data._entities;",
+                  "  pm.expect(entities).to.have.lengthOf(1);",
+                  "  pm.expect(entities[0].alerts).to.have.lengthOf(1);",
+                  "  pm.expect(entities[0].alerts[0].userId).to.eql('u-bob');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($representations: [_Any!]!) { _entities(representations: $representations) { ... on User { alerts { userId symbol } } } }\",\n  \"variables\": {\n    \"representations\": [\n      {\n        \"__typename\": \"User\",\n        \"id\": \"u-bob\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     }

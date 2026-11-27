@@ -184,7 +184,7 @@ answers.
 | | Operation | What it does with the same path |
 | --- | --- | --- |
 | Vulnerable | `setChannelByPath` | Walks it as it was given: `__proto__.webhook` writes the prototype |
-| Counterpart 1 | `setChannel` | The channel is named by an enum; the path is not a name the enum has, `GRAPHQL_VALIDATION_FAILED` |
+| Counterpart 1 | `setChannel` | The channel is named by an enum; the path is not a name the enum has, `BAD_USER_INPUT` |
 | Counterpart 2 | `setChannels` | The input's properties are fixed; `path` and `enabled` are refused, `BAD_USER_INPUT` |
 
 **Scoped claim.** Each counterpart defeats this flaw for identical input:
@@ -206,6 +206,7 @@ property again before the next one runs:
   written, and in the service's process `UserSettingsEntity.prototype.webhook`
   is `true` while a plain object's is `undefined`: the write left the row.
 - **Counterpart 1:** the enum refuses the value by name
-  (`GRAPHQL_VALIDATION_FAILED`) and nothing is polluted.
+  (`BAD_USER_INPUT`: no `ChannelName` it has matches the path) and nothing
+  is polluted.
 - **Counterpart 2:** the input refuses both properties (`BAD_USER_INPUT`)
   and nothing is polluted.
