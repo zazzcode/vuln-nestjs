@@ -7,7 +7,7 @@
 - **Documentation model:** committed Markdown, reviewed through pull requests. Specifications are committed under `.zazz/specifications/`.
 - **Work tracker:** none. The build order and its state are in [`.zazz/project/implementation-plan.md`](.zazz/project/implementation-plan.md). The pull request is the review record.
 - **Branch policy:** one branch per deliverable, `phase-<n>-<slug>`, from its base; one pull request; opened as a draft with the deliverable's specification as its first commit. Commit and push to the feature branch only. Never commit to the base branch directly.
-- **Shared-file coordination:** each sub-agent writes only inside its own service directory (`apps/<service>/`). Everything shared belongs to the lead agent: `libs/`, `catalog/`, `tests/`, `postman/`, `scripts/`, the root configuration, this file. A sub-agent that needs a shared change stops and asks.
+- **Shared-file coordination:** each sub-agent writes only inside what is its own: its service directory (`apps/<service>/`), its folder of the API collections (`postman/<service>/`), its documentation modules under `docs/vulnerabilities/`, and its deliverable specification under `.zazz/specifications/`. Everything else shared belongs to the lead agent: `libs/`, `catalog/`, `tests/`, the Postman environment, `scripts/`, the root configuration, this file. A sub-agent makes two shared changes without asking, each by running a command and never by editing a file: `pnpm install`, after adding a dependency its specification names, which changes `pnpm-lock.yaml`, and `pnpm audit:update`, which rewrites `tests/expected-audit.json`. For anything else, it stops and asks.
 - **Operating model:** the application is a sample. It is started, preloaded with fake data, exercised, and shut down. Nothing persists.
 
 ## Read only what applies
@@ -25,7 +25,7 @@ Violating any of these is a bad change, however green the tests.
 1. **Never "fix" a vulnerable operation.** A test that proves a flaw stopped being exploitable is a regression: restore the flaw, do not weaken the test.
 2. **Never upgrade or remove a vulnerable dependency pin.** Every advisory in `tests/expected-audit.json` is a finding the dependency scanner must report.
 3. **A protected counterpart is a scoped claim.** "This pattern defeats this flaw for identical input" — never "secure in general".
-4. **Every vulnerable operation has a protected counterpart**, and the lab keeps about two safe operations for every vulnerable one.
+4. **Every vulnerable operation has a protected counterpart.** A safe operation that is nobody's counterpart exists where a flow, a test or a scenario needs it, not to reach a ratio. (The Project Owner decided this on 2026-11-26, asking for fewer safe routes so the lab is finished sooner. Each service specification records which it left out.)
 5. **Safety rails stay.** Loopback only, fake data, harmless markers (`42`, `zazzles-lab-marker`), no real credentials or files, no telemetry.
 6. **Services never call each other.** A flow that needs two services is two calls made by the client.
 7. **Generated ground truth is never hand-edited.** Re-snapshot in the same commit as the change that justifies it.
@@ -35,7 +35,23 @@ Violating any of these is a bad change, however green the tests.
 
 ## Repository commands
 
-Nothing can run yet. Step 1, the scaffolding, adds the application and records the commands in `docs/setup-and-testing.md`; the planned names are in the [repository layout](.zazz/architecture/repository-layout.md#5-root-scripts). Until that file exists, a change to this repository is a change to documentation.
+All from the root. Each was last run on 2026-11-26.
+
+| Command | What it does |
+| --- | --- |
+| `pnpm install --frozen-lockfile` | Installs exactly the lockfile. Refuses if a manifest changed without it. |
+| `pnpm build` | Builds every library and service into its `dist/`. |
+| `pnpm start` | Builds what is missing, starts the lab, prints its addresses, stops everything on Ctrl-C. |
+| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. |
+| `pnpm format`, `pnpm format:check` | Prettier over the repository. |
+| `pnpm test` | Unit tests: every workspace, then the root's own. |
+| `pnpm test:int` | Each service's integration tests, one service at a time. Starts a database engine. |
+| `pnpm test:e2e` | The whole lab as four processes. Uses ports 3000, 3101–3103 and the relays on 3201, 3202. |
+| `pnpm scenario:check`, `pnpm scenario:update` | Compares the scenario ground truth with the catalogue, or rewrites it. Never hand-edit `tests/expected-hashes.json` or `tests/expected-scanner-findings.json`. |
+| `pnpm audit:check`, `pnpm audit:update` | Compares the production audit with `tests/expected-audit.json`, or rewrites it. An advisory leaves only by name: `pnpm audit:update --retire <id>`. |
+| `pnpm audit:lab` | The raw production audit. A nonzero exit is the lab working, once it has its pins. |
+
+Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int` and `test:e2e` take every port of the lab.
 
 ## Local artifacts and skills
 
@@ -48,5 +64,6 @@ Nothing can run yet. Step 1, the scaffolding, adds the application and records t
 - NestJS 12 is ESM-only: relative imports end in `.js`, `__dirname` does not exist, and tests run on Vitest (`vi.fn()`, not `jest.fn()`).
 - `gateway`, `accounts` and `trading` use the Fastify adapter. `notifications` uses the Express adapter. A test creates an application with the adapter its service uses.
 - A service's tests start that service alone, with its own store. No other service runs.
+- `accounts` and `trading` speak HTTP/2 in cleartext, which curl, Postman, Newman and Burp cannot send. The launcher opens an HTTP/1.1 relay in front of each (`accounts` on 3201, `trading` on 3202) that carries each request to the service over HTTP/2 and changes nothing in it. In a test, reach a service over HTTP/1.1 through `lab.http1Url(service)`; never open a relay of your own.
 - NestJS Observe is not installed. If a scaffold or an upgrade adds it, remove it.
 - Every listener binds `127.0.0.1`. Every step that adds a listener or a database engine proves that the lab stops cleanly.
