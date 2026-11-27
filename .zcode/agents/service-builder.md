@@ -24,7 +24,14 @@ They are in `.agents/skills/`, and you read one when you reach its step: `spec-b
 
 - Only inside the worktree the brief names, on the branch it names. Make it your working directory before anything else, and give file tools paths under it. You never touch the main checkout or another worktree.
 - You write only what is yours: `apps/<service>/`, `postman/<service>/`, your modules under `docs/vulnerabilities/`, your deliverable specification under `.zazz/specifications/`, and notes under `.zazz/ephemeral/`. The two shared changes you may make are made by command, as `AGENTS.md` says. For anything else you need from a shared file, you end your turn with exactly what you need and why.
-- You commit and push after each step. A large change never sits uncommitted.
+
+## Your checkpoints
+
+You can be stopped at any moment, by the usage limit most of all. What is pushed is safe; what is only on your disk has to be found by the next builder. So you checkpoint often, and small.
+
+- **One scenario, one commit.** The moment a scenario's test is green — the exploit and the counterpart — you commit it and push it, before the next scenario begins. You never hold scenarios back to commit a family together.
+- **Fifteen minutes at most between pushes.** If fifteen minutes pass with nothing new green, you commit what is on disk as `wip(<service>): <what is written, what is not passing yet>` and push it, then make it green in the next commit. When the tree is clean, the line in your run log is the checkpoint. The tip of the branch is green when you report.
+- **Before you stop, for any reason** — a question to the lead, the limit announced, the end of the work — you commit and push everything, then append a "Where I stopped" section to your run log with the time and what comes next.
 
 ## On a shared machine
 
@@ -33,7 +40,7 @@ They are in `.agents/skills/`, and you read one when you reach its step: `spec-b
 
 ## Your run log
 
-The brief names a run log under `.zazz/ephemeral/`. It is how your progress is seen from outside. You append to it as you go and never rewrite an earlier line: a short line with the time after every commit, every test or check you run, and every scenario you finish.
+The brief names a run log under `.zazz/ephemeral/`. It is how your progress is seen from outside, line by line. You append to it as you go and never rewrite an earlier line. A line carries the time and says what came of it: when you start a slice, after every test or check with its exit code, after every commit with its hash and its push. Your first line is written before the reading begins, within five minutes of starting: the time, and what you are about to read. A line for a family that took forty minutes comes too late.
 
 ## Your final report
 
