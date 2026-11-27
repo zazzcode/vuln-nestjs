@@ -21,6 +21,8 @@ pnpm build
 
 Both exit 0. The first installs exactly what the lockfile says and refuses if a manifest changed without it. The second builds every library and service into its `dist/`. `pnpm start` builds anything that is missing by itself.
 
+Build before you lint, on a fresh checkout: a workspace's typecheck reads the built types of the libraries it uses. Continuous integration ran the two the other way round once, on 2026-11-26, and failed with `Cannot find module '@zazzles/exchange-config'` in two libraries.
+
 ## 3. Start, look, stop
 
 ```sh
@@ -182,7 +184,7 @@ All from the root of the repository. The counts are as at 2026-11-26, with the s
 
 | Command | What it proves | Exit |
 | --- | --- | --- |
-| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline | 0 |
+| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. After a build, on a fresh checkout | 0 |
 | `pnpm format:check` | Prettier over everything | 0 |
 | `pnpm test` | Unit tests beside the code: every workspace, then the root's own. 170 at the time of writing | 0 |
 | `pnpm test:int` | Each service's integration tests, one service at a time: the service starts alone, with its own store, and answers. Starts a database engine. 32 | 0 |

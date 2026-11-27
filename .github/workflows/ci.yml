@@ -1,6 +1,6 @@
 # Three jobs, as the testing strategy asks.
 #
-# test          everything that starts the lab: install, static, unit, integration, build,
+# test          everything that starts the lab: install, build, static, unit, integration,
 #               end to end, Newman. They share one cache of the two database binaries, so
 #               paying six installs to split them would gain nothing.
 # ground-truth  the scenario and the audit snapshots, against the catalogue and the registry.
@@ -25,7 +25,7 @@ permissions:
 
 jobs:
   test:
-    name: Install, static, unit, integration, build, end to end, Newman
+    name: Install, build, static, unit, integration, end to end, Newman
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -51,6 +51,11 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      # Before the lint: a workspace's typecheck reads the built types of the libraries it uses,
+      # so on a fresh checkout there is nothing to read until this has run.
+      - name: Build
+        run: pnpm build
+
       - name: Lint, with every workspace's typecheck
         run: pnpm lint
 
@@ -59,9 +64,6 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
-
-      - name: Build
-        run: pnpm build
 
       - name: Integration tests, each service alone
         run: pnpm test:int

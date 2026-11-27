@@ -116,7 +116,11 @@ export function useLab(): () => LabRun {
     }
 
     const reports = outboundReports(printed());
-    expect([...reports.keys()].sort()).toEqual([...SERVICES].sort());
+    const inOrder = (first: string, second: string) =>
+      first.localeCompare(second);
+    expect([...reports.keys()].sort(inOrder)).toEqual(
+      [...SERVICES].sort(inOrder),
+    );
     for (const service of SERVICES) {
       // The lab sends no telemetry and reads no metadata endpoint: it connects to this machine and to nothing else.
       expect(elsewhere(reports.get(service) as OutboundReport)).toEqual({

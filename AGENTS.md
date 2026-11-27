@@ -42,7 +42,7 @@ All from the root. Each was last run on 2026-11-26.
 | `pnpm install --frozen-lockfile` | Installs exactly the lockfile. Refuses if a manifest changed without it. |
 | `pnpm build` | Builds every library and service into its `dist/`. |
 | `pnpm start` | Builds what is missing, starts the lab, prints its addresses, stops everything on Ctrl-C. |
-| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. |
+| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. It reads the built types of the libraries, so on a fresh checkout `pnpm build` comes first. |
 | `pnpm format`, `pnpm format:check` | Prettier over the repository. |
 | `pnpm test` | Unit tests: every workspace, then the root's own. |
 | `pnpm test:int` | Each service's integration tests, one service at a time. Starts a database engine. |
