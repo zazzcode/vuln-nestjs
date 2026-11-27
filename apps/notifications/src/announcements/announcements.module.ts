@@ -8,6 +8,7 @@ import { AnnouncementsRepository } from './announcements.repository.js';
 import { AnnouncementsResolver } from './announcements.resolver.js';
 import { AnnouncementsService } from './announcements.service.js';
 import { AnnouncementsNotifyController } from './announcements-notify.controller.js';
+import { AnnouncementsSendController } from './announcements-send.controller.js';
 import { BroadcastAnnouncementResolver } from './broadcast-announcement.resolver.js';
 import { NotifierService } from './notifier.service.js';
 import { ViewsService } from './views.service.js';
@@ -25,6 +26,7 @@ import { ViewsService } from './views.service.js';
   ],
   controllers: [
     AnnouncementsNotifyController,
+    AnnouncementsSendController,
     AnnouncementByIdController,
     AnnouncementPageController,
   ],
