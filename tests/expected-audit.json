@@ -1,5 +1,27 @@
 {
   "advisories": {
+    "1089270": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__notifications>ejs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1089270,
+      "title": "ejs template injection vulnerability",
+      "module_name": "ejs",
+      "vulnerable_versions": "<3.1.7",
+      "patched_versions": ">=3.1.7",
+      "severity": "critical",
+      "cwe": "CWE-74",
+      "github_advisory_id": "GHSA-phwq-j96m-2c2q",
+      "url": "https://github.com/advisories/GHSA-phwq-j96m-2c2q"
+    },
     "1095073": {
       "findings": [
         {
@@ -87,6 +109,28 @@
       "cwe": "CWE-1321",
       "github_advisory_id": "GHSA-pmh2-wpjm-fj45",
       "url": "https://github.com/advisories/GHSA-pmh2-wpjm-fj45"
+    },
+    "1098366": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__notifications>ejs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1098366,
+      "title": "ejs lacks certain pollution protection",
+      "module_name": "ejs",
+      "vulnerable_versions": "<3.1.10",
+      "patched_versions": ">=3.1.10",
+      "severity": "moderate",
+      "cwe": "CWE-693, CWE-1321",
+      "github_advisory_id": "GHSA-ghr5-ch3p-vcr6",
+      "url": "https://github.com/advisories/GHSA-ghr5-ch3p-vcr6"
     },
     "1098617": {
       "findings": [
@@ -301,14 +345,14 @@
     "vulnerabilities": {
       "info": 0,
       "low": 0,
-      "moderate": 3,
+      "moderate": 4,
       "high": 8,
-      "critical": 2
+      "critical": 3
     },
-    "dependencies": 526,
+    "dependencies": 527,
     "devDependencies": 0,
     "optionalDependencies": 19,
-    "totalDependencies": 545
+    "totalDependencies": 546
   },
   "retired": []
 }

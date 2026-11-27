@@ -29,8 +29,12 @@ export class CreateAlertInput {
 /** A rule: the same comparison, from an input with no free-text field. */
 @InputType()
 export class RuleInput {
+  /**
+   * The only text field a rule has. It is stored and compared as a market
+   * name, never read as code, so it takes any length a label takes.
+   */
   @IsString()
-  @Length(1, 16)
+  @Length(1, 200)
   @Field()
   symbol: string;
 

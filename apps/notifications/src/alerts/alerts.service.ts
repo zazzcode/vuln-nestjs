@@ -69,6 +69,32 @@ export class AlertsService {
   }
 
   /**
+   * Stores a smart alert: an expression the caller wrote, run when the prices
+   * arrive. The structured rule it keeps beside the expression sits far from
+   * every reference price, so the expression alone decides when it crosses.
+   */
+  async createSmart(caller: string, expression: string): Promise<Alert> {
+    const stored = await this.repository
+      .insert([
+        {
+          userId: caller,
+          symbol: 'BTC-USD',
+          direction: 'ABOVE',
+          threshold: '999999.00',
+          label: 'smart alert',
+          expression,
+          enabled: true,
+        },
+      ])
+      .then(() => this.repository.findByUserId(caller));
+    const row = stored.at(-1);
+    if (row === undefined) {
+      throw new NotFoundException('The alert was not stored');
+    }
+    return toAlert(row);
+  }
+
+  /**
    * Deletes one of the caller's own alerts. Another user's alert is refused,
    * an unknown one is not found.
    */

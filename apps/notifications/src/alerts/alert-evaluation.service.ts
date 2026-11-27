@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AlertsRepository } from './alerts.repository.js';
 import { AlertEntity } from './alert.entity.js';
 import { AlertRule } from './alert-rule.js';
+import { evaluateExpression } from './smart-alert.evaluation.js';
 import { DeliveryService } from '../webhooks/delivery.service.js';
 import type { DeliveryEntity } from '../webhooks/delivery.entity.js';
 import { UserSettingsRepository } from '../settings/user-settings.repository.js';
@@ -36,6 +37,20 @@ export class AlertEvaluationService {
   }
 
   /**
+   * Whether one alert crossed: the structured rule, or — for an alert that
+   * has an expression — the smart evaluation, which is also given the row to
+   * rewrite. Whatever the expression did to the row is kept.
+   */
+  private async decidedCrossed(alert: AlertEntity, price: string) {
+    if (alert.expression === null) {
+      return this.crossed(alert, price);
+    }
+    const decided = Boolean(evaluateExpression(alert, price, alert.threshold));
+    await this.alerts.save(alert);
+    return decided;
+  }
+
+  /**
    * Every enabled alert whose threshold was crossed by the price of its
    * symbol produces one delivery to the owner's webhook URL, recorded
    * whatever happened. An alert whose symbol is not in `prices`, or that is
@@ -48,7 +63,7 @@ export class AlertEvaluationService {
     const records: DeliveryEntity[] = [];
     for (const alert of await this.alerts.findEnabled()) {
       const price = priceBySymbol.get(alert.symbol);
-      if (price === undefined || !this.crossed(alert, price)) {
+      if (price === undefined || !(await this.decidedCrossed(alert, price))) {
         continue;
       }
       await this.alerts.save({ id: alert.id, lastTriggeredAt: new Date() });

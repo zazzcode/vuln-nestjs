@@ -13,6 +13,7 @@ import { AlertsResolver } from './alerts.resolver.js';
 import { AlertsService } from './alerts.service.js';
 import { CreateAlertResolver } from './create-alert.resolver.js';
 import { CreateRuleAlertResolver } from './create-rule-alert.resolver.js';
+import { CreateSmartAlertResolver } from './create-smart-alert.resolver.js';
 import { DeleteAlertResolver } from './delete-alert.resolver.js';
 import { EvaluateAlertsResolver } from './evaluate-alerts.resolver.js';
 import { UserAlertsResolver } from './user-alerts.resolver.js';
@@ -34,6 +35,7 @@ import { UserWebhookUrlResolver } from './user-webhook-url.resolver.js';
     AlertsResolver,
     CreateAlertResolver,
     CreateRuleAlertResolver,
+    CreateSmartAlertResolver,
     DeleteAlertResolver,
     EvaluateAlertsResolver,
     UserAlertsResolver,
