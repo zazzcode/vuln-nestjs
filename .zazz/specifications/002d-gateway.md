@@ -139,9 +139,16 @@ Halt on: a change outside section 3; the service's tests that cannot pass.
 Order: section 9. Verify each AC with what it cites. Then write the report.
 ```
 
-## 13. Implementation and review change log
+## 13. Implementation and review changes
 
-*To be filled as the build deviates or finds something. GQL-007's subgraph half is recorded here in any case: each real subgraph must require `x-internal-token` on `_entities` and `_service` — see D-5.*
+Built 2026-11-27. Thirteen scenarios, thirteen safe endpoints of its own, the pass-through and the graph, each with its test passing and its documentation and request. What differs from the plan above:
+
+- **The base is `main`, not `phase-1-foundation`.** The lead brought the branch onto `main` three times during the build (`6d377ab`, `60adb5a`, `065a12c`), so the sibling services' files travel on the branch and the pull request is reviewed against `main`. Nothing of theirs is touched; the scope check is `git diff origin/main...HEAD --name-only`.
+- **GQL-002's test walks twelve levels, not twenty-five.** The seed gives every user two orders, so a twenty-five-deep document fans out past the test worker's heap. Twelve already walks thousands of entities; the flaw — no limit at any depth — is the same, and the hardened value stays five. The documentation module says so where it shows the document.
+- **GQL-007's subgraph half is the lead's, after this service's report.** Each real subgraph must require `x-internal-token` on `_entities` and `_service`, and refuse a call without it (403), while the gateway's fetches — composition included — present the token and so pass. The gateway's half is built (`subgraph-data.source.ts`); the tests prove both halves against stand-ins that play a subgraph that requires nothing (today's services) and one that requires the token.
+- **COOKIE-003's payload is a display name.** The specification's row says "a preference changes"; the real `PUT /internal/profile` of `accounts` carries a DTO whitelist (`forbidNonWhitelisted`), so a `theme` field is refused 400 end-to-end. The cross-site form posts `displayName=Cross site change` — a field the profile accepts, written on the cookie alone — and one payload is sent across the whole row, as section 8 requires.
+- **An object body crosses as `application/json`.** `InternalClientService.forward` serializes a parsed body to JSON whatever content type the caller's own request carried; it now declares the JSON it sends, so a form the edge accepted is carried to the service as the JSON object the edge parsed (found end-to-end: accounts parsed the JSON body as a form under the caller's content type and refused it).
+- **The collection's REDIR requests assert the landing, not the 302.** Newman follows redirects and the lead's runner does not switch that off, so the exploit request points `next` at the accounts service's own public health route — an origin no allowlist names — and its script asserts the answer it landed on is accounts'; the counterparts assert the caller landed on the edge's own status page. The dead-port marker (`http://127.0.0.1:4010/landing`) stays in the integration test and the documentation module. INFO-002's requests likewise assert what the running lab can show, with the failure path (message and stack) asserted by the integration test and shown in the module.
 
 ---
 
