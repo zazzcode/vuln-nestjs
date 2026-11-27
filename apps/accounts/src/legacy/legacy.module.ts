@@ -4,6 +4,7 @@ import { WhoAmIResolver } from './whoami.resolver.js';
 import { LegacyAuthResolver } from './legacy-auth.resolvers.js';
 import { LegacySessionsController } from './legacy-sessions.controller.js';
 import { UsersLookupResolver } from './users-lookup.resolver.js';
+import { UsersPreferencesResolver } from './users-preferences.resolver.js';
 import { UsersFilterController } from './users-filter.controller.js';
 import { PreferencesBulkResolver } from './preferences-bulk.resolver.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
@@ -18,6 +19,7 @@ import { AuthFeatureModule } from '../auth/auth.module.js';
     WhoAmIResolver,
     LegacyAuthResolver,
     UsersLookupResolver,
+    UsersPreferencesResolver,
     PreferencesBulkResolver,
   ],
   controllers: [LegacySessionsController, UsersFilterController],
