@@ -158,6 +158,254 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "GQL",
+      "item": [
+        {
+          "name": "GQL-001 introspection answers the whole graph to anyone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "const names = body.data.__schema.types.map((t) => t.name);",
+                  "pm.test('gained: every type of all three services, with no credential', () => {",
+                  "  pm.expect(names).to.include.members(['User', 'Order', 'Market', 'Announcement']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{gatewayUrl}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ __schema { types { name } } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-001 the GraphiQL IDE is served to a browser",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('served as HTML', () => pm.expect(pm.response.headers.get('content-type')).to.include('text/html'));",
+                  "pm.test('gained: the IDE itself', () => pm.expect(pm.response.text()).to.include('<title>GraphiQL</title>'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "text/html",
+                "type": "text"
+              }
+            ],
+            "url": "{gatewayUrl}/graphql"
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-002 a query nested far past any limit is answered with data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "let level = body.data.me;",
+                  "for (let walked = 0; walked < 12; walked++) {",
+                  "  level = level.orders[0].user;",
+                  "}",
+                  "pm.test('gained: data twelve levels deep, no limit stood in the way', () => {",
+                  "  pm.expect(level.id).to.eql('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{gatewayUrl}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { me { displayName orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id }}}}}}}}}}}}}}}}}}}}}}}} } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-003 one request carries an array of operations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const bodies = pm.response.json();",
+                  "pm.test('gained: an array of answers, one per operation', () => {",
+                  "  pm.expect(Array.isArray(bodies)).to.be.true;",
+                  "  pm.expect(bodies).to.have.lengthOf(3);",
+                  "  for (const body of bodies) pm.expect(body.data.__typename).to.eql('Query');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{gatewayUrl}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"query\": \"{ __typename }\"},\n  {\"query\": \"{ __typename }\"},\n  {\"query\": \"{ __typename }\"}\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-004 an error answers the server stack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 400 for the invalid field', () => pm.response.to.have.status(400));",
+                  "const error = pm.response.json().errors[0];",
+                  "pm.test('gained: the server stack in extensions.stacktrace', () => {",
+                  "  pm.expect(Array.isArray(error.extensions.stacktrace)).to.be.true;",
+                  "  pm.expect(error.extensions.stacktrace.length).to.be.above(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{gatewayUrl}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ me { nope } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-007 a direct _entities call reads any user by key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('gained: the administrator record by key, with no credential', () => {",
+                  "  pm.expect(body.data._entities[0]).to.eql({ id: 'u-admin', email: 'admin@vcx.exchange' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{accountsUrl}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($r: [_Any!]!) { _entities(representations: $r) { ... on User { id email } } }\",\n  \"variables\": {\n    \"r\": [\n      {\n        \"__typename\": \"User\",\n        \"id\": \"u-admin\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
