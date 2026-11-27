@@ -8,6 +8,8 @@ import { WalletEntity } from './wallet.entity.js';
 import { WalletOfResolver } from './wallet-of.resolver.js';
 import { WalletResolver } from './wallet.resolver.js';
 import { WalletsByUserResolver } from './wallets-by-user.resolver.js';
+import { PayoutResolver } from './payout.resolver.js';
+import { WithdrawResolver } from './withdraw.resolver.js';
 import { WalletsService } from './wallets.service.js';
 
 @Module({
@@ -20,6 +22,8 @@ import { WalletsService } from './wallets.service.js';
     DepositResolver,
     CreditWalletResolver,
     WalletOfResolver,
+    WithdrawResolver,
+    PayoutResolver,
   ],
   exports: [WalletsService],
 })
