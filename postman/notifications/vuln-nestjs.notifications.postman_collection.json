@@ -169,18 +169,8 @@
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
                   "pm.test('one attempt was made to the internal address', () =>",
                   "  pm.expect(body.data.testWebhook).to.include({ attempts: 1, url: pm.variables.get('notificationsUrl') + '/internal/health' }));",
-                  "pm.test('the internal router answered, and the record read its answer back', () => {",
-                  "  pm.sendRequest({",
-                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
-                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
-                  "  }, (error, response) => {",
-                  "    pm.expect(error).to.be.undefined;",
-                  "    const records = response.json();",
-                  "    const record = records[records.length - 1];",
-                  "    pm.expect(record.url).to.contain('/internal/health');",
-                  "    pm.expect(record.responseBody).to.contain('Cannot POST /internal/health');",
-                  "  });",
-                  "});"
+                  "pm.test('the internal router answered the forged POST', () =>",
+                  "  pm.expect(body.data.testWebhook.lastError).to.contain('the receiver answered 404'));"
                 ]
               }
             }
@@ -209,6 +199,38 @@
                 }
               }
             }
+          },
+          "response": []
+        },
+        {
+          "name": "SSRF-001: the internal answer read back from the record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const records = pm.response.json();",
+                  "pm.test('the record holds the internal router own answer', () => {",
+                  "  const record = records[records.length - 1];",
+                  "  pm.expect(record.url).to.contain('/internal/health');",
+                  "  pm.expect(record.responseBody).to.contain('Cannot POST /internal/health');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/deliveries"
           },
           "response": []
         },
@@ -269,17 +291,8 @@
                   "const body = pm.response.json();",
                   "pm.test('the announcement is stored with the title as sent', () =>",
                   "  pm.expect(body.announcement.title).to.eql('Maintenance\"; echo zazzles-lab-marker; echo \"'));",
-                  "pm.test('the delivery record holds the planted command output', () => {",
-                  "  pm.sendRequest({",
-                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
-                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
-                  "  }, (error, response) => {",
-                  "    pm.expect(error).to.be.undefined;",
-                  "    const records = response.json();",
-                  "    const record = records[records.length - 1];",
-                  "    pm.expect(record.responseBody.split('\\n')).to.contain('zazzles-lab-marker');",
-                  "  });",
-                  "});"
+                  "pm.test('a record holds the planted command output on its own line', () =>",
+                  "  pm.expect(body.deliveries.some((record) => record.responseBody.split('\\n').includes('zazzles-lab-marker'))).to.be.true);"
                 ]
               }
             }
@@ -322,17 +335,8 @@
                   "pm.test('answers 200', () => pm.response.to.have.status(200));",
                   "const body = pm.response.json();",
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
-                  "pm.test('the record holds what curl printed for an option', () => {",
-                  "  pm.sendRequest({",
-                  "    url: pm.variables.get('notificationsUrl') + '/internal/deliveries',",
-                  "    header: { authorization: 'Bearer ' + pm.variables.get('accessToken') },",
-                  "  }, (error, response) => {",
-                  "    pm.expect(error).to.be.undefined;",
-                  "    const records = response.json();",
-                  "    const record = records[records.length - 1];",
-                  "    pm.expect(record.responseBody).to.contain('Usage: curl');",
-                  "  });",
-                  "});"
+                  "pm.test('curl was run and exited without asking for any URL', () =>",
+                  "  pm.expect(body.data.pingWebhook).to.include({ status: 'DELIVERED', attempts: 1 }));"
                 ]
               }
             }
@@ -361,6 +365,37 @@
                 }
               }
             }
+          },
+          "response": []
+        },
+        {
+          "name": "OS-002: what curl printed, read back from the record",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const records = pm.response.json();",
+                  "pm.test('the record holds curl own usage text', () => {",
+                  "  const record = records[records.length - 1];",
+                  "  pm.expect(record.responseBody).to.contain('Usage: curl');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/deliveries"
           },
           "response": []
         }
