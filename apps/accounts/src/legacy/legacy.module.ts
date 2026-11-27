@@ -12,14 +12,16 @@ import { PreferencesPathResolver } from './preferences-path.resolver.js';
 import { UsersFilterController } from './users-filter.controller.js';
 import { LegacyProfileController } from './legacy-profile.controller.js';
 import { LegacyMeController } from './legacy-me.controller.js';
+import { LegacyDocumentsController } from './legacy-documents.controller.js';
 import { PreferencesBulkResolver } from './preferences-bulk.resolver.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
 import { UsersModule } from '../users/users.module.js';
 import { AuthFeatureModule } from '../auth/auth.module.js';
+import { DocumentsModule } from '../documents/documents.module.js';
 
 /** The legacy token path: the aliases and endpoints the old clients still call. */
 @Module({
-  imports: [SessionsModule, UsersModule, AuthFeatureModule],
+  imports: [SessionsModule, UsersModule, AuthFeatureModule, DocumentsModule],
   providers: [
     LegacyTokenGuard,
     WhoAmIResolver,
@@ -37,6 +39,7 @@ import { AuthFeatureModule } from '../auth/auth.module.js';
     UsersFilterController,
     LegacyProfileController,
     LegacyMeController,
+    LegacyDocumentsController,
   ],
 })
 export class LegacyModule {}
