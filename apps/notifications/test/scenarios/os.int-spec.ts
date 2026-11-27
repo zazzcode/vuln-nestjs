@@ -1,4 +1,7 @@
 import { ExpressAdapter } from '@nestjs/platform-express';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import {
   graphql,
   request,
@@ -18,6 +21,7 @@ const SERVICE_TOKEN = runSecret();
 
 let service: ServiceHandle;
 let receiver: WebhookReceiver;
+let markerDirectory: string;
 const admin = () =>
   sessionToken(JWT_SECRET, { sub: 'u-admin', sid: 's', role: 'ADMIN' });
 const alice = () =>
@@ -33,9 +37,11 @@ beforeAll(async () => {
   });
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
+  markerDirectory = await mkdtemp(path.join(tmpdir(), 'vcx-os-002-'));
 }, 300_000);
 
 afterAll(async () => {
+  await rm(markerDirectory, { recursive: true, force: true });
   await receiver?.close();
   await service?.stop();
 });
@@ -137,5 +143,72 @@ describe('OS-001: a title that reaches a shell', () => {
     const [record] = await aliceRecords();
     // The record holds the receiver's answer, not a command's output: no process ran.
     expect(record?.responseBody).toBe('{"received":true}');
+  });
+});
+
+describe('OS-002: an option where a URL was expected', () => {
+  // One attacker value: a config file curl is made to read, holding the marker.
+  let payloadUrl: string;
+
+  beforeAll(async () => {
+    const file = path.join(markerDirectory, 'marker.conf');
+    await writeFile(file, 'zazzles-lab-marker\n');
+    payloadUrl = `-K${file}`;
+  });
+
+  test('the exploit: pingWebhook makes curl read a file the caller named', async () => {
+    await reset();
+
+    const exploited = await query(
+      'mutation($url: String!) { pingWebhook(url: $url) { url status attempts lastError } }',
+      { token: alice(), variables: { url: payloadUrl } },
+    );
+
+    expect(exploited.errors).toBeUndefined();
+    expect(exploited.data).toMatchObject({
+      pingWebhook: { url: payloadUrl, attempts: 1 },
+    });
+    // The file's line came back: curl read the file at the path the caller chose.
+    expect(exploited.data).toMatchObject({
+      pingWebhook: { lastError: expect.stringContaining('zazzles-lab-marker') },
+    });
+  });
+
+  test('counterpart 1: previewWebhook refuses the value before any request', async () => {
+    await reset();
+
+    const refused = await query(
+      'mutation($url: String!) { previewWebhook(url: $url) { status lastError } }',
+      { token: alice(), variables: { url: payloadUrl } },
+    );
+
+    expect(refused.errors).toBeUndefined();
+    expect(refused.data).toMatchObject({
+      previewWebhook: {
+        status: 'FAILED',
+        lastError: expect.stringContaining('not an absolute http or https URL'),
+      },
+    });
+  });
+
+  test('counterpart 2: POST /internal/webhooks/test records the refusal, and nothing is sent', async () => {
+    await reset();
+
+    const response = await request(`${service.url}/internal/webhooks/test`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${alice()}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ url: payloadUrl }),
+    });
+
+    // A send-time refusal is a recorded delivery, not an error: nothing left the service.
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      url: payloadUrl,
+      status: 'FAILED',
+      lastError: expect.stringContaining('not an absolute http or https URL'),
+    });
   });
 });

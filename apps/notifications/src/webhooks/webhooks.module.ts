@@ -6,6 +6,7 @@ import { DeliveriesController } from './deliveries.controller.js';
 import { DeliveriesRepository } from './deliveries.repository.js';
 import { DeliveryService } from './delivery.service.js';
 import { OutboundGuardModule } from './outbound-guard.module.js';
+import { PingWebhookResolver } from './ping-webhook.resolver.js';
 import { PreviewWebhookResolver } from './preview-webhook.resolver.js';
 import { TestWebhookResolver } from './test-webhook.resolver.js';
 import { WebhookClientService } from './webhook-client.service.js';
@@ -22,6 +23,7 @@ import { WebhooksTestController } from './webhooks-test.controller.js';
     DeliveriesRepository,
     WebhookClientService,
     DeliveryService,
+    PingWebhookResolver,
     PreviewWebhookResolver,
     TestWebhookResolver,
   ],
