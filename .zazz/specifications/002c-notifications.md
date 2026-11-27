@@ -238,9 +238,9 @@ The outbound guard refuses in one of two places, and the record follows the plac
 
 ### D-8 — The JSON body parser is a NestJS middleware class registered in a module
 
-**Decision.** `JsonBodyMiddleware implements NestMiddleware`, which runs `express.json()`; a module applies it to the `/internal/*` routes with a `MiddlewareConsumer`. GraphQL parses its own body.
+**Decision.** `JsonBodyMiddleware implements NestMiddleware`, which runs `express.json()`. The application is created with `bodyParser: false` — in `main.ts` for the process, and in `test/support/service.ts`, the one place every test of this service starts it from — and `AppModule` applies the middleware with a `MiddlewareConsumer` to every route that receives a JSON body: the six `POST /internal/*` routes that take a `@Body()` (`alerts/import`, `alerts/import-url`, `alerts/fetch`, `webhooks/test`, `announcements/notify`, `announcements/send`) and `POST /graphql`. GraphQL does not parse its own body: Apollo reads what the framework parsed.
 
-**Why.** `main.ts` is not what a test runs: `startService` creates the application from the module. `app.use(express.json())` in `main.ts` would leave every REST test parsing bodies through Nest's default parser and the built service through another line of code. A middleware class is also one of the three Express idioms the service exists to show (ADR-006), and it is the one with a job to do.
+**Why.** `main.ts` is not what a test runs: `startService` creates the application from the module, so the two must agree on the options. `app.use(express.json())` in `main.ts` would leave every REST test parsing bodies through Nest's default parser and the built service through another line of code. The same failure sits one level deeper: with the default parser on, the middleware class is inert — Nest parses every JSON body first, whatever the `MiddlewareConsumer` lists — and the review of 2026-11-27 proved it was (with the registration deleted, all 84 integration tests stayed green). Turning the default parser off at both creation sites is what gives the middleware the job, and the proof runs both ways: with it off, deleting the registration fails 65 of the 84, the functional suite's `webhooks/test` case among them. A middleware class is also one of the three Express idioms the service exists to show (ADR-006), and it is the one with a job to do.
 
 ### D-9 — PROTO-003 is proved twice: on the prototype, and through a typed input
 
@@ -820,6 +820,19 @@ Where the harness offers no sub-agent, run that checklist yourself and say in th
 ## 13. Implementation And Review Change Log
 
 Accepted steering, QA/UAT findings, PR review feedback, or implementation-discovered issues that change the contract must update the affected sections above in place. This section records the audit trail; the current contract lives in the body of the specification.
+
+### 2026-11-27 — The JSON body middleware is made the service's real parser
+
+**Source.** The two-axis review of 2026-11-27 (standards axis, first finding): `JsonBodyMiddleware` was registered for five `/internal` routes but parsed nothing, because neither `main.ts` nor `startService` passed `bodyParser: false` and Nest's default parser parsed every JSON body first. The lead's `c6bd2cc` added `ServiceOptions.applicationOptions` so a test can create the application with the options its process uses; this entry closes the finding on top of it.
+
+**Changed sections.** [D-8](#d-8--the-json-body-parser-is-a-nestjs-middleware-class-registered-in-a-module); this entry.
+
+**Summary.**
+
+- **The middleware is the parser now.** `main.ts` and `apps/notifications/test/support/service.ts` — the one place every test of this service starts it from, all thirteen files routed through it — create the application with `bodyParser: false`. `AppModule` registers `JsonBodyMiddleware` for every route that receives a JSON body: the six `POST /internal/*` routes that take a `@Body()` (the five it had, plus `internal/announcements/send`, which the review found parsing through the default parser) and `graphql`. The explicit list was chosen over every route: each name is a route that takes a JSON body, and `POST /internal/lab/reset`, the one other `POST`, takes none.
+- **The GraphQL fact, corrected.** GraphQL does not parse its own body: with the default parser off and `graphql` unlisted, `POST /graphql` answers 400 "POST body missing" (the lead's measurement, and 65 failing tests here). Apollo reads what the framework parsed. The two comments that said otherwise — `json-body.middleware.ts` and `app.module.ts` — now say what is true.
+- **The proof, as built.** Before the change, deleting the middleware's registration left all 84 integration tests green: the middleware was inert. After it, the same deletion fails 65 of 84 (exit 1), among them "POST /internal/webhooks/test makes one guarded delivery, its JSON body parsed by the middleware" (`test/functional.int-spec.ts`), which is AC10's evidence; with the registration back, all 84 pass (exit 0).
+- **No route needs a body type other than JSON.** `POST /internal/lab/reset` takes no body, and under Newman (`pnpm test:api` on ports 4300 to 4312, exit 0) every REST and GraphQL request of the collection parsed.
 
 ### 2026-11-27 — The build's deviations, recorded at the finish
 

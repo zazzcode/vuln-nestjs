@@ -1,4 +1,3 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import { Logger } from '@nestjs/common';
 import {
   errorCode,
@@ -6,10 +5,9 @@ import {
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 import { AlertsRepository } from '../src/alerts/alerts.repository.js';
 import { WebhookReceiver } from './support/receiver.js';
 
@@ -30,11 +28,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   alerts = service.app.get(AlertsRepository);
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();

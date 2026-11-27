@@ -1,15 +1,13 @@
 import { createServer, type Server } from 'node:http';
 import { readFileSync } from 'node:fs';
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 
 // AC11: the three pins this service carries are reached at run time, and
 // each installed version is the one in the service's own node_modules.
@@ -59,11 +57,7 @@ function close(server: Server | undefined): Promise<void> {
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
 }, 300_000);
 
 afterAll(async () => {

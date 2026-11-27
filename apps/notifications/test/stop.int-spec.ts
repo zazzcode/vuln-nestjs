@@ -3,13 +3,8 @@ import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { connect } from 'node:net';
-import { ExpressAdapter } from '@nestjs/platform-express';
-import {
-  runSecret,
-  startService,
-  type ServiceHandle,
-} from '@zazzles/exchange-testing';
-import { AppModule } from '../src/app.module.js';
+import { runSecret, type ServiceHandle } from '@zazzles/exchange-testing';
+import { startNotificationsService } from './support/service.js';
 import { WebhookReceiver } from './support/receiver.js';
 import { StandInListener } from './support/stand-in.js';
 
@@ -58,11 +53,7 @@ async function stopEverything(): Promise<void> {
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
   standIn = await StandInListener.start();
