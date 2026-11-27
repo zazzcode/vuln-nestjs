@@ -384,7 +384,8 @@ describe('the safe operations, each doing what its row says', () => {
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('SameSite=Strict');
     expect(
-      ((await response.json()) as { accessToken: string }).accessToken,
+      ((await response.json()) as { accessToken: string }).accessToken
+        .split('.'),
     ).toHaveLength(3);
   });
 
