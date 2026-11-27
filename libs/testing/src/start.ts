@@ -2,7 +2,6 @@ import { INestApplication, Type } from '@nestjs/common';
 import { AbstractHttpAdapter, NestFactory } from '@nestjs/core';
 import {
   LOOPBACK_HOST,
-  type ServiceName,
   assertLoopbackListener,
 } from '@zazzles/exchange-config';
 import type { Server } from 'node:http';
@@ -32,13 +31,8 @@ export interface ServiceHandle {
   readonly url: string;
   /** The HTTP version of every request this listener has received, in order. */
   receivedHttpVersions(): readonly string[];
-  /** Stops the service. Throws if a database process or temporary directory it created remains. */
+  /** Stops the service, and throws if a database process or temporary directory it created remains. */
   stop(): Promise<void>;
-}
-
-/** A service that is running. `close` stops it; only `stop` also checks what it left behind. */
-interface Running extends ServiceHandle {
-  close(): Promise<void>;
 }
 
 /**
@@ -53,62 +47,21 @@ export async function startService(
   return startOne(options, healthPath, before);
 }
 
-/** The whole lab, started in this process. */
-export interface Lab {
-  readonly services: Record<ServiceName, ServiceHandle>;
-  /** The gateway: the only address a client uses. */
-  readonly url: string;
-  /** Stops the gateway, then the backend services. Throws if anything they created remains. */
-  stop(): Promise<void>;
-}
-
-export type LabServices = Record<ServiceName, ServiceOptions>;
-
-/** The gateway composes the graph at start, so the three backend services are healthy before it boots. */
-const START_ORDER: readonly ServiceName[] = [
-  'accounts',
-  'trading',
-  'notifications',
-  'gateway',
-];
-
-/** Starts the whole lab in the test process: backends first, each healthy before the next, then the gateway. */
-export async function startLab(options: LabServices): Promise<Lab> {
-  const before = await databaseFootprint();
-  const started = new Map<ServiceName, Running>();
-  const stop = async (): Promise<void> => {
-    for (const name of [...START_ORDER].reverse()) {
-      await started.get(name)?.close();
-    }
-    await assertFootprintGone(before);
-  };
-  try {
-    for (const name of START_ORDER) {
-      started.set(
-        name,
-        await startOne(
-          options[name],
-          name === 'gateway' ? GATEWAY_HEALTH_PATH : HEALTH_PATH,
-          before,
-        ),
-      );
-    }
-  } catch (error) {
-    await stop();
-    throw error;
-  }
-  const running = {} as Record<ServiceName, Running>;
-  for (const name of START_ORDER) {
-    running[name] = started.get(name) as Running;
-  }
-  return { services: running, url: running.gateway.url, stop };
-}
+/**
+ * There is deliberately no function here that starts the whole lab in this
+ * process. Nest's code-first GraphQL keeps every registered type in one
+ * storage per process, so two subgraphs in one process put two `User` types
+ * into it and the gateway cannot compose them: "Schema must contain uniquely
+ * named types but contains multiple types named User". A lab is four
+ * processes or nothing. The end-to-end suite starts them through the start
+ * command, `scripts/start.mjs`; a service's own tests start that service here.
+ */
 
 async function startOne(
   options: ServiceOptions,
   healthPath: string,
   before: DatabaseFootprint,
-): Promise<Running> {
+): Promise<ServiceHandle> {
   const app = await NestFactory.create(options.module, options.adapter(), {
     logger: ['error', 'warn'],
     abortOnError: false,
@@ -133,7 +86,6 @@ async function startOne(
     port: options.port,
     url,
     receivedHttpVersions: () => [...received],
-    close: () => app.close(),
     stop: async () => {
       await app.close();
       await assertFootprintGone(before);

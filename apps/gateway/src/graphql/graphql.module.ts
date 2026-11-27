@@ -12,6 +12,15 @@ import { Environment } from '../config/environment.js';
 import { BACKENDS, portOf } from '../config/ports.js';
 import { SubgraphDataSource } from './subgraph-data.source.js';
 
+/**
+ * `@apollo/gateway` collects facts about the machine it runs on (the operating
+ * system, the CPU, the memory, the cloud provider it detects) and exports them
+ * to Apollo every hour, unless it is told not to. The lab sends no telemetry.
+ * It is told not to here, in its own code and before anything constructs a
+ * gateway, so that this holds however the service is started.
+ */
+process.env.APOLLO_TELEMETRY_DISABLED = 'true';
+
 /** Every subgraph of the graph, on the port this gateway reaches it on. */
 function subgraphsOf(environment: Environment) {
   return BACKENDS.map((service) => ({

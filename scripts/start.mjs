@@ -189,6 +189,7 @@ export async function waitForHealth(
     environment = process.env,
     timeoutMs = HEALTH_TIMEOUT_MS,
     log = () => {},
+    signal,
   } = {},
 ) {
   const deadline = Date.now() + timeoutMs;
@@ -196,6 +197,9 @@ export async function waitForHealth(
   for (;;) {
     if (await isHealthy(service, environment)) {
       return;
+    }
+    if (signal?.aborted) {
+      throw new Error(`Interrupted while waiting for ${service.name}.`);
     }
     if (Date.now() > deadline) {
       throw new Error(
@@ -213,16 +217,44 @@ export async function waitForHealth(
 }
 
 /**
+ * @typedef {object} StopOutcome
+ * @property {string[]} forced The services that had to be killed instead of stopping.
+ * @property {{ processes: { pid: number, name: string }[], directories: string[] }} leftBehind Engine processes
+ *   and temporary directories that exist now and did not when the lab started.
+ */
+
+/**
+ * @typedef {object} LabOptions
+ * @property {string} [cwd] The repository. The built entry points are read from under it.
+ * @property {NodeJS.ProcessEnv} [environment] Where the ports come from.
+ * @property {{ write(line: string): unknown }} [output] Where each line a service prints goes, with its name in front.
+ * @property {(line: string) => void} [log] Where the launcher's own messages go.
+ * @property {string[]} [execArgv] Given to each service's Node, before its entry point. The end-to-end suite
+ *   loads a watch for outgoing connections that way.
+ * @property {AbortSignal} [signal] Aborting it abandons a start in progress: no further service is started,
+ *   and the start fails once the services started so far have stopped. What stopped them is the caller.
+ * @property {(stop: () => Promise<StopOutcome>) => void} [onStop] Called with the stop function before the first
+ *   service starts, so that a caller can be ready to be interrupted at any moment.
+ */
+
+/**
  * Starts the lab as four processes, in start order, each healthy before the
  * next. Stops everything if a service fails to come up. Returns the gateway's
- * address and a `stop` function that stops the gateway first, then checks that
- * nothing was left behind.
+ * address, the secrets of the run, the processes, what they printed, and a
+ * `stop` function that stops the gateway first, then checks that nothing was
+ * left behind.
+ *
+ * @param {LabOptions} [options]
+ * @returns {Promise<{ url: string, secrets: { JWT_SECRET: string, INTERNAL_SERVICE_TOKEN: string }, children: Map<string, import('node:child_process').ChildProcess>, printed: () => string, stop: () => Promise<StopOutcome> }>}
  */
 export async function startLab({
   cwd = repositoryRoot,
   environment = process.env,
   output = process.stdout,
   log = console.log,
+  execArgv = [],
+  signal,
+  onStop,
 } = {}) {
   const secrets = generateRunSecrets();
   const before = {
@@ -231,6 +263,7 @@ export async function startLab({
   };
   const children = new Map();
   const forced = [];
+  const printed = [];
 
   const stopOne = async (service) => {
     const child = children.get(service.name);
@@ -259,6 +292,11 @@ export async function startLab({
     // The gateway first: it is the one that talks to the others.
     for (const service of [...START_ORDER].reverse()) {
       await stopOne(service);
+      const child = children.get(service.name);
+      // A service killed without stopping has nothing more to say; one that stopped reports as it exits.
+      if (child && !forced.includes(service.name)) {
+        await Promise.race([drained(child), delay(STOP_GRACE_MS)]);
+      }
     }
     // A service that had to be killed could not stop its engine or remove its directory.
     const left = leftovers(before);
@@ -279,14 +317,29 @@ export async function startLab({
     return { forced, leftBehind: leftovers(before) };
   };
 
+  /** Resolves when nothing more will come from a service: it has exited and its output has been read to the end. */
+  const drained = (child) =>
+    Promise.all(
+      [child.stdout, child.stderr]
+        .filter((stream) => !stream.readableEnded)
+        .map((stream) => new Promise((resolve) => stream.once('end', resolve))),
+    );
+
+  // From here a caller can stop what has started, before anything has.
+  onStop?.(stop);
+
   try {
     for (const service of START_ORDER) {
+      // Interrupted while coming up: nothing more is started.
+      if (signal?.aborted) {
+        throw new Error('Interrupted before the lab was up.');
+      }
       log(
         `${service.name}: starting on 127.0.0.1:${portOf(service, environment)}`,
       );
       const child = spawn(
         process.execPath,
-        [path.join(cwd, 'apps', service.name, 'dist', 'main.js')],
+        [...execArgv, path.join(cwd, 'apps', service.name, 'dist', 'main.js')],
         {
           cwd,
           env: { ...environment, ...secrets },
@@ -294,6 +347,7 @@ export async function startLab({
         },
       );
       children.set(service.name, child);
+      // Each line a service prints is passed on with its name in front, and kept.
       for (const [stream, write] of [
         [child.stdout, output.write.bind(output)],
         [child.stderr, output.write.bind(output)],
@@ -303,7 +357,9 @@ export async function startLab({
         stream.on('data', (chunk) => {
           for (const part of chunk.split(/(?<=\n)/)) {
             if (part.endsWith('\n')) {
-              write(`${service.name} | ${line}${part}`);
+              const whole = `${service.name} | ${line}${part}`;
+              write(whole);
+              printed.push(whole);
               line = '';
             } else {
               line += part;
@@ -311,10 +367,13 @@ export async function startLab({
           }
         });
       }
-      await waitForHealth(service, { environment, log });
+      await waitForHealth(service, { environment, log, signal });
     }
   } catch (error) {
-    await stop();
+    // Interrupted: whoever aborted the signal stops the services, once. For any other failure, they are stopped here.
+    if (!signal?.aborted) {
+      await stop();
+    }
     throw error;
   }
   return {
@@ -322,6 +381,7 @@ export async function startLab({
     stop,
     secrets,
     children,
+    printed: () => printed.join(''),
   };
 }
 
@@ -345,33 +405,64 @@ async function main() {
     });
   }
 
-  const lab = await startLab();
-  console.log(
-    `\nThe lab is up, on loopback only. Stop it with Ctrl-C.\n  GraphQL   POST ${lab.url}/graphql\n  Health    GET  ${lab.url}/api/v1/health\n  Reset     POST ${lab.url}/api/v1/lab/reset\n`,
-  );
-
+  // Ready to be interrupted before anything starts. An interrupt that arrives while the lab is still
+  // coming up then stops whatever has started of it, instead of ending the launcher and leaving it.
+  const interrupt = new AbortController();
   let stopping = false;
+  let stop = async () => ({
+    forced: [],
+    leftBehind: { processes: [], directories: [] },
+  });
+
+  /** Ends the process once everything has stopped. 0 when the lab stopped as asked. */
+  const finish = (exitCode) => (outcome) => {
+    if (outcome.forced.length > 0) {
+      console.log(
+        `\nThe lab did not stop cleanly: ${outcome.forced.join(', ')} had to be killed.`,
+      );
+      console.log(
+        `What was left behind afterwards: ${JSON.stringify(outcome.leftBehind)}`,
+      );
+    }
+    process.exit(
+      outcome.forced.length > 0 || outcome.leftBehind.processes.length > 0
+        ? exitCode
+        : 0,
+    );
+  };
+
+  // A second interrupt while the lab is stopping changes nothing: the stop that began is the one that finishes.
   const stopWith = (exitCode) => {
+    if (stopping) {
+      return undefined;
+    }
+    stopping = true;
+    interrupt.abort();
+    return stop().then(finish(exitCode));
+  };
+  process.on('SIGINT', () => void stopWith(1));
+  process.on('SIGTERM', () => void stopWith(1));
+
+  let lab;
+  try {
+    lab = await startLab({
+      signal: interrupt.signal,
+      onStop: (real) => {
+        stop = real;
+      },
+    });
+  } catch (error) {
+    // Interrupted on the way up: the stop that began with the signal ends the process.
     if (stopping) {
       return;
     }
-    stopping = true;
-    return lab.stop().then((outcome) => {
-      if (outcome.forced.length > 0) {
-        console.log(
-          `\nThe lab did not stop cleanly: ${outcome.forced.join(', ')} had to be killed.`,
-        );
-        console.log(
-          `What was left behind afterwards: ${JSON.stringify(outcome.leftBehind)}`,
-        );
-      }
-      process.exit(
-        outcome.forced.length > 0 || outcome.leftBehind.processes.length > 0
-          ? exitCode
-          : 0,
-      );
-    });
-  };
+    console.error(error.message);
+    process.exit(1);
+  }
+
+  console.log(
+    `\nThe lab is up, on loopback only. Stop it with Ctrl-C.\n  GraphQL   POST ${lab.url}/graphql\n  Health    GET  ${lab.url}/api/v1/health\n  Reset     POST ${lab.url}/api/v1/lab/reset\n`,
+  );
 
   // A service that dies takes the lab with it: it is started again as a whole.
   for (const [name, child] of lab.children) {
@@ -381,14 +472,10 @@ async function main() {
         console.log(
           `\n${name} exited (${signal ?? code}): stopping the rest of the lab.`,
         );
-        void stopWith(1);
+        void stop().then(finish(1));
       }
     });
   }
-
-  // A second interrupt while the lab is stopping changes nothing: the stop that began is the one that finishes.
-  process.on('SIGINT', () => void stopWith(1));
-  process.on('SIGTERM', () => void stopWith(1));
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
