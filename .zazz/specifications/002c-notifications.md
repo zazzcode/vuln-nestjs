@@ -1,7 +1,7 @@
 # The `notifications` service — Deliverable Specification
 
 **Worktree / branch:** `/Users/michael/Dev/zazzcode/vuln-nestjs-wt/notifications` / `phase-2c-notifications`
-**Feature:** Zazzles Exchange, the deliberately vulnerable NestJS lab
+**Feature:** VCX, the deliberately vulnerable NestJS lab
 **Milestone:** M2 — The services
 **Deliverable:** Step 2c, the `notifications` service: price alerts, webhook deliveries and announcements
 **Project Owner:** @zazzcode
@@ -94,9 +94,9 @@ A test that proves a flaw stopped being exploitable is a regression: restore the
 
 "This pattern defeats this flaw for identical input". Never "secure in general". Every test, module and catalogue entry of this service says it that way.
 
-### INVARIANT 4 — Every vulnerable operation has a protected counterpart, and no safe operation exists for a ratio
+### INVARIANT 4 — Every vulnerable operation has a protected counterpart, and about one and a half safe operations for every vulnerable one
 
-The nine vulnerable operations have sixteen counterparts between them. The six other safe operations exist because a flow, a test or a scenario needs them ([D-2](#d-2--twenty-two-safe-operations-are-built-and-six-are-not)). The service specification's count of 29 is corrected to 22 in [§13](#13-implementation-and-review-change-log).
+[ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md), decided on 2026-11-27. The nine vulnerable operations have sixteen counterparts between them, and every one is built: where the counterparts alone are more than the ratio has room for, they are built and the ratio gives way, because the evidence for a scenario outranks the number. Of the safe operations that are no scenario's counterpart, only those a flow, a test or a scenario needs are built ([D-2](#d-2--twenty-two-safe-operations-are-built-and-six-are-not)); six more of the service specification's 28 exist for the ratio alone and are not built. What is left out is recorded in [D-2](#d-2--twenty-two-safe-operations-are-built-and-six-are-not) and [§13](#13-implementation-and-review-change-log).
 
 ### INVARIANT 5 — Safety rails stay
 
@@ -196,7 +196,7 @@ Each answers "why this over the obvious alternative?"
 | `GET /internal/announcements` | No | `announcements` (GraphQL) lists them. No scenario or test needs the REST list |
 | `POST /internal/announcements` | No | A REST create that sends through `execFile`: `broadcastAnnouncement` does the same and is the counterpart both scenarios name. XSS-001's setup uses `broadcastAnnouncement` |
 
-**Why.** The Project Owner decided on 2026-11-26 to reduce the number of safe routes so that the lab is finished sooner, and asked each service specification to record which it left out ([AGENTS.md, invariant 4](../../AGENTS.md)). The test applied to each is the one the lead agent gave: a flow, a test or a scenario. The four `User` fields and the two delivery reads are the only places the rule needed thought, and the table gives the reason for each.
+**Why.** [ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md) fixed the ratio at about one and a half safe operations for every vulnerable one: for this service's nine, about 14. The sixteen protected counterparts alone are above that, so all of them are built and the ratio gives way — the evidence for a scenario outranks the number. Of the safe operations that are nobody's counterpart, the most needed are built first; the test applied to each is the one the lead agent gave: a flow, a test or a scenario. Six of the service specification's 28 safe operations serve no flow, test or scenario, and are not built; [D-2](#d-2--twenty-two-safe-operations-are-built-and-six-are-not) records each. The four `User` fields and the two delivery reads are the only places the rule needed thought, and the table gives the reason for each.
 
 ### D-3 — One operation per file, on both sides
 
@@ -226,7 +226,7 @@ The outbound guard refuses in one of two places, and the record follows the plac
 
 ### D-6 — The signature key is derived from the run's `JWT_SECRET`
 
-**Decision.** `X-Zazzles-Signature` is `sha256=<hex>`, the HMAC-SHA256 of the raw body under a key derived once at start: the HMAC-SHA256 of the text `zazzles-exchange/webhook-signature` under `JWT_SECRET`.
+**Decision.** `X-VCX-Signature` is `sha256=<hex>`, the HMAC-SHA256 of the raw body under a key derived once at start: the HMAC-SHA256 of the text `vcx/webhook-signature` under `JWT_SECRET`.
 
 **Why.** The service specification fixes the header and the algorithm, not the key. A new required variable would change the launcher, which is shared and makes exactly two secrets; an optional one with a default would be a hard-coded secret, which is a scenario of another service, not a pattern of this baseline. Using the session secret directly would make one key protect two things. A derived key needs nothing new, is generated per run, and is in no source file.
 
@@ -272,11 +272,11 @@ The outbound guard refuses in one of two places, and the record follows the plac
 
 **Why.** The service specification's row says the operation answers "any user's alerts, and its webhook URL", and types the answer `[Alert!]!`, which has no field for a URL. Adding one changes a type the gateway composes, which is the Deliverable Owner's call ([OQ-1](#10-open-questions)). Built as typed, the scenario is whole in what it gains, another user's alerts, and one line of the resolver file away from the rest if the answer is yes.
 
-### D-14 — The pins are the second commit, and are reached by the code that follows them
+### D-14 — Each pin arrives with the first scenario family that reaches it
 
-**Decision.** The three pins are installed and the audit snapshot rewritten in the commit after this specification. Each is reached by a test and documented in this pull request before it is reported.
+**Decision.** The three pins are installed one at a time, each in the commit of the first scenario family whose code reaches it, never all at the start: `node-fetch` 2.6.6 with SSRF (`testWebhook` posts through the client with no guard), `ejs` 3.1.6 with DESER (`ejs.render` compiles the caller's body), `dot-prop` 4.1.0 with PROTO (`set` walks the caller's path). `pnpm audit:update` follows each install, so the snapshot never disagrees with the manifest in a commit. The safe baseline runs on the skeleton's current versions (`node-fetch` 2.7.0, `ejs` 3.1.10); the swap is part of the family's commit.
 
-**Why.** The lead agent's order of work puts the pins first, and the dependency document asks that a pin arrive with the code that reaches it, its test and its documentation. One pull request is one change; the commits inside it only have to come in an order a reviewer can follow.
+**Why.** The lead agent's order of work for this session: a pin lands with the code that reaches it, its test and its documentation, and the safe baseline stands on its own before any vulnerable operation is written. One pull request is one change; the commits inside it only have to come in an order a reviewer can follow.
 
 ---
 
@@ -376,7 +376,7 @@ Each is testable from its own text.
 - **AC2 — Four tables, the fake data, fixed identifiers.** The store holds `alerts`, `deliveries`, `announcements` and `user_settings`. At start and after reset: five alerts (ids 1 to 5, one per user of `labUsers` with a wallet, on five different markets, enabled), five settings rows (the same users, `webhookUrl` `http://127.0.0.1:4010/webhook/<name>`, every channel on), one announcement with plain text (id 1), no delivery. Verified by: `apps/notifications/test/store.int-spec.ts`.
 - **AC3 — A round trip to every table, and reset.** A row written through each repository is read back with the values written. After `POST /internal/lab/reset` with the service token every table holds exactly AC2's rows. Verified by: `store.int-spec.ts`, `app.int-spec.ts`.
 - **AC4 — The outbound guard.** Given a URL and the allowlist, the guard decides: the scheme is `http` or `https`; the origin, compared as a string, is on `WEBHOOK_ALLOWED_ORIGINS`; the host resolves to a loopback address. A URL that fails any one is refused with a reason that names the rule. The allowlist is compared before any name is resolved. Verified by: `apps/notifications/src/webhooks/outbound-guard.service.spec.ts`, a table of at least ten URLs.
-- **AC5 — The guarded client.** A delivery through the client is a `POST` with `content-type: application/json`, the body it was given and `X-Zazzles-Signature: sha256=<hex>` as in [D-6](#d-6--the-signature-key-is-derived-from-the-runs-jwt_secret). It follows no redirect: a 3xx is recorded `FAILED` with a reason that says so. It gives up after 5 seconds. Verified by: `test/functional.int-spec.ts`, `test/scenarios/ssrf.int-spec.ts`.
+- **AC5 — The guarded client.** A delivery through the client is a `POST` with `content-type: application/json`, the body it was given and `X-VCX-Signature: sha256=<hex>` as in [D-6](#d-6--the-signature-key-is-derived-from-the-runs-jwt_secret). It follows no redirect: a 3xx is recorded `FAILED` with a reason that says so. It gives up after 5 seconds. Verified by: `test/functional.int-spec.ts`, `test/scenarios/ssrf.int-spec.ts`.
 - **AC6 — A crossed alert produces one signed delivery.** With the receiver of [§7](#7-test-strategy) on 4010, `evaluateAlerts` with a price that crosses Alice's alert returns one delivery for it, `DELIVERED`, `attempts` 1, `url` her webhook URL. The receiver verifies the signature with the key of [D-6](#d-6--the-signature-key-is-derived-from-the-runs-jwt_secret) over the raw body. An alert that is not crossed, disabled, or whose symbol is not in `prices` produces none. Verified by: `test/functional.int-spec.ts`, `apps/notifications/src/alerts/alert-rule.spec.ts`.
 - **AC7 — Every protected counterpart does what its row says.** Each of the sixteen, and the logging interceptor, behaves as in the table of [§7](#7-test-strategy) "Protected counterparts". Verified by: `test/functional.int-spec.ts`.
 - **AC8 — Every vulnerable operation carries its marker and is exploitable.** Each of the nine has, on the line that is the weakness, a comment `// <ID> / <CWE>: …`. Each of the ten scenarios has a test that sends one payload to the vulnerable operation and to each counterpart: the exploit assertion names what was gained, the counterpart assertion names why it was refused. Verified by: the seven files of `test/scenarios/`.
@@ -535,11 +535,9 @@ Commit and push at the end of each phase.
 
 0.1. Commit it as the first commit of the branch. Push with `--set-upstream`. Open the draft: `gh pr create --draft --base phase-1-foundation --title "Phase 2c: notifications"`.
 
-**Phase 1: the pins (AC1)**
+**Phase 1: the pins, each with its family**
 
-1.1. `pnpm add --filter @zazzles/exchange-notifications --save-exact node-fetch@2.6.6 ejs@3.1.6 dot-prop@4.1.0`. Read its output: whether every version was installed as asked, and whether anything else changed.
-1.2. `pnpm audit:update`. Expect four advisories, all under `apps/notifications`.
-1.3. `pnpm audit:check`. Expect exit 0. `pnpm lint` and `pnpm build`. Expect exit 0: nothing uses the pins yet.
+The pins are not installed up front. Each arrives with the first scenario family that reaches it ([D-14](#d-14--each-pin-arrives-with-the-first-scenario-family-that-reaches-it)): `node-fetch` 2.6.6 with SSRF, `ejs` 3.1.6 with DESER, `dot-prop` 4.1.0 with PROTO. After each install, `pnpm audit:update` and `pnpm audit:check`; expect the advisories of that pin under `apps/notifications` and exit 0.
 
 **Phase 2: the store, the guard, the client (AC2 to AC6)**
 
@@ -823,7 +821,13 @@ Where the harness offers no sub-agent, run that checklist yourself and say in th
 
 Accepted steering, QA/UAT findings, PR review feedback, or implementation-discovered issues that change the contract must update the affected sections above in place. This section records the audit trail; the current contract lives in the body of the specification.
 
-No changes recorded. Delete this line when adding the first change-log entry.
+### 2026-11-27 — The specification revised before the build, on three points
+
+**Source.** The lead agent's brief for this session, carrying [ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md) (decided 2026-11-27, after this specification was drafted), the application's name, and the order the pins are installed in.
+
+**Changed sections.** The header's feature line; [§2, invariant 4](#2-invariants); [D-2](#d-2--twenty-two-safe-operations-are-built-and-six-are-not); [D-6](#d-6--the-signature-key-is-derived-from-the-runs-jwt_secret); [AC5](#6-acceptance-criteria); [D-14](#d-14--each-pin-arrives-with-the-first-scenario-family-that-reaches-it); the phases of [§8](#8-tdd-entry-point--prescriptive-execution-sequence).
+
+**Summary.** Invariant 4 and D-2 were written to the decision of 2026-11-26 ("no safe operation exists for a ratio") and now say what ADR-013 says: every vulnerable operation keeps its protected counterpart, the lab keeps about one and a half safe operations for every vulnerable one, and where the two disagree the counterpart is built and the ratio gives way. The counts do not change: 16 counterparts, 6 other safe operations a flow, a test or a scenario needs, 22 safe in all, 9 vulnerable, 10 scenarios. The application is named VCX, not by its old name: the header, the signature header (`X-VCX-Signature`) and the key derivation text (`vcx/webhook-signature`) of D-6 and AC5. The three pins are installed one at a time, each in the commit of the first scenario family that reaches it ([D-14](#d-14--each-pin-arrives-with-the-first-scenario-family-that-reaches-it)), not together after this specification.
 
 ### 2026-11-26 22:15 EST — The safe operations of the service specification, and which are built
 
