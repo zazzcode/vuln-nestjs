@@ -10,6 +10,7 @@ import { AlertsImportController } from './alerts-import.controller.js';
 import { AlertsImportUrlController } from './alerts-import-url.controller.js';
 import { AlertsRepository } from './alerts.repository.js';
 import { AlertsResolver } from './alerts.resolver.js';
+import { AlertsOfResolver } from './alerts-of.resolver.js';
 import { AlertsService } from './alerts.service.js';
 import { CreateAlertResolver } from './create-alert.resolver.js';
 import { CreateLabeledAlertResolver } from './create-labeled-alert.resolver.js';
@@ -34,6 +35,7 @@ import { UserWebhookUrlResolver } from './user-webhook-url.resolver.js';
     AlertEvaluationService,
     AlertsImportService,
     AlertsResolver,
+    AlertsOfResolver,
     CreateAlertResolver,
     CreateLabeledAlertResolver,
     CreateRuleAlertResolver,
