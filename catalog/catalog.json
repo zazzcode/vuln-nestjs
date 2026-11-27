@@ -436,5 +436,683 @@
     "documentation": "docs/vulnerabilities/trading-gql.md",
     "test": "apps/trading/test/scenarios/graph.int-spec.ts",
     "expectedFinding": true
+  },
+  {
+    "id": "AUTH-001",
+    "title": "A token signed with the published public key as an HMAC secret is accepted as the administrator",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-347",
+    "owasp": {
+      "top10": "A02",
+      "api": "API2"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "whoAmI",
+    "source": "apps/accounts/src/legacy/legacy-token.guard.ts",
+    "flow": "Authorization bearer token -> LegacyTokenGuard -> jwt.verify(token, key) with no algorithms -> an HS256 token signed with the published RSA public key verifies and its claims are believed",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.resolver.ts"],
+    "documentation": "docs/vulnerabilities/auth.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "AUTH-002",
+    "title": "A decoded token is treated as proof of identity",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-347",
+    "owasp": {
+      "top10": "A02",
+      "api": "API2"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/sessions/decoded",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "Authorization bearer token -> jwt.decode without verification -> the payload sub and role are answered as the caller",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/auth.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "AUTH-003",
+    "title": "The quick sign-in has no lockout, no rate limit, and logs the password",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-307",
+    "owasp": {
+      "top10": "A07",
+      "api": "API2"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "quickSignIn",
+    "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+    "flow": "five wrong passwords then the right one -> the mutation answers a token -> each attempt is logged with the password in clear text",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/auth.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "AUTH-004",
+    "title": "The legacy sign-out revokes nothing and the token keeps working",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-613",
+    "owasp": {
+      "top10": "A07",
+      "api": "API2"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "signOutLegacy",
+    "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+    "flow": "signOutLegacy answers true -> no session is marked revoked -> the same bearer token still authenticates",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/auth.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "AUTH-005",
+    "title": "The check-account answer differs for an account that exists",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-204",
+    "owasp": {
+      "top10": "A07",
+      "api": "API2"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "checkAccount",
+    "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+    "flow": "the email is looked up -> true or false is answered by existence -> registered addresses can be enumerated",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.resolver.ts"],
+    "documentation": "docs/vulnerabilities/auth.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CRYPTO-001",
+    "title": "The legacy sign-up stores the password as unsalted SHA-1",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-759",
+    "owasp": {
+      "top10": "A02"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "signUp",
+    "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+    "flow": "the password -> one sha1 digest with no salt -> $sha1$<digest> stored, identical for every caller of the same password",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/admin/admin.controller.ts"],
+    "documentation": "docs/vulnerabilities/crypto.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CRYPTO-002",
+    "title": "The legacy recovery code comes from Math.random and is returned in the answer",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-338",
+    "owasp": {
+      "top10": "A02"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "recoverPassword",
+    "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+    "flow": "the email -> a six-digit code drawn from Math.random -> the code is answered to the caller",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.resolver.ts"],
+    "documentation": "docs/vulnerabilities/crypto.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CRYPTO-003",
+    "title": "The committed fallback secret verifies legacy tokens",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-798",
+    "owasp": {
+      "top10": "A02"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "whoAmI, through LegacyTokenGuard",
+    "source": "apps/accounts/src/legacy/legacy-token.guard.ts",
+    "flow": "VCX_LEGACY_JWT_SECRET unset -> the committed LEGACY_FALLBACK_SECRET verifies and signs -> anyone who reads the repository mints tokens",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.resolver.ts"],
+    "documentation": "docs/vulnerabilities/crypto.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "COOKIE-001",
+    "title": "The token route sets the session cookie without HttpOnly",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1004",
+    "owasp": {
+      "top10": "A05"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/sessions/token",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "sign-in -> the access token itself is the cookie value -> no HttpOnly, so any script on the page reads it",
+    "safeControl": "apps/accounts/src/auth/auth.controller.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/cookie.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "COOKIE-002",
+    "title": "The remember cookie lives thirty days with no SameSite",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1275",
+    "owasp": {
+      "top10": "A05"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/sessions/remember",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "the remember sign-in -> max-age 2592000 and no SameSite attribute -> every site request carries the cookie",
+    "safeControl": "apps/accounts/src/auth/auth.controller.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/cookie.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "DESER-001",
+    "title": "The remember cookie is unserialized by node-serialize, functions included",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-502",
+    "owasp": {
+      "top10": "A08"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/sessions/resume-legacy",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "the vcx_remember cookie -> serialize.unserialize -> a _$$ND_FUNC$$_ value becomes a function and runs in the service process",
+    "safeControl": "apps/accounts/src/auth/auth.controller.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/deser.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "INFO-001",
+    "title": "The legacy token route logs the password and the issued token",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-532",
+    "owasp": {
+      "top10": "A09",
+      "api": "API8"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/sessions/token",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "the credentials of the request -> a Logger call that interpolates the password and the token -> both are in the service output",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/info.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-005",
+    "title": "The password hash is a selectable field of the legacy record type",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-200",
+    "owasp": {
+      "top10": "A01",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "whoAmI: UserRecord",
+    "source": "apps/accounts/src/legacy/whoami.resolver.ts",
+    "flow": "any token -> whoAmI -> the stored passwordHash is selected and returned",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.resolver.ts"],
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "apps/accounts/test/scenarios/auth.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-001",
+    "title": "The legacy sign-in request body is the query filter",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-943",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/sessions",
+    "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+    "flow": "the parsed body -> the find filter -> operators included: $ne matches every account and the first one signs in",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/auth/auth.controller.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-002",
+    "title": "The console search forwards the caller JSON filter to find",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-943",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "findUsers(filter)",
+    "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+    "flow": "a user token -> filter {role: {$ne: \"USER\"}} -> every administrator document, password hash included",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.resolver.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-003",
+    "title": "The bracketed query string is parsed and used as the filter",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-943",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/users/filter",
+    "source": "apps/accounts/src/legacy/users-filter.controller.ts",
+    "flow": "?filter[role][$ne]=USER -> parseBrackets -> {role: {$ne: \"USER\"}} reaches the store",
+    "safeControl": "apps/accounts/src/users/users.controller.ts",
+    "safeControls": ["apps/accounts/src/users/users.controller.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-004",
+    "title": "The name search interpolates the text into $regex unescaped",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-943",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "findUsersByName(q)",
+    "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+    "flow": "the text -> {displayName: {$regex: q}} -> a pattern, not a name: \".*\" matches every user",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.resolver.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-005",
+    "title": "The caller names the sort and the projection of the user query",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-943",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "findUsers(sortBy, fields)",
+    "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+    "flow": "fields {passwordHash: 1} and sortBy \"passwordHash\" -> the store answers hash-only rows ordered by hash",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.resolver.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "MONGO-006",
+    "title": "The preferences document is the $set of the update",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-915",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "updatePreferencesAll(prefs)",
+    "source": "apps/accounts/src/legacy/preferences-bulk.resolver.ts",
+    "flow": "prefs {role: \"ADMIN\"} -> updateOne({_id}, {$set: prefs}) -> the caller writes its own role",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.resolver.ts"],
+    "documentation": "docs/vulnerabilities/mongo.md",
+    "test": "apps/accounts/test/scenarios/mongo.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-001",
+    "title": "The preferences lookup answers any account to any caller",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01",
+      "api": "API1"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "userPreferences(userId)",
+    "source": "apps/accounts/src/legacy/users-preferences.resolver.ts",
+    "flow": "a user token -> any userId -> that account's email and preferences, with no ownership check",
+    "safeControl": "apps/accounts/src/auth/auth.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.resolver.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/accounts/test/scenarios/crypto-access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-003",
+    "title": "A user's token creates an administrator's account",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-862",
+    "owasp": {
+      "top10": "A01",
+      "api": "API1"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "createUserAccount(input)",
+    "source": "apps/accounts/src/legacy/account-creation.resolver.ts",
+    "flow": "a user token -> no role check -> the input role ADMIN is written and the account exists",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/admin/admin.controller.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/accounts/test/scenarios/crypto-access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-004",
+    "title": "The legacy profile editor writes every property the body carries",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-915",
+    "owasp": {
+      "top10": "A01",
+      "api": "API3"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "PATCH /internal/profile",
+    "source": "apps/accounts/src/legacy/legacy-profile.controller.ts",
+    "flow": "the raw body {displayName, role} -> assigned onto the record property by property -> the caller writes its own role",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.controller.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/accounts/test/scenarios/crypto-access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-005",
+    "title": "The internal me route believes the x-user-id header",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-807",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/me",
+    "source": "apps/accounts/src/legacy/legacy-me.controller.ts",
+    "flow": "a local caller sets x-user-id -> the route answers the account it names -> the administrator profile with no token",
+    "safeControl": "apps/accounts/src/auth/auth.controller.ts",
+    "safeControls": ["apps/accounts/src/users/users.controller.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/accounts/test/scenarios/crypto-access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "RES-001",
+    "title": "The console export reads whatever limit the caller names",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-770",
+    "owasp": {
+      "top10": "A05",
+      "api": "API4"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "usersAll(limit)",
+    "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+    "flow": "limit 100000 -> accepted unbounded -> the store reads whatever the number names",
+    "safeControl": "apps/accounts/src/users/users.resolver.ts",
+    "safeControls": ["apps/accounts/src/users/users.controller.ts"],
+    "documentation": "docs/vulnerabilities/res.md",
+    "test": "apps/accounts/test/scenarios/proto-re-res.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "RE-001",
+    "title": "The display-name pattern backtracks exponentially on an almost-match",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1333",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "updateDisplayName(name)",
+    "source": "apps/accounts/src/legacy/display-name.resolver.ts",
+    "flow": "twenty-nine As and a ! -> /^([a-zA-Z0-9_ ]+)*$/ tries every grouping -> the event loop is held for seconds",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.controller.ts"],
+    "documentation": "docs/vulnerabilities/re.md",
+    "test": "apps/accounts/test/scenarios/proto-re-res.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "PROTO-002",
+    "title": "The notification settings string is parsed and deep-merged without checks",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1321",
+    "owasp": {
+      "top10": "A08"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "updateNotificationSettings(settings)",
+    "source": "apps/accounts/src/legacy/notification-settings.resolver.ts",
+    "flow": "the string parses with an own __proto__ key -> the merge follows it -> Object.prototype gains the key, and an omitted field elsewhere answers with its value",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.resolver.ts"],
+    "documentation": "docs/vulnerabilities/proto.md",
+    "test": "apps/accounts/test/scenarios/proto-re-res.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "PROTO-001",
+    "title": "The dotted preference path is walked without checks",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1321",
+    "owasp": {
+      "top10": "A08"
+    },
+    "service": "accounts",
+    "surface": "graphql",
+    "operation": "setPreferenceByPath(path, value)",
+    "source": "apps/accounts/src/legacy/preferences-path.resolver.ts",
+    "flow": "__proto__.theme -> the walk leaves the document -> Object.prototype.theme is set, and an omitted theme elsewhere answers with the value",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.resolver.ts"],
+    "documentation": "docs/vulnerabilities/proto.md",
+    "test": "apps/accounts/test/scenarios/proto-re-res.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "FS-001",
+    "title": "The console file route resolves the caller's name against the process directory",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-22",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/documents/file/:name",
+    "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+    "flow": "..%2F..%2Fpackage.json -> readFile(resolve(name)) -> any file the process can read, the repository manifest included",
+    "safeControl": "apps/accounts/src/documents/documents.controller.ts",
+    "safeControls": ["apps/accounts/src/documents/documents.controller.ts"],
+    "documentation": "docs/vulnerabilities/fs.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "FS-002",
+    "title": "The console upload stores the file under the caller's destination name",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-22",
+    "owasp": {
+      "top10": "A04"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/documents/legacy?name=",
+    "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+    "flow": "name=../outside-zazzles.txt -> joined to the documents directory unchecked -> the write lands outside the upload directory",
+    "safeControl": "apps/accounts/src/documents/documents.controller.ts",
+    "safeControls": ["apps/accounts/src/documents/documents.controller.ts"],
+    "documentation": "docs/vulnerabilities/fs.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "FS-003",
+    "title": "The console upload accepts any extension and any content type",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-434",
+    "owasp": {
+      "top10": "A04"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/documents/legacy",
+    "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+    "flow": "an .html part as text/html -> both stored as the uploader's word -> the upload becomes the payload of the next weakness",
+    "safeControl": "apps/accounts/src/documents/documents.controller.ts",
+    "safeControls": ["apps/accounts/src/documents/documents.controller.ts"],
+    "documentation": "docs/vulnerabilities/fs.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "XSS-002",
+    "title": "The stored upload is served inline with its stored content type",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-79",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/documents/file/:name/view",
+    "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+    "flow": "the FS-003 upload (marker.html, text/html) -> served inline as text/html, no attachment, no nosniff -> the script runs on the service's origin",
+    "safeControl": "apps/accounts/src/documents/documents.controller.ts",
+    "safeControls": ["apps/accounts/src/documents/documents.controller.ts"],
+    "documentation": "docs/vulnerabilities/xss.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "XSS-004",
+    "title": "A stored display name is rendered into the console page unescaped",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-79",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "GET /internal/admin/users-html",
+    "source": "apps/accounts/src/legacy/admin-html.controller.ts",
+    "flow": "a display name carrying <script> is stored -> the console page concatenates it into HTML -> the script reaches the administrator's browser",
+    "safeControl": "apps/accounts/src/admin/admin.controller.ts",
+    "safeControls": ["apps/accounts/src/admin/admin.controller.ts"],
+    "documentation": "docs/vulnerabilities/xss.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SSRF-002",
+    "title": "The avatar URL is fetched wherever it points, and redirects are followed",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-918",
+    "owasp": {
+      "top10": "A10",
+      "api": "API7"
+    },
+    "service": "accounts",
+    "surface": "rest",
+    "operation": "POST /internal/profile/avatar",
+    "source": "apps/accounts/src/legacy/legacy-avatar.controller.ts",
+    "flow": "the caller's URL -> fetch with node-fetch's default redirect following -> whatever listens on the machine's loopback is reached from inside",
+    "safeControl": "apps/accounts/src/profile/profile.resolver.ts",
+    "safeControls": ["apps/accounts/src/profile/profile.controller.ts"],
+    "documentation": "docs/vulnerabilities/ssrf.md",
+    "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
   }
 ]
