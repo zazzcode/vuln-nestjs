@@ -35,11 +35,12 @@ Violating any of these is a bad change, however green the tests.
 
 ## Repository commands
 
-All from the root. Each was last run on 2026-11-26.
+All from the root. Each was last run on 2026-11-26, the `git config` line on 2026-11-27.
 
 | Command | What it does |
 | --- | --- |
 | `pnpm install --frozen-lockfile` | Installs exactly the lockfile. Refuses if a manifest changed without it. |
+| `git config core.hooksPath .githooks` | Enables the pre-push hook, once per clone: lint, the format check and the unit tests must pass before a push leaves. |
 | `pnpm build` | Builds every library and service into its `dist/`. |
 | `pnpm start` | Builds what is missing, starts the lab, prints its addresses, stops everything on Ctrl-C. |
 | `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. It reads the built types of the libraries, so on a fresh checkout `pnpm build` comes first. |
@@ -54,7 +55,7 @@ All from the root. Each was last run on 2026-11-26.
 
 Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int`, `test:e2e` and `test:api` take every port of the lab; to run one of them anyway, move the lab with the start command's variables (`GATEWAY_PORT`, `ACCOUNTS_PORT`, `TRADING_PORT`, `NOTIFICATIONS_PORT`, `ACCOUNTS_RELAY_PORT`, `TRADING_RELAY_PORT`). While a builder runs database tests on the same machine, do not run those three: the end-to-end suite can hang, and the stop check compares the whole machine. CI is the evidence for them.
 
-Before a push, a pre-push hook runs `pnpm lint` and `pnpm format:check` and refuses the push when either fails. Enable it once per clone, because Git does not commit that setting: `git config core.hooksPath .githooks`. CI runs on every push of a branch that has a pull request, draft or not, and each red run is mail to the owner.
+**Nothing red is pushed.** A pre-push hook, `.githooks/pre-push`, runs `pnpm lint` (oxlint with type awareness and every workspace's typecheck, test files included), `pnpm format:check` and `pnpm test` before a push leaves the clone, and refuses the push while any issue they report stands. Fix the issue first: `git push --no-verify` is not used in this repository. Enable the hook once per clone, because Git does not commit that setting: `git config core.hooksPath .githooks`. CI runs on every push of a branch that has a pull request, draft or not, and each red run is mail to the owner.
 
 ## Local artifacts and skills
 

@@ -1,19 +1,20 @@
 #!/bin/sh
-# Runs before a push leaves this working tree.
-#
-# CI runs on every push of a branch that has a pull request, and a red run is
-# a mail to the owner. So a tree that fails the static checks is not pushed:
-# the first builder that pushed without running them (2026-11-27) left a
-# branch red on a promise left floating and two files out of format.
+# Runs before a push leaves this working tree: lint, the format check and the
+# unit tests. CI runs on every push of a branch that has a pull request, and a
+# red run is a mail to the owner. An issue these report is fixed before the
+# push, never pushed past: `git push --no-verify` is not used in this
+# repository.
 #
 # Enabled once per clone, because the setting is not committed:
 #
 #   git config core.hooksPath .githooks
 #
 # `pnpm lint` reads the libraries' built types: on a fresh checkout, run
-# `pnpm build` first.
+# `pnpm build` first. The integration tests are not here: they start database
+# engines and take the service's port, which a builder's own run may hold.
 set -e
 
-echo "pre-push: pnpm lint, then pnpm format:check" >&2
+echo "pre-push: pnpm lint, pnpm format:check, pnpm test" >&2
 pnpm lint >&2
 pnpm format:check >&2
+pnpm test >&2
