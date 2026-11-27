@@ -821,6 +821,14 @@ Where the harness offers no sub-agent, run that checklist yourself and say in th
 
 Accepted steering, QA/UAT findings, PR review feedback, or implementation-discovered issues that change the contract must update the affected sections above in place. This section records the audit trail; the current contract lives in the body of the specification.
 
+### 2026-11-27 — The service is finished on a second branch, cut from `main`
+
+**Source.** The Project Owner merged pull request #5 at 17:37 on 2026-11-27, unfinished, and its remote branch was deleted. The lead agent cut `phase-2c-notifications-finish` from `main` (`2bfd51c`) at 17:49 for this session to finish the service on, with a new draft pull request against `main`.
+
+**Changed sections.** None in the body; this entry. The branch named in the header and in [§5](#5-agent-implementation-rules) is read as `phase-2c-notifications-finish`, and the scope check of [AC16](#6-acceptance-criteria) is read against `origin/main` (`git diff origin/main...HEAD --name-only`), not against `421d2a4`, which [§3](#3-scope) names: `main` now holds the files of trading and accounts beside this service's, and theirs are not this branch's to touch.
+
+**Summary.** Eight of the ten scenarios were merged through #5 with the safe baseline, the store, the seed, the outbound guard, the signed client, the evaluation, three pins and their advisories. The rest of the service — INJECT-002, ACCESS-006, `test/pins.int-spec.ts`, `test/stop.int-spec.ts`, the documentation modules `proto.md`, `inject.md` and ACCESS-006 in `access.md`, the Postman requests and catalogue entries of PROTO, INJECT and ACCESS, this change log, the pull request body and the report — is delivered on `phase-2c-notifications-finish`.
+
 ### 2026-11-27 — The specification revised before the build, on three points
 
 **Source.** The lead agent's brief for this session, carrying [ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md) (decided 2026-11-27, after this specification was drafted), the application's name, and the order the pins are installed in.
