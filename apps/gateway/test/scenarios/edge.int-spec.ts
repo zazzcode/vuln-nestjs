@@ -82,4 +82,52 @@ describe('the edge scenarios', () => {
     expect(response.headers.location).toBe('/api/v1/status');
     expect(response.headers.location).not.toContain('4010');
   });
+
+  // XSS-003 — the caller's name is written into the page as it arrived.
+  const MARKER =
+    '<img src=x onerror="window.__zazzles=\'zazzles-lab-marker\'">';
+
+  test('XSS-003: the public status page serves the name unescaped, as text/html', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/v1/public/status?name=${encodeURIComponent(MARKER)}`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.headers['content-type']).toContain('text/html');
+    // What was gained: the marker is served as markup, in a page with no CSP —
+    // a browser that opens the link runs the script the caller sent.
+    expect(response.body).toContain(MARKER);
+    expect(response.body).not.toContain('&lt;img');
+  });
+
+  test('XSS-003 counterpart 1: the default-scope status page escapes the same name', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/v1/status?name=${encodeURIComponent(MARKER)}`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    // Refused by the template: the same name arrives as data, escaped, in a
+    // page that also carries a CSP.
+    expect(response.body).not.toContain(MARKER);
+    expect(response.body).toContain('&lt;img src=x');
+    expect(response.headers['content-security-policy']).toBe(
+      "default-src 'self'",
+    );
+  });
+
+  test('XSS-003 counterpart 2: status.json answers JSON with nosniff', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: `/api/v1/status.json?name=${encodeURIComponent(MARKER)}`,
+    });
+
+    expect(response.statusCode).toBe(200);
+    // Refused twice over: JSON is not a document to run markup in, and
+    // `nosniff` keeps a browser from reading it as one.
+    expect(response.headers['content-type']).toContain('application/json');
+    expect(response.headers['x-content-type-options']).toBe('nosniff');
+    expect(response.json().caller).toBe(MARKER);
+  });
 });
