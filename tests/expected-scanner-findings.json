@@ -3,6 +3,29 @@
   "scopeNote": "Per-source expectations for scanner evaluations. expectedFinding=true rows must be flagged (a miss is a false negative). expectedFinding=false rows are scoped claims: the file should NOT be flagged for the listed CWE, the flaw it is the registered safe control for; findings for unrelated issues are out of scope for this lab. Regenerate with: pnpm scenario:update",
   "sources": [
     {
+      "id": "ACCESS-001",
+      "source": "apps/accounts/src/legacy/users-preferences.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-001-safeControl",
+      "controlFor": "ACCESS-001",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-001-safeControl",
+      "controlFor": "ACCESS-001",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
       "id": "ACCESS-002",
       "source": "apps/trading/src/orders/order-details.resolver.ts",
       "expectedFinding": true,
@@ -15,6 +38,75 @@
       "source": "apps/trading/src/orders/orders.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-003",
+      "source": "apps/accounts/src/legacy/account-creation.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-003-safeControl",
+      "controlFor": "ACCESS-003",
+      "source": "apps/accounts/src/admin/admin.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-003-safeControl",
+      "controlFor": "ACCESS-003",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-004",
+      "source": "apps/accounts/src/legacy/legacy-profile.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-004-safeControl",
+      "controlFor": "ACCESS-004",
+      "source": "apps/accounts/src/profile/profile.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-004-safeControl",
+      "controlFor": "ACCESS-004",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-005",
+      "source": "apps/accounts/src/legacy/legacy-me.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-807",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-005-safeControl",
+      "controlFor": "ACCESS-005",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-807",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-005-safeControl",
+      "controlFor": "ACCESS-005",
+      "source": "apps/accounts/src/users/users.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-807",
       "scanner": "SAST"
     },
     {
@@ -110,6 +202,328 @@
       "scanner": "SAST"
     },
     {
+      "id": "AUTH-001",
+      "source": "apps/accounts/src/legacy/legacy-token.guard.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-001-safeControl",
+      "controlFor": "AUTH-001",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-001-safeControl",
+      "controlFor": "AUTH-001",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-002",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-002-safeControl",
+      "controlFor": "AUTH-002",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-002-safeControl",
+      "controlFor": "AUTH-002",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-347",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-003",
+      "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-307",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-003-safeControl",
+      "controlFor": "AUTH-003",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-307",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-003-safeControl",
+      "controlFor": "AUTH-003",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-307",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-004",
+      "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-613",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-004-safeControl",
+      "controlFor": "AUTH-004",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-613",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-004-safeControl",
+      "controlFor": "AUTH-004",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-613",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-005",
+      "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-204",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-005-safeControl",
+      "controlFor": "AUTH-005",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-204",
+      "scanner": "SAST"
+    },
+    {
+      "id": "AUTH-005-safeControl",
+      "controlFor": "AUTH-005",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-204",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-001",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1004",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-001-safeControl",
+      "controlFor": "COOKIE-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1004",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-001-safeControl",
+      "controlFor": "COOKIE-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1004",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-002",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1275",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-002-safeControl",
+      "controlFor": "COOKIE-002",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1275",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-002-safeControl",
+      "controlFor": "COOKIE-002",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1275",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-001",
+      "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-759",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-001-safeControl",
+      "controlFor": "CRYPTO-001",
+      "source": "apps/accounts/src/admin/admin.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-759",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-001-safeControl",
+      "controlFor": "CRYPTO-001",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-759",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-002",
+      "source": "apps/accounts/src/legacy/legacy-auth.resolvers.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-338",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-002-safeControl",
+      "controlFor": "CRYPTO-002",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-338",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-002-safeControl",
+      "controlFor": "CRYPTO-002",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-338",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-003",
+      "source": "apps/accounts/src/legacy/legacy-token.guard.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-798",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-003-safeControl",
+      "controlFor": "CRYPTO-003",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-798",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CRYPTO-003-safeControl",
+      "controlFor": "CRYPTO-003",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-798",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-001",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-502",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-001-safeControl",
+      "controlFor": "DESER-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-502",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-001-safeControl",
+      "controlFor": "DESER-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-502",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-001",
+      "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-001-safeControl",
+      "controlFor": "FS-001",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-001-safeControl",
+      "controlFor": "FS-001",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-002",
+      "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-002-safeControl",
+      "controlFor": "FS-002",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-002-safeControl",
+      "controlFor": "FS-002",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-003",
+      "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-434",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-003-safeControl",
+      "controlFor": "FS-003",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-434",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-003-safeControl",
+      "controlFor": "FS-003",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-434",
+      "scanner": "SAST"
+    },
+    {
       "id": "FS-004",
       "source": "apps/trading/src/reports/reports-files.controller.ts",
       "expectedFinding": true,
@@ -122,6 +536,29 @@
       "source": "apps/trading/src/reports/reports.controller.ts",
       "expectedFinding": false,
       "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-005",
+      "source": "apps/accounts/src/legacy/whoami.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-005-safeControl",
+      "controlFor": "GQL-005",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-005-safeControl",
+      "controlFor": "GQL-005",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-200",
       "scanner": "SAST"
     },
     {
@@ -145,6 +582,29 @@
       "source": "apps/trading/src/orders/place-order.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INFO-001",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-532",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INFO-001-safeControl",
+      "controlFor": "INFO-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-532",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INFO-001-safeControl",
+      "controlFor": "INFO-001",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-532",
       "scanner": "SAST"
     },
     {
@@ -275,6 +735,236 @@
       "source": "apps/trading/src/orders/settle-order.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-362",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-001",
+      "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-001-safeControl",
+      "controlFor": "MONGO-001",
+      "source": "apps/accounts/src/auth/auth.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-001-safeControl",
+      "controlFor": "MONGO-001",
+      "source": "apps/accounts/src/auth/auth.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-002",
+      "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-002-safeControl",
+      "controlFor": "MONGO-002",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-002-safeControl",
+      "controlFor": "MONGO-002",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-003",
+      "source": "apps/accounts/src/legacy/users-filter.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-003-safeControl",
+      "controlFor": "MONGO-003",
+      "source": "apps/accounts/src/users/users.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-003-safeControl",
+      "controlFor": "MONGO-003",
+      "source": "apps/accounts/src/users/users.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-004",
+      "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-004-safeControl",
+      "controlFor": "MONGO-004",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-004-safeControl",
+      "controlFor": "MONGO-004",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-005",
+      "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-005-safeControl",
+      "controlFor": "MONGO-005",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-005-safeControl",
+      "controlFor": "MONGO-005",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-943",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-006",
+      "source": "apps/accounts/src/legacy/preferences-bulk.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-006-safeControl",
+      "controlFor": "MONGO-006",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "MONGO-006-safeControl",
+      "controlFor": "MONGO-006",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-001",
+      "source": "apps/accounts/src/legacy/preferences-path.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-001-safeControl",
+      "controlFor": "PROTO-001",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-001-safeControl",
+      "controlFor": "PROTO-001",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-002",
+      "source": "apps/accounts/src/legacy/notification-settings.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-002-safeControl",
+      "controlFor": "PROTO-002",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-002-safeControl",
+      "controlFor": "PROTO-002",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RE-001",
+      "source": "apps/accounts/src/legacy/display-name.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1333",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RE-001-safeControl",
+      "controlFor": "RE-001",
+      "source": "apps/accounts/src/profile/profile.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1333",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RE-001-safeControl",
+      "controlFor": "RE-001",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1333",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-001",
+      "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-001-safeControl",
+      "controlFor": "RES-001",
+      "source": "apps/accounts/src/users/users.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-001-safeControl",
+      "controlFor": "RES-001",
+      "source": "apps/accounts/src/users/users.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-770",
       "scanner": "SAST"
     },
     {
@@ -459,6 +1149,75 @@
       "source": "apps/trading/src/orders/orders-among.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-002",
+      "source": "apps/accounts/src/legacy/legacy-avatar.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-002-safeControl",
+      "controlFor": "SSRF-002",
+      "source": "apps/accounts/src/profile/profile.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-002-safeControl",
+      "controlFor": "SSRF-002",
+      "source": "apps/accounts/src/profile/profile.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-002",
+      "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-002-safeControl",
+      "controlFor": "XSS-002",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-002-safeControl",
+      "controlFor": "XSS-002",
+      "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-004",
+      "source": "apps/accounts/src/legacy/admin-html.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-004-safeControl",
+      "controlFor": "XSS-004",
+      "source": "apps/accounts/src/admin/admin.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-004-safeControl",
+      "controlFor": "XSS-004",
+      "source": "apps/accounts/src/admin/admin.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
       "scanner": "SAST"
     }
   ]
