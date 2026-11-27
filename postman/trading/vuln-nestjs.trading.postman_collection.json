@@ -985,6 +985,175 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "INJECT",
+      "item": [
+        {
+          "name": "INJECT-001 the raw export writes the memo as a formula",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text();",
+                  "pm.test('the memo cell is a formula, unprefixed', () => {",
+                  "  pm.expect(body).to.include('=zazzles-lab-marker');",
+                  "  pm.expect(body).to.not.include(\"'=zazzles-lab-marker\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/reports/trades-raw.csv"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "FS",
+      "item": [
+        {
+          "name": "FS-004 the traversal reads this service\u2019s manifest",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.text();",
+                  "pm.test('a file outside the reports directory came back', () => {",
+                  "  pm.expect(body).to.include('@zazzles/exchange-trading');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/reports/files/..%2F..%2Fpackage.json"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "RES",
+      "item": [
+        {
+          "name": "RES-002 allTrades answers an unbounded limit",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('every row the table holds came back for a limit of 100000', () => ",
+                  "  pm.expect(body.data.allTrades).to.have.lengthOf(3));",
+                  "// The 253-row proof is the Vitest suite, which fills the table first."
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($symbol: String!, $limit: Int!) { allTrades(symbol: $symbol, limit: $limit) { id } }\",\n  \"variables\": {\n    \"symbol\": \"BTC-USD\",\n    \"limit\": 100000\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GQL",
+      "item": [
+        {
+          "name": "GQL-006 giftOrder points the order\u2019s user at the caller\u2019s choice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test(\"the reference is the caller's choice, Erin\", () => {",
+                  "  pm.expect(body.data.giftOrder.user).to.eql({ id: 'u-erin' });",
+                  "});",
+                  "pm.test(\"the order itself is stored as the caller's\", () => {",
+                  "  pm.expect(body.data.giftOrder.userId).to.eql('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($toUserId: ID!, $input: PlaceOrderInput!) { giftOrder(toUserId: $toUserId, input: $input) { id userId user { id } } }\",\n  \"variables\": {\n    \"toUserId\": \"u-erin\",\n    \"input\": {\n      \"symbol\": \"BTC-USD\",\n      \"side\": \"BUY\",\n      \"type\": \"MARKET\",\n      \"quantity\": \"0.10000000\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

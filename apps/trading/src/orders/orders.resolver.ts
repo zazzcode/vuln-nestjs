@@ -81,10 +81,13 @@ export class OrdersResolver {
     return order;
   }
 
-  /** The order's user, as a reference built from what is stored. Never from a caller's argument. */
+  /**
+   * The order's user, as a reference built from what is stored. A stored order
+   * carries its own reference already; one that a resolver provided keeps it.
+   */
   @ResolveField(() => User)
   user(@Parent() order: Order): User {
-    return { id: order.userId, orders: [] };
+    return order.user ?? { id: order.userId, orders: [] };
   }
 }
 

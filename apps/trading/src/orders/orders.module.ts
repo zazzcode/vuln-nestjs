@@ -7,6 +7,8 @@ import { OrderDetailsResolver } from './order-details.resolver.js';
 import { OrderLookupResolver } from './order-lookup.resolver.js';
 import { OrdersPatchController } from './orders-patch.controller.js';
 import { BuyAtMarketResolver } from './buy-at-market.resolver.js';
+import { CancelOrderResolver } from './cancel-order.resolver.js';
+import { GiftOrderResolver } from './gift-order.resolver.js';
 import { MatchOrderResolver } from './match-order.resolver.js';
 import { PlaceOrderResolver } from './place-order.resolver.js';
 import { QuickBuyResolver } from './quick-buy.resolver.js';
@@ -36,6 +38,8 @@ import { OrdersService } from './orders.service.js';
     QuickBuyResolver,
     MatchOrderResolver,
     SettleOrderResolver,
+    CancelOrderResolver,
+    GiftOrderResolver,
   ],
   controllers: [OrdersPatchController],
   exports: [OrdersRepository, OrdersService],

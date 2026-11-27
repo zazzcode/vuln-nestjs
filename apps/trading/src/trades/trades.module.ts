@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AllTradesResolver } from './all-trades.resolver.js';
 import { FeesPaidResolver } from './fees-paid.resolver.js';
 import { HighPriceResolver } from './high-price.resolver.js';
 import { TradeEntity } from './trade.entity.js';
@@ -19,6 +20,7 @@ import { TradesSortedResolver } from './trades-sorted.resolver.js';
     TradeHistoryResolver,
     TradesSortedResolver,
     FeesPaidResolver,
+    AllTradesResolver,
   ],
   exports: [TradesService],
 })
