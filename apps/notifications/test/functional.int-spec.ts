@@ -127,6 +127,7 @@ describe('a crossed alert produces one signed delivery', () => {
     expect(absent.data).toEqual({ evaluateAlerts: [] });
 
     const disabled = await alerts.findById(1);
+    expect(disabled).not.toBeNull();
     await alerts.save({ id: 1, enabled: false });
     const crossed = await evaluate(admin(), [
       { symbol: 'BTC-USD', price: '71000.00' },
