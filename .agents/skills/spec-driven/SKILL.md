@@ -85,6 +85,40 @@ If an implementation detail can adapt without changing scope, public behavior, A
 strategy, approved review shape, or invariants, log meaningful deviations in the run log
 and continue. If the contract changes, use the change protocol below.
 
+## Checkpoints: Committed Work Is Not Lost Work
+
+An agent can stop at any moment: a usage limit, a lost session, an interrupted
+run. Whatever exists only in its working tree, or only in its context, is work
+the next agent has to find and cannot quite trust. The branch is the record of
+progress. The run log is the record of how it was made.
+
+Treat each of these as a checkpoint, and at a checkpoint commit and push:
+
+- a specification, or an accepted change to one
+- a slice that builds and passes its tests: an acceptance criterion met, a
+  scenario finished with its documentation
+- a change to what the project depends on
+
+A checkpoint commit stands on its own: it builds, its tests pass, and its
+message says what changed and why. It is not every edit, and it is never a
+large change left uncommitted while the next one starts. A draft pull request,
+open from the first checkpoint, shows each one as it lands.
+
+Keep the run log at the same pace. A line as each phase or step ends is not
+enough: a step can run for half an hour and commit several times. Append a
+short line with the time after every commit, every test or check you run, and
+every scenario you finish, saying what you did and what came of it. While the
+agent works, the log is how its progress is seen from outside.
+
+A quiet log is not proof that work has stopped. Before stepping in, look at
+what is durable: the commits on the branch, the files changed in the working
+tree, the processes a test leaves running. Then ask the agent, in one line,
+where it is.
+
+An agent that takes over, new or resumed, reads the branch's commits and the
+run log before anything else. A stopped agent's work is in its branch and its
+working tree whether or not it reported.
+
 ## Lead Agent, Contributor Agents, And Tracking
 
 The implementation prompt should name the coordination model. The Lead Agent may work
