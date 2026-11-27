@@ -1,6 +1,20 @@
 # `PROTO` — prototype pollution
 
+3 scenarios: `PROTO-001` in `accounts`, `PROTO-002` in `accounts`, `PROTO-003` in `notifications`.
+
+**In `accounts`.**
+
 Two weaknesses of the legacy settings paths in `accounts`. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults). Both are observed through the service itself: after the pollution, a field another caller omitted gains a value.
+
+**In `notifications`.**
+
+**Family:** `PROTO` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A08
+
+A channel is written by a path the caller brings, and the library that walks
+it follows `__proto__` like any other segment. The two protected ways to
+write a channel name it with an enum or a typed input, so no path exists to
+walk. This one needs the `dot-prop` 4.1.0 pin ([SCA-006](dependencies.md)):
+from 4.2.1 the walk refuses `__proto__`.
 
 ## PROTO-001 — the dotted path is walked without checks
 
@@ -100,3 +114,98 @@ The user came from the prototype. The same document as `updatePreferences` input
 ### PROTO-002 — tests
 
 `apps/accounts/test/scenarios/proto-re-res.int-spec.ts`, `PROTO-002`: the merge pollutes and the omitted userId gains `u-admin`; the typed input cannot be handed the document; `importSettings` leaves the preferences as they were.
+
+## PROTO-003 — a path that reaches every object
+
+### PROTO-003 — agent reference
+
+- **Scenario:** PROTO-003, prototype pollution through a settings path.
+- **Source:** `apps/notifications/src/settings/set-channel-by-path.resolver.ts`
+- **Operation:** GraphQL `setChannelByPath(path: String!, enabled: Boolean!)`, user.
+- **Sink:** `dotProp.set(row, path, enabled)` in `dot-prop` 4.1.0, whose walk follows `__proto__` as a segment.
+- **Flow:** `path = "__proto__.webhook"` → the walk leaves the caller's row → the row's prototype gains the channel, and every settings entity inherits it.
+- **Counterparts:** `apps/notifications/src/settings/set-channel.resolver.ts` (an enum names the channel), `apps/notifications/src/settings/set-channels.resolver.ts` (a typed input of fixed properties).
+- **Tests:** `apps/notifications/test/scenarios/proto.int-spec.ts`.
+- **Expected finding:** yes. A SAST tool must report a caller-supplied dotted path reaching a deep-set.
+
+### PROTO-003 — student guide
+
+The line (`apps/notifications/src/settings/set-channel-by-path.resolver.ts`):
+
+```ts
+const row = await this.settings.of(caller);
+dotProp.set(row, path, enabled); // PROTO-003 / CWE-1321: the caller's path is walked as it was given, so __proto__ reaches every object
+```
+
+`dot-prop`'s `set` walks one segment at a time: `row`, then whatever the
+first segment names, and so on to the end of the path. In 4.1.0 no segment
+is refused, and `__proto__` is a segment like any other — so
+`__proto__.webhook` does not write the caller's row at all. It writes
+`webhook` onto the row's prototype, where every settings entity in the
+process looks for the fields it does not own. From 4.2.1 the walk refuses
+`__proto__` in a path, which is why this service is pinned to 4.1.0
+([SCA-006](dependencies.md)). The author's belief: "a path is friendlier
+than a mutation per channel shape the client happens to bring."
+
+### PROTO-003 — exploit lab
+
+Run on 2026-11-27 against the service alone on `127.0.0.1:3103`. `$A` is
+Alice's token. The channel is off first, so the row's own answer cannot
+move:
+
+```console
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"mutation { setChannel(name: WEBHOOK, enabled: false) { webhook } }"}'
+{"data":{"setChannel":{"webhook":false}}}
+
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"mutation { setChannelByPath(path: \"__proto__.webhook\", enabled: true) { webhook } }"}'
+{"data":{"setChannelByPath":{"webhook":false}}}
+```
+
+The row answers `false` still: what the path wrote is not the row but its
+prototype. The proof is read where the service runs, and the test reads it
+there: after the mutation, `UserSettingsEntity.prototype.webhook` is `true`
+in the service's process, and a plain `({}).webhook` is `undefined`, which
+is what pins the write to the entity's prototype rather than the row. The
+walk can also be pointed one level deeper — `__proto__.__proto__.webhook`
+reaches `Object.prototype` itself — and then the damage is observable from
+outside: the next `setChannels(input: { email: false })` answers
+`INTERNAL_SERVER_ERROR`, because the process's own validation library now
+reads the polluted prototype (`grouped[metadata.propertyName].push is not
+a function`). In Postman: the request `PROTO-003: a path that reaches every
+object`. In Burp: send the two mutations from Repeater and compare the
+answers.
+
+### PROTO-003 — vulnerable and protected
+
+| | Operation | What it does with the same path |
+| --- | --- | --- |
+| Vulnerable | `setChannelByPath` | Walks it as it was given: `__proto__.webhook` writes the prototype |
+| Counterpart 1 | `setChannel` | The channel is named by an enum; the path is not a name the enum has, `GRAPHQL_VALIDATION_FAILED` |
+| Counterpart 2 | `setChannels` | The input's properties are fixed; `path` and `enabled` are refused, `BAD_USER_INPUT` |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input:
+the path that walks onto the prototype on the first cannot be handed to
+either of them as a channel name or an input property, and nothing is
+written, in a row or anywhere else. The claim is not that typed inputs make
+every settings write safe; only that this path reaches no prototype through
+them.
+
+### PROTO-003 — tests
+
+`apps/notifications/test/scenarios/proto.int-spec.ts`, describe `PROTO-003:
+a path that reaches every object`. One attacker value — the path
+`__proto__.webhook` with `enabled: true` — is sent to the vulnerable
+operation and to each counterpart, and the tests delete the written
+property again before the next one runs:
+
+- **The exploit:** `setChannelByPath` answers as if a channel had been
+  written, and in the service's process `UserSettingsEntity.prototype.webhook`
+  is `true` while a plain object's is `undefined`: the write left the row.
+- **Counterpart 1:** the enum refuses the value by name
+  (`GRAPHQL_VALIDATION_FAILED`) and nothing is polluted.
+- **Counterpart 2:** the input refuses both properties (`BAD_USER_INPUT`)
+  and nothing is polluted.
