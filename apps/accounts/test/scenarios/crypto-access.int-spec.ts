@@ -178,3 +178,58 @@ describe("ACCESS-004: the body of the legacy profile editor is the change", () =
     expect(response.status).toBe(400);
   });
 });
+
+describe('ACCESS-005: a header believed as identity', () => {
+  test('GET /internal/me answers the administrator the header names, with no token', async () => {
+    const response = await call(lab, '/internal/me', {
+      headers: { 'x-user-id': 'u-admin' },
+    });
+    const answered = (await response.json()) as {
+      id: string;
+      email: string;
+      role: string;
+    };
+
+    // gained: the administrator's whole profile, with no credentials at all
+    expect(response.status).toBe(200);
+    expect(answered).toEqual({
+      id: 'u-admin',
+      email: 'admin@vcx.exchange',
+      displayName: 'Admin',
+      role: 'ADMIN',
+      preferences: {
+        theme: 'dark',
+        language: 'en',
+        currency: 'USD',
+        marketingEmails: 'false',
+      },
+      avatarUrl: null,
+      createdAt: answered.createdAt,
+    });
+  });
+
+  test('introspect refuses the same call: a token must verify first', async () => {
+    const response = await call(lab, '/internal/sessions/introspect', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-user-id': 'u-admin',
+      },
+      body: JSON.stringify({ token: 'not-a-token' }),
+    });
+
+    // refused: the route is closed, and no header stands in for a verified token
+    expect(response.status).toBe(401);
+  });
+
+  test('the users lookup answers a service token, not a header', async () => {
+    const response = await call(
+      lab,
+      '/internal/users/lookup?email=admin@vcx.exchange',
+      { headers: { 'x-user-id': 'u-admin' } },
+    );
+
+    // refused: only the run's service token opens the lookup
+    expect(response.status).toBe(401);
+  });
+});
