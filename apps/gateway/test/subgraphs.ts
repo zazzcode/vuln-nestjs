@@ -253,6 +253,31 @@ async function standIn(
         return;
       }
 
+      if (request.url === '/internal/lab/reset') {
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ status: 'ok', service }));
+        return;
+      }
+
+      // Any other internal path: a stand-in for the REST contract a backend
+      // service serves. It answers with exactly what reached it, so a test of
+      // the edge can read what the edge carried. A create answers 201, which
+      // lets a test see a status other than 200 cross the edge unchanged.
+      if ((request.url ?? '').startsWith('/internal/')) {
+        const seen = reached.at(-1) as Reached;
+        response.writeHead(request.method === 'POST' ? 201 : 200, {
+          'content-type': 'application/json',
+        });
+        response.end(
+          JSON.stringify({
+            echoed: true,
+            service,
+            reached: seen,
+          }),
+        );
+        return;
+      }
+
       const query =
         typeof (body as { query?: unknown })?.query === 'string'
           ? (body as { query: string }).query
