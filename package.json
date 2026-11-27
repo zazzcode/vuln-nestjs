@@ -2,7 +2,7 @@
   "name": "vuln-nestjs",
   "version": "0.0.0",
   "private": true,
-  "description": "A deliberately vulnerable NestJS application for testing SAST, SCA and DAST tools: Zazzles Exchange, a fake cryptocurrency exchange built as microservices.",
+  "description": "A deliberately vulnerable NestJS application for testing SAST, SCA and DAST tools: VCX, a fake cryptocurrency exchange built as microservices.",
   "license": "MIT",
   "type": "module",
   "packageManager": "pnpm@12.23.0",

@@ -23,7 +23,7 @@ The contract for each service: what it owns, its data, its API, and every delibe
 | Identifiers | The GraphQL `ID` scalar, always a string |
 | Scalars | `Decimal` (a string such as `"65000.00"`), `DateTime` (an ISO 8601 string in UTC), `JSON` (any JSON value; parsed with `JSON.parse`) |
 | Money | Integer minor units. Dollars in cents, coins in hundred-millionths |
-| Tokens | HS256 JWT. Claims `sub` (user id), `sid` (session id), `role`. Sent as `Authorization: Bearer …` or in the `zazzles_session` cookie |
+| Tokens | HS256 JWT. Claims `sub` (user id), `sid` (session id), `role`. Sent as `Authorization: Bearer …` or in the `vcx_session` cookie |
 | Authentication | Every service verifies the token itself, through the shared library `libs/internal-auth`. A global guard; `@Public()` marks an open operation |
 | Authorization | `@Roles('ADMIN')` with a roles guard for administration. An ownership check inside the service for anything selected by `id` or `userId` |
 | Input | `@InputType()` classes and DTOs with class-validator, through a global `ValidationPipe` with `whitelist` and `forbidNonWhitelisted` |

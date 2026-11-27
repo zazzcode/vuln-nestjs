@@ -1,6 +1,6 @@
 # Architecture
 
-How Zazzles Exchange is put together, and why. The design records with their options and consequences are in [`.zazz/architecture/`](../.zazz/architecture/README.md); this page is the summary for readers of the lab.
+How VCX (Vulnerable Crypto Exchange) is put together, and why. The design records with their options and consequences are in [`.zazz/architecture/`](../.zazz/architecture/README.md); this page is the summary for readers of the lab.
 
 ## It is a sample that is started, seeded and stopped
 

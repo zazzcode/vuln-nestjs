@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-accounts",
   "version": "0.0.0",
-  "description": "Users, sign-in, sessions, profile and documents of Zazzles Exchange",
+  "description": "Users, sign-in, sessions, profile and documents of VCX",
   "private": true,
   "license": "MIT",
   "type": "module",

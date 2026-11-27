@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-gateway",
   "version": "0.0.0",
-  "description": "The federated graph and the REST edge of Zazzles Exchange: the only listener a client uses",
+  "description": "The federated graph and the REST edge of VCX: the only listener a client uses",
   "private": true,
   "license": "MIT",
   "type": "module",

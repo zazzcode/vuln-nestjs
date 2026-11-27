@@ -1,6 +1,6 @@
 # `trading` — service specification
 
-**Adapter:** Fastify, HTTP/2 on `127.0.0.1:3102` · **Store:** MySQL, database `zazzles_trading`
+**Adapter:** Fastify, HTTP/2 on `127.0.0.1:3102` · **Store:** MySQL, database `vcx_trading`
 **Status:** design agreed with the Project Owner on 2026-11-26. Ready to build. Extended the same day, at the Project Owner's request, with three scenarios in which a template literal was taken for a prepared statement: [SQL-005 to SQL-007](#sql--sql-injection).
 
 ## 1. What it owns

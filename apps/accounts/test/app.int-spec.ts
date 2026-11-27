@@ -96,7 +96,7 @@ describe('the accounts service, started alone', () => {
       data: {
         user: {
           id: 'u-alice',
-          email: 'alice@zazzles.exchange',
+          email: 'alice@vcx.exchange',
           displayName: 'Alice',
           role: Role.USER,
           createdAt: labStart.toISOString(),
@@ -125,7 +125,7 @@ describe('the accounts service, started alone', () => {
     );
 
     expect(response.data).toEqual({
-      _entities: [{ id: 'u-bob', email: 'bob@zazzles.exchange' }],
+      _entities: [{ id: 'u-bob', email: 'bob@vcx.exchange' }],
     });
   });
 

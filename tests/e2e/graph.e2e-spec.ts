@@ -29,12 +29,12 @@ describe('the graph the gateway composes from the three subgraphs', () => {
           // Sent by trading as a reference carrying the key; the email and the name come from accounts.
           user: {
             id: 'u-alice',
-            email: 'alice@zazzles.exchange',
+            email: 'alice@vcx.exchange',
             displayName: 'Alice',
           },
         },
       ],
-      announcements: [{ id: '1', title: 'Welcome to Zazzles Exchange' }],
+      announcements: [{ id: '1', title: 'Welcome to VCX' }],
     });
   });
 
@@ -48,7 +48,7 @@ describe('the graph the gateway composes from the three subgraphs', () => {
     expect(response.data).toEqual({
       user: {
         id: 'u-alice',
-        email: 'alice@zazzles.exchange',
+        email: 'alice@vcx.exchange',
         orders: [{ id: '1', symbol: 'BTC-USD' }],
       },
     });

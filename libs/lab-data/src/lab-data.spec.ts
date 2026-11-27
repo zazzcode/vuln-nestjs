@@ -15,7 +15,7 @@ describe('the fake data', () => {
   it('gives every record a fixed identifier that names no real person', () => {
     for (const user of labUsers) {
       expect(user.id).toMatch(/^u-[a-z]+$/);
-      expect(user.email).toMatch(/^[a-z]+@zazzles\.exchange$/);
+      expect(user.email).toMatch(/^[a-z]+@vcx\.exchange$/);
     }
   });
 

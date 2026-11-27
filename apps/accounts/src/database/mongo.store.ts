@@ -5,7 +5,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 /** The MongoDB release every machine runs. Pinned, so that the engine is the same everywhere. */
 export const MONGODB_VERSION = '8.2.6';
 
-export const DATABASE_NAME = 'zazzles_accounts';
+export const DATABASE_NAME = 'vcx_accounts';
 
 /** The token the database is provided under. */
 export const MONGO_DATABASE = 'MONGO_DATABASE';
