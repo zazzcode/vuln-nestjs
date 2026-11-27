@@ -1,0 +1,223 @@
+{
+  "info": {
+    "_postman_id": "1c2f6331-d0fd-427f-a1e3-92b645b1094a",
+    "name": "Zazzles Exchange: accounts",
+    "description": "The accounts microservice, called on its own address. accountsUrl is the relay the start command opens in front of it: the service speaks HTTP/2 in cleartext, which Postman and Newman cannot send, and the relay carries each request to it over HTTP/2.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "The service",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"accounts\",\"store\":{\"engine\":\"mongodb\",\"connected\":true}}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{accountsUrl}}/internal/health"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"status\":\"ok\",\"service\":\"accounts\"}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset, refused without the service token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 401', () => pm.response.to.have.status(401));",
+                  "const body = pm.response.json();",
+                  "pm.test('with what the lab is built to answer', () => pm.expect(body).to.eql({\"message\":\"A valid service token is required\",\"error\":\"Unauthorized\",\"statusCode\":401}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{accountsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "One user, asked for by an administrator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('answers with the user', () =>",
+                  "  pm.expect(body.data).to.eql({ user: { id: 'u-alice', email: 'alice@zazzles.exchange' } }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ user(id: \\\"u-alice\\\") { id email } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "One user, asked for by a user",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('user is refused, with its code', () => {",
+                  "  pm.expect(body.errors[0].path).to.eql(['user']);",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('FORBIDDEN');",
+                  "});",
+                  "pm.test('and with no user', () => pm.expect(body.data).to.eql({\"user\":null}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ user(id: \\\"u-alice\\\") { id email } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "One user, asked for without a caller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('user is refused, with its code', () => {",
+                  "  pm.expect(body.errors[0].path).to.eql(['user']);",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('UNAUTHENTICATED');",
+                  "});",
+                  "pm.test('and with no user', () => pm.expect(body.data).to.eql({\"user\":null}));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ user(id: \\\"u-alice\\\") { id email } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

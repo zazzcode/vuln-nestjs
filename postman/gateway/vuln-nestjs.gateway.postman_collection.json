@@ -1,0 +1,160 @@
+{
+  "info": {
+    "_postman_id": "9aa85967-f614-4956-b8d0-25dfbb367ec7",
+    "name": "Zazzles Exchange: the gateway",
+    "description": "The gateway, on the one address a client uses. Every other collection calls one microservice on its own.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "The lab",
+      "item": [
+        {
+          "name": "Health",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('reports the gateway and its three services as up', () => {",
+                  "  pm.expect(body.status).to.eql('ok');",
+                  "  pm.expect(Object.keys(body.services).sort()).to.eql(['accounts', 'notifications', 'trading']);",
+                  "  for (const service of Object.keys(body.services)) {",
+                  "    pm.expect(body.services[service].status, service).to.eql('ok');",
+                  "    pm.expect(body.services[service].store.connected, service).to.be.true;",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/health"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('returns every store to the fake data', () =>",
+                  "  pm.expect(body).to.eql({ accounts: 'ok', trading: 'ok', notifications: 'ok' }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "The graph",
+      "item": [
+        {
+          "name": "A query answered from three services",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test(\"joins trading's order to accounts' user, and adds notifications' announcement\", () =>",
+                  "  pm.expect(body.data).to.eql({",
+                  "    orders: [{ id: '1', symbol: 'BTC-USD', user: { id: 'u-alice', email: 'alice@zazzles.exchange' } }],",
+                  "    announcements: [{ id: '1', title: 'Welcome to Zazzles Exchange' }],",
+                  "  }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ orders { id symbol user { id email } } announcements { id title } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "A query without a caller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('orders is refused, with its code', () => {",
+                  "  pm.expect(body.errors[0].path).to.eql(['orders']);",
+                  "  pm.expect(body.errors[0].extensions.code).to.eql('UNAUTHENTICATED');",
+                  "});",
+                  "pm.test('and with no orders', () => pm.expect(body.data).to.eql(null));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ orders { id } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

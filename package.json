@@ -18,7 +18,7 @@
     "test": "pnpm -r test && vitest run --passWithNoTests",
     "test:int": "pnpm -r --workspace-concurrency=1 test:int",
     "test:e2e": "vitest run --config vitest.config.e2e.ts",
-    "test:api": "newman run postman/vuln-nestjs.postman_collection.json --environment postman/local.postman_environment.json --bail",
+    "test:api": "vitest run --config vitest.config.api.ts",
     "scenario:check": "node scripts/check-scenarios.mjs",
     "scenario:update": "node scripts/check-scenarios.mjs --update",
     "audit:check": "node scripts/check-audit.mjs",

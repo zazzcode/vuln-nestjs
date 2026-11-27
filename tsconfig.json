@@ -11,6 +11,7 @@
     "scripts",
     "vitest.config.ts",
     "vitest.config.e2e.ts",
+    "vitest.config.api.ts",
     "vitest.libs.ts"
   ]
 }

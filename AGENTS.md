@@ -47,11 +47,12 @@ All from the root. Each was last run on 2026-11-26.
 | `pnpm test` | Unit tests: every workspace, then the root's own. |
 | `pnpm test:int` | Each service's integration tests, one service at a time. Starts a database engine. |
 | `pnpm test:e2e` | The whole lab as four processes. Uses ports 3000, 3101–3103 and the relays on 3201, 3202. |
+| `pnpm test:api` | Every collection under `postman/`, each run under Newman against the whole lab. The same ports as `test:e2e`. |
 | `pnpm scenario:check`, `pnpm scenario:update` | Compares the scenario ground truth with the catalogue, or rewrites it. Never hand-edit `tests/expected-hashes.json` or `tests/expected-scanner-findings.json`. |
 | `pnpm audit:check`, `pnpm audit:update` | Compares the production audit with `tests/expected-audit.json`, or rewrites it. An advisory leaves only by name: `pnpm audit:update --retire <id>`. |
 | `pnpm audit:lab` | The raw production audit. A nonzero exit is the lab working, once it has its pins. |
 
-Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int` and `test:e2e` take every port of the lab.
+Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int`, `test:e2e` and `test:api` take every port of the lab; to run one of them anyway, move the lab with the start command's variables (`GATEWAY_PORT`, `ACCOUNTS_PORT`, `TRADING_PORT`, `NOTIFICATIONS_PORT`, `ACCOUNTS_RELAY_PORT`, `TRADING_RELAY_PORT`).
 
 ## Local artifacts and skills
 
