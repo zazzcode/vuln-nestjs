@@ -33,6 +33,17 @@ describe('the graph the gateway composes from the three subgraphs', () => {
             displayName: 'Alice',
           },
         },
+        {
+          id: '6',
+          symbol: 'SOL-USD',
+          limitPrice: '160.00',
+          quantity: '5.00000000',
+          user: {
+            id: 'u-alice',
+            email: 'alice@vcx.exchange',
+            displayName: 'Alice',
+          },
+        },
       ],
       announcements: [{ id: '1', title: 'Welcome to VCX' }],
     });
@@ -49,7 +60,10 @@ describe('the graph the gateway composes from the three subgraphs', () => {
       user: {
         id: 'u-alice',
         email: 'alice@vcx.exchange',
-        orders: [{ id: '1', symbol: 'BTC-USD' }],
+        orders: [
+          { id: '1', symbol: 'BTC-USD' },
+          { id: '6', symbol: 'SOL-USD' },
+        ],
       },
     });
   });
@@ -60,7 +74,12 @@ describe('the graph the gateway composes from the three subgraphs', () => {
 
     const bob = await query('{ orders { id userId } }', tokenOf('u-bob'));
 
-    expect(bob.data).toEqual({ orders: [{ id: '2', userId: 'u-bob' }] });
+    expect(bob.data).toEqual({
+      orders: [
+        { id: '2', userId: 'u-bob' },
+        { id: '7', userId: 'u-bob' },
+      ],
+    });
   });
 
   test("carries a service's own refusal through, with its code", async () => {

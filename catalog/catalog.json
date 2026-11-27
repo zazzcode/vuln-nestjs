@@ -1,1 +1,440 @@
-[]
+[
+  {
+    "id": "SQL-001",
+    "title": "An untagged template literal, written as if the backticks bound the value",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "orderLookup(id: String!)",
+    "source": "apps/trading/src/orders/order-lookup.resolver.ts",
+    "flow": "args.id -> template literal -> dataSource.query(`SELECT ... WHERE id = ${id} LIMIT 1`): the id is SQL text",
+    "safeControl": "apps/trading/src/orders/orders.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-002",
+    "title": "Query builder where built by concatenation",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "tradeHistory(input: TradeHistoryInput!)",
+    "source": "apps/trading/src/trades/trade-history.resolver.ts",
+    "flow": "args.input.symbol -> `t.symbol = '${symbol}' AND t.side = '${side}'` -> createQueryBuilder.where(raw fragment)",
+    "safeControl": "apps/trading/src/trades/trades.resolver.ts",
+    "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-003",
+    "title": "LIKE pattern built from search text",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "searchMarkets(q: String!)",
+    "source": "apps/trading/src/markets/search-markets.resolver.ts",
+    "flow": "args.q -> `m.symbol LIKE '%${q}%'` -> createQueryBuilder.where(raw fragment)",
+    "safeControl": "apps/trading/src/markets/markets.resolver.ts",
+    "safeControls": ["apps/trading/src/markets/markets-by-assets.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-004",
+    "title": "Caller-controlled sort column",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "tradesSorted(symbol: String!, sortBy: String!, sortDir: String!)",
+    "source": "apps/trading/src/trades/trades-sorted.resolver.ts",
+    "flow": "args.sortBy -> orderBy(`t.${sortBy}`, direction): an expression of the caller's choosing orders the rows",
+    "safeControl": "apps/trading/src/trades/trades.resolver.ts",
+    "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-005",
+    "title": "A tag that escapes quotes and joins, taken for one that parameterizes",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "volumeFor(symbol: String!)",
+    "source": "apps/trading/src/markets/volume-for.resolver.ts",
+    "flow": "args.symbol -> sqlText tag (escapes quotes, joins pieces) -> dataSource.query(one string)",
+    "safeControl": "apps/trading/src/trades/high-price.resolver.ts",
+    "safeControls": ["apps/trading/src/markets/markets.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-006",
+    "title": "execute() on a string built with a template literal: no placeholder, no parameter",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "feesPaid(symbol: String!)",
+    "source": "apps/trading/src/trades/fees-paid.resolver.ts",
+    "flow": "args.symbol -> template literal with no placeholder -> SqlClient.execute(interpolated string)",
+    "safeControl": "apps/trading/src/markets/settlement-price.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SQL-007",
+    "title": "An IN (...) list joined from the caller's ids",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-89",
+    "owasp": {
+      "top10": "A03",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "ordersByIds(ids: [ID!]!)",
+    "source": "apps/trading/src/orders/orders-by-ids.resolver.ts",
+    "flow": "args.ids -> ids.join(', ') inside `... id IN (${...})` -> dataSource.query(one string)",
+    "safeControl": "apps/trading/src/orders/orders-among.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "test": "apps/trading/test/scenarios/sql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-008",
+    "title": "Another user's wallet and ledger",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01",
+      "api": "API1"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "walletOf(userId: ID!)",
+    "source": "apps/trading/src/wallets/wallet-of.resolver.ts",
+    "flow": "args.userId -> repository where clause: the caller names any user, the balances answer to the token alone",
+    "safeControl": "apps/trading/src/wallets/wallet.resolver.ts",
+    "safeControls": ["apps/trading/src/wallets/wallets-by-user.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-access.md",
+    "test": "apps/trading/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-002",
+    "title": "Order details without an ownership check",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01",
+      "api": "API1"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "orderDetails(id: ID!)",
+    "source": "apps/trading/src/orders/order-details.resolver.ts",
+    "flow": "args.id -> OrdersService.byId -> returned to the caller with no check of who placed the order",
+    "safeControl": "apps/trading/src/orders/orders.resolver.ts",
+    "safeControls": [],
+    "documentation": "docs/vulnerabilities/trading-access.md",
+    "test": "apps/trading/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-009",
+    "title": "A user credits any wallet",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-862",
+    "owasp": {
+      "top10": "A01",
+      "api": "API5"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "creditWallet(userId: ID!, amount: Decimal!)",
+    "source": "apps/trading/src/wallets/credit-wallet.resolver.ts",
+    "flow": "args.userId, args.amount -> WalletsService.adjust: the amount is checked, the role never is",
+    "safeControl": "apps/trading/src/wallets/deposit.resolver.ts",
+    "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
+    "documentation": "docs/vulnerabilities/trading-access.md",
+    "test": "apps/trading/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-010",
+    "title": "Mass assignment through an order DTO",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-915",
+    "owasp": {
+      "top10": "A01",
+      "api": "API3"
+    },
+    "service": "trading",
+    "surface": "rest",
+    "operation": "PATCH /internal/orders/:id",
+    "source": "apps/trading/src/orders/orders-patch.controller.ts",
+    "flow": "request body -> Object.assign(order, body) -> repository.save: status and userId are properties of the entity",
+    "safeControl": "apps/trading/src/orders/update-order.resolver.ts",
+    "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
+    "documentation": "docs/vulnerabilities/trading-access.md",
+    "test": "apps/trading/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-007",
+    "title": "A user sets a reference price",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-862",
+    "owasp": {
+      "top10": "A01",
+      "api": "API5"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "setReferencePrice(symbol: String!, price: Decimal!)",
+    "source": "apps/trading/src/markets/set-reference-price.resolver.ts",
+    "flow": "args.price -> repository.update(referencePrice): no role check, any signed-in caller moves the price",
+    "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
+    "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
+    "documentation": "docs/vulnerabilities/trading-access.md",
+    "test": "apps/trading/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "LOGIC-001",
+    "title": "A negative amount credits a wallet",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-20",
+    "owasp": {
+      "top10": "A04",
+      "api": "API6"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "payout(amount: Decimal!)",
+    "source": "apps/trading/src/wallets/payout.resolver.ts",
+    "flow": "args.amount -> taken exactly as it came -> balance = balance - amount: a negative payout is a deposit",
+    "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
+    "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
+    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "test": "apps/trading/test/scenarios/logic.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "LOGIC-002",
+    "title": "Withdrawal race: read, then write",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-367",
+    "owasp": {
+      "top10": "A04",
+      "api": "API6"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "payout(amount: Decimal!)",
+    "source": "apps/trading/src/wallets/payout.resolver.ts",
+    "flow": "findOneBy(balance) -> ... -> update(balance - amount): between the two statements any number of payouts run",
+    "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
+    "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
+    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "test": "apps/trading/test/scenarios/logic.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "LOGIC-003",
+    "title": "A market order takes the caller's price",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-840",
+    "owasp": {
+      "top10": "A04",
+      "api": "API6"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "quickBuy(symbol: String!, quantity: Decimal!, price: Decimal!)",
+    "source": "apps/trading/src/orders/quick-buy.resolver.ts",
+    "flow": "args.price -> costOf(quantity, price) -> balance charged the caller's own number",
+    "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/buy-at-market.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "test": "apps/trading/test/scenarios/logic.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "LOGIC-004",
+    "title": "Floating-point arithmetic on money",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-682",
+    "owasp": {
+      "top10": "A04"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "convert(asset: Asset!, amount: Float!)",
+    "source": "apps/trading/src/money/convert.resolver.ts",
+    "flow": "args.amount (Float) -> Math.floor(amount * 10 ** scale): 8.2 dollars is 819.9999... cents as a float",
+    "safeControl": "apps/trading/src/money/convert-exact.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/place-order.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "test": "apps/trading/test/scenarios/logic.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "LOGIC-005",
+    "title": "An order filled twice by concurrent calls",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-362",
+    "owasp": {
+      "top10": "A04",
+      "api": "API6"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "matchOrder(orderId: ID!)",
+    "source": "apps/trading/src/orders/match-order.resolver.ts",
+    "flow": "findOneBy (status OPEN seen) -> adjust (credit) -> update (status FILLED): two writes in no transaction",
+    "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/settle-order.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "test": "apps/trading/test/scenarios/logic.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "INJECT-001",
+    "title": "Spreadsheet formula in a CSV export",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1236",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "trading",
+    "surface": "rest",
+    "operation": "GET /internal/reports/trades-raw.csv",
+    "source": "apps/trading/src/reports/trades-raw.controller.ts",
+    "flow": "orders.memo -> CSV cell written as it is: =zazzles-lab-marker stays a formula",
+    "safeControl": "apps/trading/src/reports/reports.controller.ts",
+    "safeControls": [],
+    "documentation": "docs/vulnerabilities/trading-inject.md",
+    "test": "apps/trading/test/scenarios/exports.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "FS-004",
+    "title": "Path traversal in a report download",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-22",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "trading",
+    "surface": "rest",
+    "operation": "GET /internal/reports/files/:name",
+    "source": "apps/trading/src/reports/reports-files.controller.ts",
+    "flow": ":name param -> join(REPORTS_DIRECTORY, name) -> readFile: ..%2F..%2Fpackage.json reads the service manifest",
+    "safeControl": "apps/trading/src/reports/reports.controller.ts",
+    "safeControls": [],
+    "documentation": "docs/vulnerabilities/trading-fs.md",
+    "test": "apps/trading/test/scenarios/exports.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "RES-002",
+    "title": "No cap on limit",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-770",
+    "owasp": {
+      "top10": "A05",
+      "api": "API4"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "allTrades(symbol: String!, limit: Int!)",
+    "source": "apps/trading/src/trades/all-trades.resolver.ts",
+    "flow": "args.limit -> repository take: the caller's number, uncapped, sizes the answer",
+    "safeControl": "apps/trading/src/trades/trades.resolver.ts",
+    "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-res.md",
+    "test": "apps/trading/test/scenarios/graph.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-006",
+    "title": "An entity reference built from the caller's input",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01",
+      "api": "API1"
+    },
+    "service": "trading",
+    "surface": "graphql",
+    "operation": "giftOrder(toUserId: ID!, input: PlaceOrderInput!)",
+    "source": "apps/trading/src/orders/gift-order.resolver.ts",
+    "flow": "args.toUserId -> { ...order, user: { id: toUserId } }: the reference the gateway resolves is the caller's choice",
+    "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
+    "safeControls": ["apps/trading/src/orders/orders.resolver.ts"],
+    "documentation": "docs/vulnerabilities/trading-gql.md",
+    "test": "apps/trading/test/scenarios/graph.int-spec.ts",
+    "expectedFinding": true
+  }
+]

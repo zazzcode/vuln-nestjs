@@ -410,9 +410,21 @@ describe('the command', () => {
     const checked = await checkScenarios();
 
     expect(checked.problems).toEqual([]);
-    // Nothing is registered until a service is built; the designed count is the application scenarios and the dependency pins.
-    expect(checked.summary).toMatch(
-      /^The catalogue is sound; 0 of \d+ designed scenarios are registered; 0 registered files match tests\/expected-hashes\.json; tests\/expected-scanner-findings\.json matches the catalogue \(0 rows\)\.$/,
+    // What is registered is what the catalogue holds: an entry per scenario
+    // built so far, a hash per file an entry names, a row per finding. The
+    // designed count is the application scenarios and the dependency pins.
+    const committed = (file) =>
+      JSON.parse(readFileSync(path.join(here, '..', file), 'utf8'));
+    const catalogue = committed('catalog/catalog.json');
+    const designedCount = designedIds(
+      readFileSync(path.join(here, '..', DESIGNED_IN), 'utf8'),
+    ).length;
+    const rows = committed('tests/expected-scanner-findings.json').sources
+      .length;
+    expect(checked.summary).toBe(
+      `The catalogue is sound; ${catalogue.length} of ${designedCount} designed scenarios are registered; ` +
+        `${registeredFiles(catalogue).length} registered files match tests/expected-hashes.json; ` +
+        `tests/expected-scanner-findings.json matches the catalogue (${rows} rows).`,
     );
   });
 });

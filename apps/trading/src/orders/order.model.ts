@@ -1,5 +1,6 @@
 import { Directive, Field, ID, ObjectType } from '@nestjs/graphql';
-import { DecimalScalar } from '@zazzles/exchange-graphql';
+import { DateTimeScalar, DecimalScalar } from '@zazzles/exchange-graphql';
+import { OrderSide, OrderStatus, OrderType } from './order.entity.js';
 import { User } from './user.model.js';
 
 /** An order of the graph. The stored row carries the same fields, with money as integers in minor units. */
@@ -16,14 +17,27 @@ export class Order {
   @Field()
   symbol: string;
 
+  @Field(() => OrderSide)
+  side: OrderSide;
+
+  @Field(() => OrderType)
+  type: OrderType;
+
   @Field(() => DecimalScalar)
   limitPrice: string;
 
   @Field(() => DecimalScalar)
   quantity: string;
 
-  @Field()
-  status: string;
+  /** A free-text note the user attached when placing the order. */
+  @Field(() => String, { nullable: true })
+  memo: string | null;
+
+  @Field(() => OrderStatus)
+  status: OrderStatus;
+
+  @Field(() => DateTimeScalar)
+  createdAt!: Date;
 
   /**
    * The user the order belongs to. This is a reference to the user entity,

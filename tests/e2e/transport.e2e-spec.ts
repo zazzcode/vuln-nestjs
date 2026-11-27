@@ -221,7 +221,12 @@ describe('the relays in front of the services on HTTP/2', () => {
 
     expect(answered.status).toBe(200);
     expect(await answered.json()).toEqual({
-      data: { orders: [{ id: '2', userId: 'u-bob' }] },
+      data: {
+        orders: [
+          { id: '2', userId: 'u-bob' },
+          { id: '7', userId: 'u-bob' },
+        ],
+      },
     });
   });
 
