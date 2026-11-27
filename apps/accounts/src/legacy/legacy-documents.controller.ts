@@ -52,6 +52,27 @@ export class LegacyDocumentsController {
   }
 
   /**
+   * Serves a stored file inline, with the content type its record carries:
+   * what the uploader said the file was is what the browser is told it is.
+   */
+  @Get('file/:name/view')
+  async view(
+    @CurrentUser() caller: TokenPayload,
+    @Param('name') name: string,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<Buffer> {
+    const record = await this.documents.byOriginalName(caller.sub, name);
+    if (record === null) {
+      throw new NotFoundException('No such document');
+    }
+    // XSS-002 / CWE-79: the bytes go out inline as the stored content type —
+    // an upload that claimed text/html is rendered as text/html, on this origin
+    const contents = await readFile(await this.uploads.pathOf(record.storedName));
+    reply.header('content-type', record.mimeType);
+    return contents;
+  }
+
+  /**
    * Stores an upload where the console's uploader said to put it: the `name`
    * field of the request names the destination file, and the upload's own
    * content type is stored with it, whatever either of them is.

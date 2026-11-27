@@ -195,3 +195,49 @@ describe('FS-003: any type accepted, HTML included', () => {
     expect(refusal.message).toContain('signature');
   });
 });
+
+describe('XSS-002: the stored upload served inline as its stored type', () => {
+  test('GET /internal/documents/file/marker.html/view renders as text/html', async () => {
+    const { headers, body } = multipart(
+      'file',
+      'marker.html',
+      '<script>window.__zazzles = "zazzles-lab-marker"</script>\n',
+      'text/html',
+    );
+    const stored = await call(lab, '/internal/documents/legacy', {
+      method: 'POST',
+      headers: { ...bearer(lab.aliceToken), ...headers },
+      body,
+    });
+    const record = (await stored.json()) as { id: string };
+
+    const response = await call(
+      lab,
+      '/internal/documents/file/marker.html/view',
+      { headers: bearer(lab.aliceToken) },
+    );
+    const page = await response.text();
+
+    // gained: the script rides to the browser as a page of this origin —
+    // inline, text/html, and nothing tells the browser not to run it
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toBe('text/html');
+    expect(response.headers.get('content-disposition')).toBeNull();
+    expect(response.headers.get('x-content-type-options')).toBeNull();
+    expect(page).toContain('window.__zazzles = "zazzles-lab-marker"');
+
+    // the same document through the counterparts
+    const asAttachment = await call(
+      lab,
+      `/internal/documents/${record.id}/view`,
+      { headers: bearer(lab.aliceToken) },
+    );
+    expect(asAttachment.headers.get('content-disposition')).toBe('attachment');
+    expect(asAttachment.headers.get('x-content-type-options')).toBe('nosniff');
+
+    const asImage = await call(lab, `/internal/documents/${record.id}/image`, {
+      headers: bearer(lab.aliceToken),
+    });
+    expect(asImage.status).toBe(415);
+  });
+});
