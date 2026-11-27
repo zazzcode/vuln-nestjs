@@ -86,7 +86,7 @@ The versions are the latest published on 2026-11-26, checked against each other'
 | Concern | Package | Version |
 | --- | --- | --- |
 | Runtime | Node.js | 24 (24.21.0 was used for the checks). `engines: ">=24.11.0"`: TypeORM 1.1.3 requires 24.11 or later on that line |
-| Package manager | pnpm | 12.23.0, declared in `packageManager` and supplied by corepack |
+| Package manager | pnpm | 12.23.0, declared in `packageManager`. Continuous integration installs it with `pnpm/action-setup`; the tests do not depend on how it was installed |
 | Framework | `@nestjs/common`, `@nestjs/core`, `@nestjs/platform-fastify`, `@nestjs/platform-express`, `@nestjs/testing` | 12.6.3 |
 | | `@nestjs/cli` | 12.0.15 |
 | | `@nestjs/schematics` | 12.0.17 |

@@ -6,7 +6,7 @@ Every command on this page was run on macOS on arm64, with Node 24.21.0 and pnpm
 
 ## 1. What you need
 
-- Node 24.11 or later. `package.json` names pnpm 12.23.0 under `packageManager`, and corepack supplies it.
+- Node 24.11 or later, and pnpm 12.23.0: the version `package.json` names under `packageManager`. Continuous integration installs that version with `pnpm/action-setup`.
 - Nothing else is installed. The two in-memory database engines are downloaded the first time a service needs them, not at install: 722,567,409 bytes for MySQL 8.4.9 and 147,837,968 for MongoDB 8.2.6, as measured on an arm64 Mac. They are cached and reused.
 - Access to the npm registry, for the install and for the audit.
 

@@ -15,6 +15,19 @@ const COLOR_CODE = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
 
 const STILL_RUNNING = 'still running after two minutes';
 
+/**
+ * How `pnpm start` ends once an interrupt has stopped the lab cleanly, by where
+ * it runs. On macOS with the launcher's exit code, 0, through corepack's wrapper
+ * and through pnpm's own binary alike. On CI's Linux runner by the interrupt
+ * itself, on each run that reached this test, and it says nothing about the
+ * launcher, which may still be stopping the lab. A stop is therefore judged by
+ * what is left of the run, which `stopByInterrupt` checks.
+ */
+const CLEAN_ENDS = [
+  { code: 0, signal: null },
+  { code: null, signal: 'SIGINT' },
+];
+
 interface Exit {
   code: number | null;
   signal: NodeJS.Signals | null;
@@ -72,16 +85,56 @@ function exitOf(run: LauncherRun): Promise<Exit | string> {
   return Promise.race([run.exited, delay(120_000).then(() => STILL_RUNNING)]);
 }
 
+/**
+ * Whether nothing is left of the run, waiting until the deadline. The package
+ * manager, the launcher, the services and their engines are all in its process
+ * group, so it is empty once the run is over.
+ */
+async function nothingLeftOf(
+  run: LauncherRun,
+  deadline: number,
+): Promise<boolean> {
+  for (;;) {
+    try {
+      // Signal 0 asks whether anything is left of the group. It throws when nothing is.
+      process.kill(-run.group, 0);
+    } catch {
+      return true;
+    }
+    if (performance.now() > deadline) {
+      return false;
+    }
+    await delay(50);
+  }
+}
+
+/**
+ * Ctrl-C to the run, as a terminal delivers it to the whole process group, and
+ * what a clean stop shows: the package manager ended as `CLEAN_ENDS` says,
+ * nothing of the run is left within the limit, and no service had to be killed
+ * instead of stopping.
+ */
+async function stopByInterrupt(run: LauncherRun): Promise<void> {
+  const interrupted = performance.now();
+  process.kill(-run.group, 'SIGINT');
+  expect(CLEAN_ENDS).toContainEqual(await exitOf(run));
+  // Where the package manager ended by the interrupt itself, the launcher was still stopping the lab.
+  expect(await nothingLeftOf(run, interrupted + 20_000)).toBe(true);
+  expect(run.output()).not.toContain('did not stop cleanly');
+}
+
 /** Stops a lab that a test did not get to stop, so that a failing test cannot leave it for the next one. */
 async function makeSureItIsGone(run: LauncherRun): Promise<void> {
   try {
     process.kill(-run.group, 'SIGINT');
-    await Promise.race([run.exited, delay(20_000)]);
-    process.kill(-run.group, 'SIGKILL');
+    // What is left stops as the launcher does, its engines included. What is still there after the limit is killed.
+    if (!(await nothingLeftOf(run, performance.now() + 20_000))) {
+      process.kill(-run.group, 'SIGKILL');
+    }
   } catch {
     // The group is gone already.
   }
-  await Promise.race([run.exited, delay(5_000)]);
+  await nothingLeftOf(run, performance.now() + 5_000);
 }
 
 describe('the start command', () => {
@@ -136,14 +189,7 @@ describe('the start command', () => {
         /JWT_SECRET|INTERNAL_SERVICE_TOKEN|x-internal-token|[0-9a-f]{64}/,
       );
 
-      // Ctrl-C: the interrupt reaches the package manager, the launcher and every service at once.
-      const interrupted = performance.now();
-      process.kill(-run.group, 'SIGINT');
-      const outcome = await exitOf(run);
-      const stoppedAfter = performance.now() - interrupted;
-
-      expect(outcome).toEqual({ code: 0, signal: null });
-      expect(stoppedAfter).toBeLessThan(20_000);
+      await stopByInterrupt(run);
       expect(await gatewayHealth()).toBeNull();
       // The relays closed with the rest: nothing listens where they were.
       for (const port of [3201, 3202]) {
@@ -180,10 +226,7 @@ describe('the start command', () => {
       );
       expect(printed).not.toContain('The lab is up');
 
-      process.kill(-run.group, 'SIGINT');
-      const outcome = await exitOf(run);
-
-      expect(outcome).toEqual({ code: 0, signal: null });
+      await stopByInterrupt(run);
       // Accounts was up: it must have gone down with its engine.
       await expect(
         fetch('http://127.0.0.1:3101/internal/health', {
