@@ -1,11 +1,4 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum OrderSide {
   BUY = 'BUY',
@@ -23,7 +16,10 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED',
 }
 
-/** An order as it is stored. Money is an integer in minor units: dollars in cents, coins in hundred-millionths. */
+/**
+ * An order as it is stored. Money is an integer in minor units: dollars in
+ * cents, coins in hundred-millionths. The price is in cents for one coin.
+ */
 @Entity('orders')
 @Index(['symbol', 'status'])
 @Index(['userId', 'createdAt'])
@@ -35,6 +31,11 @@ export class OrderEntity {
   @Column({ length: 26 })
   userId: string;
 
+  /** How the lab's other parts name this order: `ord-`, then its id. Given once the row has an id. */
+  @Index(['reference'], { unique: true })
+  @Column({ type: 'varchar', length: 32, nullable: true })
+  reference: string | null;
+
   @Column({ length: 16 })
   symbol: string;
 
@@ -44,10 +45,11 @@ export class OrderEntity {
   @Column({ type: 'enum', enum: OrderType })
   type: OrderType;
 
-  /** A `bigint` in MySQL, which the driver returns as a string: exact, at any size. */
+  /** The limit of a limit order, the price a market order filled at. A `bigint`, which the driver returns as a string. */
   @Column({ type: 'bigint' })
   limitPrice: string;
 
+  /** In hundred-millionths of the base asset. */
   @Column({ type: 'bigint' })
   quantity: string;
 
@@ -58,9 +60,9 @@ export class OrderEntity {
   @Column({ type: 'enum', enum: OrderStatus })
   status: OrderStatus;
 
-  @CreateDateColumn()
+  @Column({ type: 'datetime', precision: 3 })
   createdAt: Date;
 
-  @UpdateDateColumn()
+  @Column({ type: 'datetime', precision: 3 })
   updatedAt: Date;
 }

@@ -21,20 +21,294 @@
       "cwe": "CWE-173, CWE-200, CWE-601",
       "github_advisory_id": "GHSA-r683-j2x4-v87g",
       "url": "https://github.com/advisories/GHSA-r683-j2x4-v87g"
+    },
+    "1096970": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1096970,
+      "title": "mysql2 Remote Code Execution (RCE) via the readCodeFor function",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<3.9.4",
+      "patched_versions": ">=3.9.4",
+      "severity": "critical",
+      "cwe": "CWE-94",
+      "github_advisory_id": "GHSA-fpw7-j2hg-69v5",
+      "url": "https://github.com/advisories/GHSA-fpw7-j2hg-69v5"
+    },
+    "1097180": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1097180,
+      "title": "MySQL2 for Node Arbitrary Code Injection",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<3.9.7",
+      "patched_versions": ">=3.9.7",
+      "severity": "critical",
+      "cwe": "CWE-94",
+      "github_advisory_id": "GHSA-4rch-2fh8-94vw",
+      "url": "https://github.com/advisories/GHSA-4rch-2fh8-94vw"
+    },
+    "1097488": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1097488,
+      "title": "mysql2 vulnerable to Prototype Pollution",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<3.9.8",
+      "patched_versions": ">=3.9.8",
+      "severity": "high",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-pmh2-wpjm-fj45",
+      "url": "https://github.com/advisories/GHSA-pmh2-wpjm-fj45"
+    },
+    "1098617": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1098617,
+      "title": "mysql2 vulnerable to Prototype Poisoning",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<3.9.4",
+      "patched_versions": ">=3.9.4",
+      "severity": "moderate",
+      "cwe": "CWE-1321",
+      "github_advisory_id": "GHSA-49j4-86m8-q2jw",
+      "url": "https://github.com/advisories/GHSA-49j4-86m8-q2jw"
+    },
+    "1153173": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1153173,
+      "title": "MySQL2: Auth Plugin Downgrade to mysql_clear_password Leaks Plaintext Credentials",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<3.22.0",
+      "patched_versions": ">=3.22.0",
+      "severity": "high",
+      "cwe": "CWE-522",
+      "github_advisory_id": "GHSA-3f6p-5ww8-9rcr",
+      "url": "https://github.com/advisories/GHSA-3f6p-5ww8-9rcr"
+    },
+    "1158532": {
+      "findings": [
+        {
+          "version": "3.9.3",
+          "paths": [
+            "apps__trading>mysql2"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1158532,
+      "title": "MySQL2: Unbounded zlib inflate in compressed MySQL protocol handler allows decompression-bomb DoS",
+      "module_name": "mysql2",
+      "vulnerable_versions": "<=3.23.0",
+      "patched_versions": ">=3.23.1",
+      "severity": "moderate",
+      "cwe": "CWE-409",
+      "github_advisory_id": "GHSA-rgwj-5xj2-c3m3",
+      "url": "https://github.com/advisories/GHSA-rgwj-5xj2-c3m3"
+    },
+    "1240612": {
+      "findings": [
+        {
+          "version": "12.0.1",
+          "paths": [
+            "apps__trading>@nestjs/platform-fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240612,
+      "title": "@nestjs/platform-fastify: Path-scoped middleware bypass via absolute-form request targets",
+      "module_name": "@nestjs/platform-fastify",
+      "vulnerable_versions": ">=12.0.0 <12.0.2",
+      "patched_versions": ">=12.0.2",
+      "severity": "high",
+      "cwe": "CWE-288, CWE-436",
+      "github_advisory_id": "GHSA-9c5c-9qcx-q35q",
+      "url": "https://github.com/advisories/GHSA-9c5c-9qcx-q35q"
+    },
+    "1240639": {
+      "findings": [
+        {
+          "version": "5.12.1",
+          "paths": [
+            "apps__trading>@as-integrations/fastify>fastify",
+            "apps__trading>@nestjs/platform-fastify>fastify",
+            "apps__trading>fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240639,
+      "title": "fastify vulnerable to Denial of Service via unhandled exception on HTTP/2 trailer responses",
+      "module_name": "fastify",
+      "vulnerable_versions": "<5.12.5",
+      "patched_versions": ">=5.12.5",
+      "severity": "moderate",
+      "cwe": "CWE-248",
+      "github_advisory_id": "GHSA-4mh8-r7rc-xpvc",
+      "url": "https://github.com/advisories/GHSA-4mh8-r7rc-xpvc"
+    },
+    "1240641": {
+      "findings": [
+        {
+          "version": "5.12.1",
+          "paths": [
+            "apps__trading>@as-integrations/fastify>fastify",
+            "apps__trading>@nestjs/platform-fastify>fastify",
+            "apps__trading>fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240641,
+      "title": "fastify vulnerable to request body replacement via an async validation result collision",
+      "module_name": "fastify",
+      "vulnerable_versions": "<5.12.2",
+      "patched_versions": ">=5.12.2",
+      "severity": "high",
+      "cwe": "CWE-20",
+      "github_advisory_id": "GHSA-667r-xxjv-c9mm",
+      "url": "https://github.com/advisories/GHSA-667r-xxjv-c9mm"
+    },
+    "1240642": {
+      "findings": [
+        {
+          "version": "5.12.1",
+          "paths": [
+            "apps__trading>@as-integrations/fastify>fastify",
+            "apps__trading>@nestjs/platform-fastify>fastify",
+            "apps__trading>fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240642,
+      "title": "fastify vulnerable to authentication bypass via malformed URLs reaching encapsulated not-found handlers",
+      "module_name": "fastify",
+      "vulnerable_versions": ">=4.0.0 <5.12.2",
+      "patched_versions": ">=5.12.2",
+      "severity": "high",
+      "cwe": "CWE-288",
+      "github_advisory_id": "GHSA-p68q-wchp-6fh7",
+      "url": "https://github.com/advisories/GHSA-p68q-wchp-6fh7"
+    },
+    "1240643": {
+      "findings": [
+        {
+          "version": "5.12.1",
+          "paths": [
+            "apps__trading>@as-integrations/fastify>fastify",
+            "apps__trading>@nestjs/platform-fastify>fastify",
+            "apps__trading>fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240643,
+      "title": "fastify vulnerable to request validation bypass via skipped boolean false schemas",
+      "module_name": "fastify",
+      "vulnerable_versions": "<5.12.2",
+      "patched_versions": ">=5.12.2",
+      "severity": "high",
+      "cwe": "CWE-20",
+      "github_advisory_id": "GHSA-hwr6-493r-vm6h",
+      "url": "https://github.com/advisories/GHSA-hwr6-493r-vm6h"
+    },
+    "1240644": {
+      "findings": [
+        {
+          "version": "5.12.1",
+          "paths": [
+            "apps__trading>@as-integrations/fastify>fastify",
+            "apps__trading>@nestjs/platform-fastify>fastify",
+            "apps__trading>fastify"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1240644,
+      "title": "fastify vulnerable to header validation bypass via incomplete schema case normalization",
+      "module_name": "fastify",
+      "vulnerable_versions": "<5.12.2",
+      "patched_versions": ">=5.12.2",
+      "severity": "high",
+      "cwe": "CWE-178",
+      "github_advisory_id": "GHSA-9q9j-q6p8-xq58",
+      "url": "https://github.com/advisories/GHSA-9q9j-q6p8-xq58"
     }
   },
   "metadata": {
     "vulnerabilities": {
       "info": 0,
       "low": 0,
-      "moderate": 0,
-      "high": 1,
-      "critical": 0
+      "moderate": 3,
+      "high": 8,
+      "critical": 2
     },
-    "dependencies": 513,
+    "dependencies": 526,
     "devDependencies": 0,
-    "optionalDependencies": 16,
-    "totalDependencies": 529
+    "optionalDependencies": 19,
+    "totalDependencies": 545
   },
   "retired": []
 }

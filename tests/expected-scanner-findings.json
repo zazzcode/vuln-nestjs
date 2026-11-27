@@ -1,5 +1,465 @@
 {
   "generatedFrom": "catalog/catalog.json",
   "scopeNote": "Per-source expectations for scanner evaluations. expectedFinding=true rows must be flagged (a miss is a false negative). expectedFinding=false rows are scoped claims: the file should NOT be flagged for the listed CWE, the flaw it is the registered safe control for; findings for unrelated issues are out of scope for this lab. Regenerate with: pnpm scenario:update",
-  "sources": []
+  "sources": [
+    {
+      "id": "ACCESS-002",
+      "source": "apps/trading/src/orders/order-details.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-002-safeControl",
+      "controlFor": "ACCESS-002",
+      "source": "apps/trading/src/orders/orders.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-007",
+      "source": "apps/trading/src/markets/set-reference-price.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-007-safeControl",
+      "controlFor": "ACCESS-007",
+      "source": "apps/trading/src/internal/internal.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-007-safeControl",
+      "controlFor": "ACCESS-007",
+      "source": "apps/trading/src/markets/tick-prices.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-008",
+      "source": "apps/trading/src/wallets/wallet-of.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-008-safeControl",
+      "controlFor": "ACCESS-008",
+      "source": "apps/trading/src/wallets/wallet.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-008-safeControl",
+      "controlFor": "ACCESS-008",
+      "source": "apps/trading/src/wallets/wallets-by-user.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-009",
+      "source": "apps/trading/src/wallets/credit-wallet.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-009-safeControl",
+      "controlFor": "ACCESS-009",
+      "source": "apps/trading/src/internal/internal.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-009-safeControl",
+      "controlFor": "ACCESS-009",
+      "source": "apps/trading/src/wallets/deposit.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-862",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-010",
+      "source": "apps/trading/src/orders/orders-patch.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-010-safeControl",
+      "controlFor": "ACCESS-010",
+      "source": "apps/trading/src/internal/internal.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-010-safeControl",
+      "controlFor": "ACCESS-010",
+      "source": "apps/trading/src/orders/update-order.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-915",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-004",
+      "source": "apps/trading/src/reports/reports-files.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "FS-004-safeControl",
+      "controlFor": "FS-004",
+      "source": "apps/trading/src/reports/reports.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-22",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-006",
+      "source": "apps/trading/src/orders/gift-order.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-006-safeControl",
+      "controlFor": "GQL-006",
+      "source": "apps/trading/src/orders/orders.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-006-safeControl",
+      "controlFor": "GQL-006",
+      "source": "apps/trading/src/orders/place-order.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INJECT-001",
+      "source": "apps/trading/src/reports/trades-raw.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1236",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INJECT-001-safeControl",
+      "controlFor": "INJECT-001",
+      "source": "apps/trading/src/reports/reports.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1236",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-001",
+      "source": "apps/trading/src/wallets/payout.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-20",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-001-safeControl",
+      "controlFor": "LOGIC-001",
+      "source": "apps/trading/src/internal/internal.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-20",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-001-safeControl",
+      "controlFor": "LOGIC-001",
+      "source": "apps/trading/src/wallets/withdraw.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-20",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-002",
+      "source": "apps/trading/src/wallets/payout.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-367",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-002-safeControl",
+      "controlFor": "LOGIC-002",
+      "source": "apps/trading/src/internal/internal.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-367",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-002-safeControl",
+      "controlFor": "LOGIC-002",
+      "source": "apps/trading/src/wallets/withdraw.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-367",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-003",
+      "source": "apps/trading/src/orders/quick-buy.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-840",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-003-safeControl",
+      "controlFor": "LOGIC-003",
+      "source": "apps/trading/src/orders/buy-at-market.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-840",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-003-safeControl",
+      "controlFor": "LOGIC-003",
+      "source": "apps/trading/src/orders/place-order.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-840",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-004",
+      "source": "apps/trading/src/money/convert.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-682",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-004-safeControl",
+      "controlFor": "LOGIC-004",
+      "source": "apps/trading/src/money/convert-exact.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-682",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-004-safeControl",
+      "controlFor": "LOGIC-004",
+      "source": "apps/trading/src/orders/place-order.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-682",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-005",
+      "source": "apps/trading/src/orders/match-order.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-362",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-005-safeControl",
+      "controlFor": "LOGIC-005",
+      "source": "apps/trading/src/markets/tick-prices.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-362",
+      "scanner": "SAST"
+    },
+    {
+      "id": "LOGIC-005-safeControl",
+      "controlFor": "LOGIC-005",
+      "source": "apps/trading/src/orders/settle-order.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-362",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-002",
+      "source": "apps/trading/src/trades/all-trades.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-002-safeControl",
+      "controlFor": "RES-002",
+      "source": "apps/trading/src/trades/trades-named.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "RES-002-safeControl",
+      "controlFor": "RES-002",
+      "source": "apps/trading/src/trades/trades.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-001",
+      "source": "apps/trading/src/orders/order-lookup.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-001-safeControl",
+      "controlFor": "SQL-001",
+      "source": "apps/trading/src/orders/order-by-reference.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-001-safeControl",
+      "controlFor": "SQL-001",
+      "source": "apps/trading/src/orders/orders.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-002",
+      "source": "apps/trading/src/trades/trade-history.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-002-safeControl",
+      "controlFor": "SQL-002",
+      "source": "apps/trading/src/trades/trades-named.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-002-safeControl",
+      "controlFor": "SQL-002",
+      "source": "apps/trading/src/trades/trades.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-003",
+      "source": "apps/trading/src/markets/search-markets.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-003-safeControl",
+      "controlFor": "SQL-003",
+      "source": "apps/trading/src/markets/markets-by-assets.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-003-safeControl",
+      "controlFor": "SQL-003",
+      "source": "apps/trading/src/markets/markets.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-004",
+      "source": "apps/trading/src/trades/trades-sorted.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-004-safeControl",
+      "controlFor": "SQL-004",
+      "source": "apps/trading/src/trades/trades-named.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-004-safeControl",
+      "controlFor": "SQL-004",
+      "source": "apps/trading/src/trades/trades.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-005",
+      "source": "apps/trading/src/markets/volume-for.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-005-safeControl",
+      "controlFor": "SQL-005",
+      "source": "apps/trading/src/markets/markets.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-005-safeControl",
+      "controlFor": "SQL-005",
+      "source": "apps/trading/src/trades/high-price.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-006",
+      "source": "apps/trading/src/trades/fees-paid.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-006-safeControl",
+      "controlFor": "SQL-006",
+      "source": "apps/trading/src/markets/settlement-price.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-006-safeControl",
+      "controlFor": "SQL-006",
+      "source": "apps/trading/src/orders/order-by-reference.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-007",
+      "source": "apps/trading/src/orders/orders-by-ids.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-007-safeControl",
+      "controlFor": "SQL-007",
+      "source": "apps/trading/src/orders/order-by-reference.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SQL-007-safeControl",
+      "controlFor": "SQL-007",
+      "source": "apps/trading/src/orders/orders-among.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-89",
+      "scanner": "SAST"
+    }
+  ]
 }
