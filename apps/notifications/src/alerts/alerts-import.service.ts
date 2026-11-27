@@ -3,11 +3,11 @@ import { WebhookClientService } from '../webhooks/webhook-client.service.js';
 import { AlertsService, type NewAlert } from './alerts.service.js';
 import type { Alert } from './alert.model.js';
 
-/** What one imported alert document holds. */
+/** What one imported alert document holds, once it has been checked. */
 interface AlertDocument {
-  symbol: unknown;
-  direction: unknown;
-  threshold: unknown;
+  symbol: string;
+  direction: 'ABOVE' | 'BELOW';
+  threshold: string;
   label?: unknown;
 }
 

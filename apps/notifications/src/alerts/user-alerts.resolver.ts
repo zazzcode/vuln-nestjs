@@ -11,7 +11,7 @@ import { User } from './user.model.js';
 /** The alerts of the `User` entity this service extends: the caller's own, or any user for an administrator. */
 @Resolver(() => User)
 export class UserAlertsResolver {
-  constructor(private readonly alerts: AlertsService) {}
+  constructor(private readonly alertsOf: AlertsService) {}
 
   @ResolveField(() => [Alert])
   alerts(
@@ -19,6 +19,6 @@ export class UserAlertsResolver {
     @CurrentUser() caller: TokenPayload | undefined,
   ): Promise<Alert[]> {
     requireOwnUser(caller, user.id);
-    return this.alerts.of(user.id);
+    return this.alertsOf.of(user.id);
   }
 }
