@@ -10,7 +10,7 @@ const run = promisify(execFile);
 /** The notifier command of this service, resolved from the module's own directory. */
 export const NOTIFY_SCRIPT = path.resolve(
   import.meta.dirname,
-  '../../../scripts/notify.js',
+  '../../scripts/notify.js',
 );
 
 /**

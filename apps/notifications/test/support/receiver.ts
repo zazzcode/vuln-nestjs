@@ -38,6 +38,24 @@ export class WebhookReceiver {
             typeof signature === 'string' &&
             verifySignature(rawBody, signature, this.key),
         });
+        // A GET of the alert documents answers with one, so an import from this origin can succeed.
+        if (
+          request.method === 'GET' &&
+          (request.url ?? '').startsWith('/alerts')
+        ) {
+          response.writeHead(200, { 'content-type': 'application/json' });
+          response.end(
+            JSON.stringify([
+              {
+                symbol: 'SOL-USD',
+                direction: 'ABOVE',
+                threshold: '170.00',
+                label: 'From the receiver',
+              },
+            ]),
+          );
+          return;
+        }
         response.writeHead(200, { 'content-type': 'application/json' });
         response.end('{"received":true}');
       });

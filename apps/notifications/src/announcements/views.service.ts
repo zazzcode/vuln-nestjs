@@ -8,10 +8,7 @@ import path from 'node:path';
  * this module's own directory, the same relative path from `src/` and from
  * `dist/`. The build emits JavaScript and nothing else.
  */
-export const VIEWS_DIRECTORY = path.resolve(
-  import.meta.dirname,
-  '../../../views',
-);
+export const VIEWS_DIRECTORY = path.resolve(import.meta.dirname, '../../views');
 
 /**
  * Teaches the Express instance to render `ejs` views: the engine and the
