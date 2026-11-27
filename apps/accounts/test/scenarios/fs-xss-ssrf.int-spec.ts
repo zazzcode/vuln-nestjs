@@ -32,18 +32,20 @@ describe('FS-001: the file name is the path', () => {
   });
 
   test('the id route serves the record the database names, not the caller', async () => {
-    const response = await call(lab, '/internal/documents/d-alice-avatar/view', {
-      headers: bearer(lab.aliceToken),
-    });
+    const response = await call(
+      lab,
+      '/internal/documents/d-alice-avatar/view',
+      {
+        headers: bearer(lab.aliceToken),
+      },
+    );
     const bytes = Buffer.from(await response.arrayBuffer());
 
     // refused: there is no name to traverse with — the seeded PNG answers,
     // as an attachment, with the PNG signature it must have
     expect(response.status).toBe(200);
     expect(response.headers.get('content-disposition')).toBe('attachment');
-    expect(bytes.subarray(0, 4)).toEqual(
-      Buffer.from([0x89, 0x50, 0x4e, 0x47]),
-    );
+    expect(bytes.subarray(0, 4)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
   });
 
   test('the by-name route resolves and checks the stored path', async () => {
@@ -80,9 +82,7 @@ describe('FS-002: the upload is stored under its own name', () => {
     // gained: the write landed one directory up, wherever the uploader
     // pointed it — the answer says a document was stored
     expect(response.status).toBe(201);
-    const { documents, root } = await lab.service.app
-      .get(UploadsStore)
-      .open();
+    const { documents, root } = await lab.service.app.get(UploadsStore).open();
     expect(existsSync(join(root, 'outside-zazzles.txt'))).toBe(true);
     expect(existsSync(join(documents, 'outside-zazzles.txt'))).toBe(false);
   });
@@ -103,9 +103,7 @@ describe('FS-002: the upload is stored under its own name', () => {
     // refused: the uploader's name is data; the file that lands is named by
     // the service, inside the documents directory
     expect(response.status).toBe(201);
-    const { documents, root } = await lab.service.app
-      .get(UploadsStore)
-      .open();
+    const { documents, root } = await lab.service.app.get(UploadsStore).open();
     const stored = readdirSync(documents).filter((name) =>
       /^[0-9a-f-]{36}\.txt$/.test(name),
     );
@@ -127,12 +125,10 @@ describe('FS-002: the upload is stored under its own name', () => {
     });
 
     expect(response.status).toBe(201);
-    const { documents, root } = await lab.service.app
-      .get(UploadsStore)
-      .open();
-    expect(
-      readdirSync(documents).some((name) => name.endsWith('.txt')),
-    ).toBe(true);
+    const { documents, root } = await lab.service.app.get(UploadsStore).open();
+    expect(readdirSync(documents).some((name) => name.endsWith('.txt'))).toBe(
+      true,
+    );
     expect(existsSync(join(root, 'checked-zazzles.txt'))).toBe(false);
   });
 });
@@ -285,9 +281,9 @@ describe('XSS-004: a stored display name rendered unescaped', () => {
     // refused as a page: the display names are data in JSON, and the header
     // says the browser may not read the answer as anything else
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
-    expect(
-      users.some((user) => user.displayName.includes('<script>')),
-    ).toBe(false);
+    expect(users.some((user) => user.displayName.includes('<script>'))).toBe(
+      false,
+    );
   });
 
   test('the directory page escapes every value and allows nothing', async () => {

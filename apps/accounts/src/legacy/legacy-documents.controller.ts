@@ -19,7 +19,10 @@ import {
 } from '@zazzles/exchange-internal-auth';
 import type { DocumentRecord } from '../documents/document.record.js';
 import { DocumentsRepository } from '../documents/documents.repository.js';
-import { toStored, type StoredDocument } from '../documents/documents.service.js';
+import {
+  toStored,
+  type StoredDocument,
+} from '../documents/documents.service.js';
 import { UploadsStore } from '../documents/uploads.store.js';
 
 /**
@@ -67,7 +70,9 @@ export class LegacyDocumentsController {
     }
     // XSS-002 / CWE-79: the bytes go out inline as the stored content type —
     // an upload that claimed text/html is rendered as text/html, on this origin
-    const contents = await readFile(await this.uploads.pathOf(record.storedName));
+    const contents = await readFile(
+      await this.uploads.pathOf(record.storedName),
+    );
     reply.header('content-type', record.mimeType);
     return contents;
   }

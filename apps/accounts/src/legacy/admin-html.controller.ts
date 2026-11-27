@@ -21,8 +21,7 @@ export class AdminHtmlController {
     // display name that carries markup is rendered as markup
     const rows = users
       .map(
-        (user) =>
-          `<tr><td>${user.displayName}</td><td>${user.email}</td></tr>`,
+        (user) => `<tr><td>${user.displayName}</td><td>${user.email}</td></tr>`,
       )
       .join('');
     reply.header('content-type', 'text/html');
