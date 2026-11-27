@@ -14,6 +14,7 @@ import { LegacyProfileController } from './legacy-profile.controller.js';
 import { LegacyMeController } from './legacy-me.controller.js';
 import { LegacyDocumentsController } from './legacy-documents.controller.js';
 import { AdminHtmlController } from './admin-html.controller.js';
+import { LegacyAvatarController } from './legacy-avatar.controller.js';
 import { PreferencesBulkResolver } from './preferences-bulk.resolver.js';
 import { SessionsModule } from '../sessions/sessions.module.js';
 import { UsersModule } from '../users/users.module.js';
@@ -42,6 +43,7 @@ import { DocumentsModule } from '../documents/documents.module.js';
     LegacyMeController,
     LegacyDocumentsController,
     AdminHtmlController,
+    LegacyAvatarController,
   ],
 })
 export class LegacyModule {}

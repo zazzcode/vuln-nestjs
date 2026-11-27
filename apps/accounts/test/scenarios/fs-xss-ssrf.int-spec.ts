@@ -1,7 +1,9 @@
 import { existsSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, expect, test } from 'vitest';
-import { bearer, call, multipart, startLab, type Lab } from '../lab.js';
+import type { AddressInfo } from 'node:net';
+import { createServer } from 'node:http';
+import { bearer, call, gql, multipart, startLab, type Lab } from '../lab.js';
 import { UploadsStore } from '../../src/documents/uploads.store.js';
 
 let lab: Lab;
@@ -314,5 +316,107 @@ describe('XSS-004: a stored display name rendered unescaped', () => {
       method: 'POST',
       headers: { 'x-internal-token': lab.serviceToken },
     });
+  });
+});
+
+describe('SSRF-002: the avatar URL is fetched wherever it points', () => {
+  const hits: string[] = [];
+  let stub: import('node:http').Server;
+  let port: number;
+
+  beforeAll(async () => {
+    stub = createServer((request, response) => {
+      hits.push(request.url ?? '');
+      if (request.url === '/redirect') {
+        response.writeHead(302, { location: '/internal/health' });
+        response.end();
+        return;
+      }
+      response.writeHead(200, { 'content-type': 'text/plain' });
+      response.end('the service fetched this\n');
+    });
+    await new Promise<void>((resolve) => stub.listen(0, '127.0.0.1', resolve));
+    port = (stub.address() as AddressInfo).port;
+  });
+
+  afterAll(async () => {
+    await new Promise((resolve) => stub.close(resolve));
+  });
+
+  test('POST /internal/profile/avatar reaches the loopback the URL names', async () => {
+    const response = await call(lab, '/internal/profile/avatar', {
+      method: 'POST',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `http://127.0.0.1:${port}/internal/health`,
+      }),
+    });
+
+    // gained: the service fetched the URL the caller chose — a listener on
+    // the machine's own loopback was reached from inside
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({ stored: true, status: 200 });
+    expect(hits).toContain('/internal/health');
+  });
+
+  test('a redirect is followed to wherever it leads', async () => {
+    const response = await call(lab, '/internal/profile/avatar', {
+      method: 'POST',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ url: `http://127.0.0.1:${port}/redirect` }),
+    });
+
+    // gained: the 302 was followed — the fetch ended where the redirect said
+    expect(await response.json()).toMatchObject({ stored: true, status: 200 });
+    expect(hits).toEqual(
+      expect.arrayContaining(['/redirect', '/internal/health']),
+    );
+  });
+
+  test('setAvatarUrl stores the same URL and fetches nothing', async () => {
+    const before = hits.length;
+    const response = await gql(
+      lab,
+      'mutation ($url: String!) { setAvatarUrl(url: $url) { id avatarUrl } }',
+      {
+        token: lab.aliceToken,
+        variables: { url: `http://127.0.0.1:${port}/internal/health` },
+      },
+    );
+
+    // refused: the URL is data — nothing was fetched, and the count of hits
+    // the stub saw did not move
+    expect(response.errors).toBeUndefined();
+    expect(response.data).toMatchObject({
+      setAvatarUrl: {
+        id: 'u-alice',
+        avatarUrl: `http://127.0.0.1:${port}/internal/health`,
+      },
+    });
+    expect(hits.length).toBe(before);
+  });
+
+  test('the allowlisted fetch refuses the same URL before any request', async () => {
+    const before = hits.length;
+    const response = await call(lab, '/internal/profile/avatar/fetch', {
+      method: 'POST',
+      headers: {
+        ...bearer(lab.aliceToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: `http://127.0.0.1:${port}/internal/health`,
+      }),
+    });
+
+    // refused: the origin is not on the allowlist, so no request was made
+    expect(await response.json()).toMatchObject({ stored: false });
+    expect(hits.length).toBe(before);
   });
 });
