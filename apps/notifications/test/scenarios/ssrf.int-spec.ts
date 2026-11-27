@@ -156,3 +156,73 @@ describe('SSRF-001: a webhook posted to any URL', () => {
     });
   });
 });
+
+describe('SSRF-003: a URL fetched and its body returned', () => {
+  const url = () => `${standIn.url}/internal/health`;
+
+  test("the exploit: POST /internal/alerts/fetch answers the internal endpoint's body", async () => {
+    await reset();
+    standIn.forget();
+
+    const response = await request(`${service.url}/internal/alerts/fetch`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${alice()}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ url: url() }),
+    });
+
+    expect(response.status).toBe(200);
+    const answered = (await response.json()) as {
+      status: number;
+      body: string;
+    };
+    expect(answered.status).toBe(200);
+    expect(answered.body).toContain(STAND_IN_MARKER);
+    expect(standIn.sawRequestTo('/internal/health')).toBe(true);
+  });
+
+  test('counterpart 1: POST /internal/alerts/import takes the content and fetches nothing', async () => {
+    await reset();
+    standIn.forget();
+
+    const response = await request(`${service.url}/internal/alerts/import`, {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${alice()}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ json: url() }),
+    });
+
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { message: string }).message).toContain(
+      'not an alert document',
+    );
+    expect(standIn.sawRequestTo('/internal/health')).toBe(false);
+  });
+
+  test('counterpart 2: POST /internal/alerts/import-url refuses the origin through the guard', async () => {
+    await reset();
+    standIn.forget();
+
+    const response = await request(
+      `${service.url}/internal/alerts/import-url`,
+      {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${alice()}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ url: url() }),
+      },
+    );
+
+    expect(response.status).toBe(400);
+    expect(((await response.json()) as { message: string }).message).toContain(
+      'not on the webhook allowlist',
+    );
+    expect(standIn.sawRequestTo('/internal/health')).toBe(false);
+  });
+});

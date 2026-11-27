@@ -43,6 +43,7 @@ export class AppModule implements NestModule {
       .forRoutes(
         { path: 'internal/alerts/import', method: RequestMethod.POST },
         { path: 'internal/alerts/import-url', method: RequestMethod.POST },
+        { path: 'internal/alerts/fetch', method: RequestMethod.POST },
         { path: 'internal/webhooks/test', method: RequestMethod.POST },
         { path: 'internal/announcements/notify', method: RequestMethod.POST },
       );

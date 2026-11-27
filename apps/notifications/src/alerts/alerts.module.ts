@@ -4,6 +4,7 @@ import { SettingsModule } from '../settings/settings.module.js';
 import { WebhooksModule } from '../webhooks/webhooks.module.js';
 import { AlertEntity } from './alert.entity.js';
 import { AlertEvaluationService } from './alert-evaluation.service.js';
+import { AlertsFetchController } from './alerts-fetch.controller.js';
 import { AlertsImportService } from './alerts-import.service.js';
 import { AlertsImportController } from './alerts-import.controller.js';
 import { AlertsImportUrlController } from './alerts-import-url.controller.js';
@@ -39,7 +40,11 @@ import { UserWebhookUrlResolver } from './user-webhook-url.resolver.js';
     UserWebhookUrlResolver,
     UserNotificationSettingsResolver,
   ],
-  controllers: [AlertsImportController, AlertsImportUrlController],
+  controllers: [
+    AlertsImportController,
+    AlertsImportUrlController,
+    AlertsFetchController,
+  ],
   exports: [
     AlertsRepository,
     AlertsService,

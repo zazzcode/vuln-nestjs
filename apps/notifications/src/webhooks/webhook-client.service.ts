@@ -100,6 +100,27 @@ export class WebhookClientService implements OnApplicationShutdown {
     }
   }
 
+  /**
+   * One GET to whatever the URL says, with no guard, following the redirects
+   * the receiver offers. What came back is the caller's to read.
+   */
+  async read(url: string): Promise<DeliveryOutcome> {
+    try {
+      const answer = await fetch(url, {
+        method: 'GET',
+        redirect: 'follow',
+        timeout: TIMEOUT_MS,
+      });
+      const text = await answer.text();
+      return { sent: true, answer: { status: answer.status, body: text } };
+    } catch (error) {
+      return {
+        sent: true,
+        error: `the request could not be made: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
   private async deliver(
     url: string,
     payload: unknown,
