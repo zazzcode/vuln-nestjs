@@ -10,7 +10,7 @@ import {
 import type { AddressInfo } from 'node:net';
 import { labMarkets, labUsers } from '@zazzles/exchange-lab-data';
 import { SERVICE_TOKEN_HEADER } from '@zazzles/exchange-internal-auth';
-import { parse, print } from 'graphql';
+import { GraphQLError, parse, print } from 'graphql';
 
 const require = createRequire(import.meta.url);
 const { graphql } = require('graphql') as typeof import('graphql');
@@ -93,7 +93,9 @@ const ordersOf = (userId: string) =>
   orders.filter((order) => order.userId === userId);
 
 /** Who the caller is, from the authorization header the gateway forwarded. */
-function callerOf(headers: Record<string, string | string[] | undefined>) {
+function callerOf(
+  headers: Record<string, string | string[] | undefined>,
+): { sub: string; role: string } | null {
   const authorization = headers.authorization;
   if (typeof authorization !== 'string') {
     return null;
@@ -101,8 +103,16 @@ function callerOf(headers: Record<string, string | string[] | undefined>) {
   const token = authorization.replace(/^Bearer /, '');
   try {
     const decoded = new JwtService({}).decode(token);
-    if (decoded && typeof decoded === 'object' && 'sub' in decoded) {
-      return String(decoded.sub);
+    if (
+      decoded &&
+      typeof decoded === 'object' &&
+      'sub' in decoded &&
+      'role' in decoded
+    ) {
+      return {
+        sub: String(decoded.sub),
+        role: String(decoded.role),
+      };
     }
   } catch {
     // A stand-in does not verify; a token it cannot read has no caller.
@@ -125,9 +135,23 @@ function schemaOf(service: 'accounts' | 'trading' | 'notifications') {
               },
             ) => {
               const caller = callerOf(context.headers ?? {});
-              return caller ? (users[caller] ?? null) : null;
+              return caller ? (users[caller.sub] ?? null) : null;
             },
-            user: (_: unknown, { id }: { id: string }) => users[id] ?? null,
+            user: (
+              _: unknown,
+              { id }: { id: string },
+              context: {
+                headers?: Record<string, string | string[] | undefined>;
+              },
+            ) => {
+              // As the accounts contract has it: one user by id, an
+              // administrator's question only.
+              const caller = callerOf(context.headers ?? {});
+              if (!caller || caller.role !== 'ADMIN') {
+                throw new GraphQLError('user(id) is for an administrator');
+              }
+              return users[id] ?? null;
+            },
           },
           User: {
             __resolveReference: (reference: { id: string }) =>
@@ -151,7 +175,7 @@ function schemaOf(service: 'accounts' | 'trading' | 'notifications') {
               },
             ) => {
               const caller = callerOf(context.headers ?? {});
-              return caller ? ordersOf(caller) : [];
+              return caller ? ordersOf(caller.sub) : [];
             },
             markets: () =>
               labMarkets.map((market) => ({

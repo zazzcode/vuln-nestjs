@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import { SERVICE_TOKEN_HEADER } from '@zazzles/exchange-internal-auth';
+import { Http2ClientService } from '@zazzles/exchange-http2';
 import { runSecret, sessionToken } from '@zazzles/exchange-testing';
 import {
   FastifyAdapter,
@@ -109,11 +111,8 @@ describe('the GraphQL scenarios', () => {
     // one request is a walk of every order of the caller, twelve levels deep.
     let level: unknown = body.data.me;
     for (let walked = 0; walked < depth; walked++) {
-      level = (
-        (level as { orders?: unknown[] }).orders?.[0] as {
-          user?: unknown;
-        }
-      ).user;
+      const order = (level as { orders?: { user?: unknown }[] }).orders?.[0];
+      level = order?.user;
       expect(level).toMatchObject({ id: 'u-alice' });
     }
   });
@@ -162,5 +161,118 @@ describe('the GraphQL scenarios', () => {
     const stack = error.extensions.stacktrace as string[];
     expect(stack.length).toBeGreaterThan(3);
     expect(stack.join('\n')).toMatch(/\sat\s/);
+  });
+
+  // GQL-007 — the backend federation queries answer any caller. The gateway's
+  // half is built: it presents `x-internal-token` on every subgraph fetch. The
+  // subgraph's half is played by the stand-in's `requireInternalToken` switch:
+  // off, it is the services as they are today; on, it is the hardened value.
+  const ENTITIES_QUERY = `query($reps: [_Any!]!) {
+    _entities(representations: $reps) {
+      ... on User { id email }
+    }
+  }`;
+
+  const entitiesTo = (port: number, token?: string) =>
+    app
+      .get(Http2ClientService)
+      .fetch(`http://127.0.0.1:${port}/graphql`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { [SERVICE_TOKEN_HEADER]: token } : {}),
+        },
+        body: JSON.stringify({
+          query: ENTITIES_QUERY,
+          variables: { reps: [{ __typename: 'User', id: 'u-admin' }] },
+        }),
+      })
+      .then(async (response) => ({
+        status: response.status,
+        body: (await response.json()) as {
+          data?: { _entities?: unknown[] };
+          errors?: { message: string }[];
+        },
+      }));
+
+  const userById = (port: number, token?: string) =>
+    app
+      .get(Http2ClientService)
+      .fetch(`http://127.0.0.1:${port}/graphql`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          query: 'query { user(id: "u-admin") { id } }',
+        }),
+      })
+      .then(async (response) => ({
+        status: response.status,
+        body: (await response.json()) as {
+          data?: unknown;
+          errors?: { message: string }[];
+        },
+      }));
+
+  test('GQL-007: a direct _entities call with no token reads any user by key', async () => {
+    // As the services are today: the federation queries require no credential.
+    subgraphs.accounts.requireInternalToken = false;
+
+    const read = await entitiesTo(subgraphs.accounts.port);
+
+    expect(read.status).toBe(200);
+    // What was gained: the administrator's own record, by key, with no
+    // credential at all — through the query the gateway alone is meant to use.
+    expect(read.body.data?._entities).toEqual([
+      { id: 'u-admin', email: 'admin@vcx.exchange' },
+    ]);
+
+    // The same service refuses the same record to the guarded field: `user(id)`
+    // is an administrator's question, and this caller is nobody.
+    const guarded = await userById(subgraphs.accounts.port);
+    expect(guarded.body.errors?.[0]?.message).toBe(
+      'user(id) is for an administrator',
+    );
+  });
+
+  test('GQL-007: with the token required, a direct call is refused and the graph still answers', async () => {
+    // The hardened value: a subgraph answers `_entities` and `_service` to the
+    // gateway only, on presentation of the internal token.
+    subgraphs.accounts.requireInternalToken = true;
+
+    const refused = await entitiesTo(subgraphs.accounts.port);
+    expect(refused.status).toBe(403);
+    expect(refused.body.data).toBeUndefined();
+
+    // The gateway presents the token, so the graph it composes still answers —
+    // including the join that is itself an `_entities` call to accounts.
+    const throughTheGraph = await post(
+      { query: '{ orders { id user { id email } } }' },
+      { authorization: `Bearer ${alice}` },
+    );
+    expect(throughTheGraph.statusCode).toBe(200);
+    const body = throughTheGraph.json();
+    expect(body.errors).toBeUndefined();
+    expect(body.data.orders).toHaveLength(2);
+    for (const order of body.data.orders) {
+      expect(order.user).toEqual({
+        id: 'u-alice',
+        email: 'alice@vcx.exchange',
+      });
+    }
+
+    // And a direct call that does present the token is the gateway's own.
+    const asTheGateway = await entitiesTo(
+      subgraphs.accounts.port,
+      process.env.INTERNAL_SERVICE_TOKEN,
+    );
+    expect(asTheGateway.status).toBe(200);
+    expect(asTheGateway.body.data?._entities).toEqual([
+      { id: 'u-admin', email: 'admin@vcx.exchange' },
+    ]);
+
+    subgraphs.accounts.requireInternalToken = false;
   });
 });
