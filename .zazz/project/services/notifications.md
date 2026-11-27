@@ -104,9 +104,9 @@ input AnnouncementInput { title: String! body: String! }
 | `POST /api/v1/admin/announcements/send` → `POST /internal/announcements/send` | vulnerable | admin | OS-001, DESER-003 |
 | `GET /api/v1/announcements/:id.html` → `GET /internal/announcements/:id/html` | vulnerable | public | XSS-001 |
 
-**Counts.** 10 scenarios on 9 vulnerable operations. 29 safe operations: 20 GraphQL, the four `User` fields included, and 9 REST. More than three safe for every vulnerable one.
+**Counts.** 10 scenarios on 9 vulnerable operations. 22 safe operations are built: 16 protected counterparts and 6 others, about two and a half for every vulnerable one. Six more were designed and are not built: the owner decided on 2026-11-26 to fewer safe routes, and [the deliverable specification](../../specifications/002c-notifications.md), D-2, names the six and why. See [ADR-013](../../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md).
 
-**Dependency versions this service is built with.** `ejs` 3.1.10, `node-fetch` 2.7.0 and `dot-prop` 4.1.0. The first two are the controls for SCA-004 and SCA-003; the third is the pin SCA-006, because PROTO-003 is not exploitable without it.
+**Dependency versions this service is built with.** `node-fetch` 2.6.6, `ejs` 3.1.6 and `dot-prop` 4.1.0: three vulnerable pins, each an exact version and each reached at run time, by SSRF-001, DESER-003 and PROTO-003. They are SCA-003, SCA-004 and SCA-006 in the [dependency document](../../../docs/vulnerabilities/dependencies.md); the controls are the patched versions it names in `apps/accounts`. Until 2026-11-27 this line named two of those patched versions as this service's own.
 
 ## 5. Scenarios
 
