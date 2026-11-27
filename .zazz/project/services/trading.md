@@ -1,7 +1,7 @@
 # `trading` — service specification
 
 **Adapter:** Fastify, HTTP/2 on `127.0.0.1:3102` · **Store:** MySQL, database `zazzles_trading`
-**Status:** design agreed with the Project Owner on 2026-11-26. Ready to build.
+**Status:** design agreed with the Project Owner on 2026-11-26. Ready to build. Extended the same day, at the Project Owner's request, with three scenarios in which a template literal was taken for a prepared statement: [SQL-005 to SQL-007](#sql--sql-injection).
 
 ## 1. What it owns
 
@@ -88,8 +88,11 @@ input UpdateOrderInput { memo: String }
 | `wallet: [Wallet!]!` | safe | user | | The caller's balances |
 | `ledger(asset: Asset, limit: Int, offset: Int): [LedgerEntry!]!` | safe | user | | The caller's ledger |
 | `orders(status: OrderStatus, limit: Int, offset: Int): [Order!]!` | safe | user | | The caller's orders |
+| `ordersAmong(ids: [ID!]!): [Order!]!` | safe | user | | The caller's orders among these ids. A list is bound with `In`, and so is the caller |
 | `order(id: ID!): Order` | safe | user | | Through the repository, then an ownership check |
 | `orderByReference(ref: String!): Order` | safe | user | | Raw SQL with `?` placeholders, then an ownership check |
+| `highPrice(symbol: String!): Decimal!` | safe | public | | Raw SQL through `sql`, the tag that parameterizes: the text keeps `?`, the values travel as parameters |
+| `settlementPrice(symbol: String!): Decimal!` | safe | public | | The driver's `execute()`, a prepared statement: the text and the parameters come from the same tag |
 | `wallets(userId: ID!): [Wallet!]!` | safe | admin | | |
 | `User.wallets`, `User.orders`, `User.trades`, `User.ledger` | safe | user | | Keyed by the user the gateway resolved |
 | `placeOrder(input: PlaceOrderInput!): Order!` | safe | user | | A market order takes the server's reference price. The input has no price for it |
@@ -105,6 +108,9 @@ input UpdateOrderInput { memo: String }
 | `tradeHistory(input: TradeHistoryInput!): [Trade!]!` | vulnerable | user | SQL-002 | Query builder `where` built by concatenation |
 | `searchMarkets(q: String!): [Market!]!` | vulnerable | public | SQL-003 | `LIKE '%${q}%'` concatenated |
 | `tradesSorted(symbol: String!, sortBy: String!, sortDir: String!): [Trade!]!` | vulnerable | public | SQL-004 | `sortBy` and `sortDir` passed to `orderBy` |
+| `volumeFor(symbol: String!): Decimal!` | vulnerable | public | SQL-005 | Through `sqlText`, a tag kept from before the one that parameterizes: it escapes quotes and joins the pieces |
+| `feesPaid(symbol: String!): Decimal!` | vulnerable | user | SQL-006 | The driver's `execute()`, on a string built with a template literal. No placeholder, no parameter |
+| `ordersByIds(ids: [ID!]!): [Order!]!` | vulnerable | user | SQL-007 | The ids are joined into `IN (…)` |
 | `walletOf(userId: ID!): [Wallet!]!` | vulnerable | user | ACCESS-008 | Any user's balances, and its ledger |
 | `orderDetails(id: ID!): Order` | vulnerable | user | ACCESS-002 | No ownership check |
 | `allTrades(symbol: String!, limit: Int): [Trade!]!` | vulnerable | public | RES-002 | No cap on `limit` |
@@ -133,18 +139,23 @@ input UpdateOrderInput { memo: String }
 | `GET /api/v1/reports/files/:name` → `GET /internal/reports/files/:name` | vulnerable | user | FS-004 |
 | `GET /api/v1/reports/trades-raw.csv` → `GET /internal/reports/trades-raw.csv` | vulnerable | user | INJECT-001 |
 
-**Counts.** 18 scenarios on 17 vulnerable operations. 35 safe operations: 26 GraphQL, the four `User` fields included, and 9 REST. About two safe for every vulnerable one.
+**Counts.** 21 scenarios on 20 vulnerable operations. 38 safe operations: 29 GraphQL, the four `User` fields included, and 9 REST. About two safe for every vulnerable one (1.9).
 
 ## 5. Scenarios
 
 ### `SQL` — SQL injection
 
-| ID | Weakness and sink | Vulnerable | Protected 1 | Protected 2 |
+Seven ways the same mistake appears: a template literal taken for a prepared statement. An untagged template literal is concatenation (SQL-001 to SQL-003). A tag binds nothing unless it is written to (SQL-005). `execute()` prepares whatever string it is handed (SQL-006). A list can be bound, so it need not be joined (SQL-007). SQL-004 is the one that is about something else: an identifier, which cannot be a parameter and so must be chosen from a list. The Project Owner asked for the beliefs to be named, on 2026-11-26: each row says what its author believed.
+
+| ID | What the author believed, and the sink | Vulnerable | Protected 1 | Protected 2 |
 | --- | --- | --- | --- | --- |
-| SQL-001 | `` `SELECT … WHERE id = ${id}` `` passed to `DataSource.query()` (CWE-89) | `orderLookup` | `order(id)`: the repository | `orderByReference`: raw SQL with `?` |
-| SQL-002 | `.where(\`symbol = '${symbol}' AND side = '${side}'\`)` (CWE-89) | `tradeHistory` | `trades`: `.where({ symbol })` | `tradesNamed`: `.setParameter()` |
-| SQL-003 | `.where(\`name LIKE '%${q}%'\`)` (CWE-89) | `searchMarkets` | `markets(q)`: a bound parameter, wildcards escaped | `marketsByAssets`: an enum list |
-| SQL-004 | `.orderBy(\`t.${sortBy}\`, sortDir)` (CWE-89) | `tradesSorted` | `trades(orderBy)`: an enum mapped to a column and a direction | `tradesNamed`: a fixed order |
+| SQL-001 | "Backticks bind." `` const query = `SELECT … WHERE id = ${id}` ``, then `dataSource.query(query)`. An untagged template literal is concatenation (CWE-89) | `orderLookup` | `order(id)`: the repository | `orderByReference`: raw SQL with `?` |
+| SQL-002 | "The query builder parameterizes." `.where(\`symbol = '${symbol}' AND side = '${side}'\`)`: a raw fragment of the builder is still SQL text (CWE-89) | `tradeHistory` | `trades`: `.where({ symbol })` | `tradesNamed`: `.setParameter()` |
+| SQL-003 | "It is only a search box." `.where(\`name LIKE '%${q}%'\`)` (CWE-89) | `searchMarkets` | `markets(q)`: a bound parameter, wildcards escaped | `marketsByAssets`: an enum list |
+| SQL-004 | "A column name cannot be a parameter, so any name will do." `.orderBy(\`t.${sortBy}\`, sortDir)` (CWE-89) | `tradesSorted` | `trades(orderBy)`: an enum mapped to a column and a direction | `tradesNamed`: a fixed order |
+| SQL-005 | "A tag makes it safe." `sqlText`, a tag kept from before the one that parameterizes, escapes quotes and joins the pieces: `` sqlText`… WHERE symbol = ${symbol}` ``. A backslash before the quote escapes the escape (CWE-89) | `volumeFor` | `highPrice`: the same query through `sql`, the tag that parameterizes | `markets(q)`: a bound parameter |
+| SQL-006 | "It calls `execute()`, so it is a prepared statement." The string was built with a template literal before the call. There is no placeholder, and no parameter (CWE-89) | `feesPaid` | `settlementPrice`: `execute()` with the text and the parameters of `sql` | `orderByReference`: raw SQL with `?` |
+| SQL-007 | "A list cannot be bound." The ids are joined into `` IN (${ids.join(', ')}) ``. There is no quote to get past, because the list is already outside one (CWE-89) | `ordersByIds` | `ordersAmong`: the same ids bound with `In`, and scoped to the caller | `orderByReference`: raw SQL, a `?` for every value |
 
 ### `ACCESS` — authorization
 
@@ -184,10 +195,10 @@ The service is tested on its own: `apps/trading/test/` starts it with its own in
 | Functional | Every safe operation does what its row says. Money never appears or disappears: after any sequence of safe operations, each balance equals the sum of its ledger entries |
 | Authorization | Every admin operation refuses a user. Every own-data operation refuses another user's object |
 | Concurrency | `withdraw` and `tickPrices` hold under `Promise.all`. `payout` and `matchOrder` do not, and the test asserts the overdraw and the double credit |
-| Scenario, both directions | For each of the 18 scenarios: one payload, sent to the vulnerable operation and to each counterpart |
+| Scenario, both directions | For each of the 21 scenarios: one payload, sent to the vulnerable operation and to each counterpart |
 | Reset and stop | The data is back after `POST /internal/lab/reset`. After a stop, no `mysqld` process and no temporary directory remain |
 
-Harmless markers: `1 OR 1=1` reads an order that belongs to another user; a `memo` of `=zazzles-lab-marker`; `package.json` read through FS-004.
+Harmless markers: `1 OR 1=1` reads an order that belongs to another user; a `memo` of `=zazzles-lab-marker`; `package.json` read through FS-004. For the three where a template literal was taken for a prepared statement: `\' OR 1=1 -- ` gets through `sqlText` and reads every market's volume; `' OR '1'='1` is prepared as SQL by `feesPaid` and reads another user's fees; `0) OR (1=1`, sent as one of the ids, reads every user's orders.
 
 ## 7. Out of scope
 

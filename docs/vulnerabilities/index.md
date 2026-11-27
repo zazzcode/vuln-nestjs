@@ -24,7 +24,7 @@ One deliberate weakness. Each has:
 | `AUTH` | Authentication and sessions | A02, A07 | API2 | 5 |
 | `CRYPTO` | Weak hashing, weak randomness, hard-coded secrets | A02 | — | 3 |
 | `ACCESS` | Authorization: object, function and property level; trusted headers | A01 | API1, API3, API5, API10 | 10 |
-| `SQL` | SQL injection through TypeORM and MySQL | A03 | API3 | 4 |
+| `SQL` | SQL injection: template literals taken for prepared statements | A03 | API3 | 7 |
 | `MONGO` | NoSQL operator injection | A03 | API3 | 6 |
 | `PROTO` | Prototype pollution | A08 | — | 3 |
 | `XSS` | Stored and reflected cross-site scripting | A03 | — | 4 |
@@ -43,16 +43,16 @@ One deliberate weakness. Each has:
 | `INFO` | Information exposure through logs and errors | A09, A05 | API8 | 2 |
 | `SCA` | Vulnerable dependency versions | A06 | — | 8 |
 
-**74 weaknesses in application code, on 62 vulnerable operations, and 8 vulnerable dependency pins.** Every category of both OWASP lists is covered, and so are the four the Project Owner named: SQL injection, NoSQL injection, prototype pollution and stored XSS.
+**77 weaknesses in application code, on 65 vulnerable operations, and 8 vulnerable dependency pins.** Every category of both OWASP lists is covered, and so are the four the Project Owner named: SQL injection, NoSQL injection, prototype pollution and stored XSS.
 
 ## Safe and vulnerable
 
-The lab keeps about two safe operations for every vulnerable one: 118 safe, 62 vulnerable. The safe operations are what a scanner must leave alone. A report against one, for the weakness it is the counterpart of, is a false positive.
+The lab keeps about two safe operations for every vulnerable one: 121 safe, 65 vulnerable. The safe operations are what a scanner must leave alone. A report against one, for the weakness it is the counterpart of, is a false positive.
 
 | Service | Vulnerable operations | Safe operations |
 | --- | --- | --- |
 | accounts | 28 | 41 |
-| trading | 17 | 35 |
+| trading | 20 | 38 |
 | notifications | 9 | 29 |
 | gateway | 8 | 13 |
 

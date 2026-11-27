@@ -12,7 +12,7 @@ Every scenario needs a protected counterpart that receives the identical payload
 1. Step 2 writes every **safe** operation of a service first and correctly. Those operations are the counterparts.
 2. Its vulnerable operations follow, each a **twin operation** in a separate file with a feature-plausible name. The safe operation is not modified to become unsafe.
 3. Process-wide settings have no twin. They are changed in the options file that owns them, marked, and documented with the hardened value beside the weak one.
-4. **About two safe operations for every vulnerable one.** A vulnerable operation has one protected counterpart, and a second one wherever a second technique exists. In the design: 118 safe, 62 vulnerable.
+4. **About two safe operations for every vulnerable one.** A vulnerable operation has one protected counterpart, and a second one wherever a second technique exists. In the design: 121 safe, 65 vulnerable.
 5. Names in code stay neutral. The catalogue holds the answer.
 6. The vulnerable line carries a sink marker, as in vuln-nextjs.
 

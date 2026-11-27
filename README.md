@@ -44,7 +44,7 @@ The design and its reasoning are in [`docs/architecture.md`](docs/architecture.m
 
 ## What it will cover
 
-74 designed weaknesses across the OWASP Top 10 and the OWASP API Security Top 10, with SQL injection, NoSQL injection, prototype pollution and stored XSS among them. Plus 8 libraries pinned to vulnerable versions, one service at a time, so a scanner has to say which service is affected.
+77 designed weaknesses across the OWASP Top 10 and the OWASP API Security Top 10, with SQL injection, NoSQL injection, prototype pollution and stored XSS among them. Plus 8 libraries pinned to vulnerable versions, one service at a time, so a scanner has to say which service is affected.
 
 - **Injection** — SQL injection through TypeORM, NoSQL operator injection, command and argument injection, template injection, unsafe deserialization, `eval`, spreadsheet formulas, log lines.
 - **Prototype pollution** — a dotted path walked without checks, a parsed string deep-merged, a vulnerable library.
