@@ -12,7 +12,6 @@ export class ConvertResolver {
     @Args('asset', { type: () => Asset }) asset: Asset,
     @Args('amount', { type: () => Number }) amount: number,
   ): string {
-    void caller;
     // LOGIC-004 / CWE-682: binary floating point on money: 8.2 dollars is 819.9999… cents when multiplied as a float
     const minor = Math.floor(amount * 10 ** scaleOf(asset));
     return toDecimal(String(minor), scaleOf(asset));

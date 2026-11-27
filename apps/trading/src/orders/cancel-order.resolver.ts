@@ -88,7 +88,7 @@ export class CancelOrderResolver {
         { id: order.id, status: OrderStatus.OPEN },
         { status: OrderStatus.CANCELLED, updatedAt: new Date() },
       );
-      return toOrder({ ...order, status: OrderStatus.CANCELLED });
+      return toOrder(order, { status: OrderStatus.CANCELLED });
     });
   }
 }

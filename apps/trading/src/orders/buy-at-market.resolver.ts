@@ -85,7 +85,7 @@ export class BuyAtMarketResolver {
         { id: placed.id },
         { reference: referenceOf(placed.id) },
       );
-      return toOrder({ ...placed, reference: referenceOf(placed.id) });
+      return toOrder(placed);
     });
   }
 }

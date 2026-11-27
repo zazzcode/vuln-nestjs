@@ -80,6 +80,6 @@ export class MatchOrderResolver {
       fee: '0',
       executedAt: new Date(),
     });
-    return toOrder({ ...order, status: OrderStatus.FILLED });
+    return toOrder(order, { status: OrderStatus.FILLED });
   }
 }

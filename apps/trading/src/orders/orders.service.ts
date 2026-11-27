@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { COIN_SCALE, DOLLAR_SCALE, toDecimal } from '../money/money.js';
-import { OrderEntity } from './order.entity.js';
+import { OrderEntity, OrderStatus } from './order.entity.js';
 import { type Order } from './order.model.js';
 import { OrdersRepository } from './orders.repository.js';
 
@@ -11,8 +11,14 @@ export function referenceOf(id: number | string): string {
   return `${ORDER_REFERENCE_PREFIX}${id}`;
 }
 
-/** Minor units as the graph carries them: cents become dollars, hundred-millionths become coins. */
-export function toOrder(row: OrderEntity): Order {
+/**
+ * Minor units as the graph carries them: cents become dollars, hundred-millionths become coins.
+ * The patch carries what has just been written to the row, so the answer matches the store.
+ */
+export function toOrder(
+  row: OrderEntity,
+  patch: { status?: OrderStatus } = {},
+): Order {
   return {
     id: String(row.id),
     userId: row.userId,
@@ -22,7 +28,7 @@ export function toOrder(row: OrderEntity): Order {
     limitPrice: toDecimal(row.limitPrice, DOLLAR_SCALE),
     quantity: toDecimal(row.quantity, COIN_SCALE),
     memo: row.memo,
-    status: row.status,
+    status: patch.status ?? row.status,
     createdAt: row.createdAt,
     user: { id: row.userId, orders: [] },
   };
@@ -34,7 +40,9 @@ export class OrdersService {
 
   /** The orders a user placed. Whoever calls it has already settled whether the caller may see that user's orders. */
   async byUser(userId: string): Promise<Order[]> {
-    return (await this.repository.findByUser(userId)).map(toOrder);
+    return (await this.repository.findByUser(userId)).map((row) =>
+      toOrder(row),
+    );
   }
 
   /** One order, or nothing when there is none. */

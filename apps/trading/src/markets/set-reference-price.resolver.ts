@@ -1,4 +1,4 @@
-import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Args, Mutation, Resolver } from '@nestjs/graphql';
 import { DecimalScalar } from '@zazzles/exchange-graphql';
 import { InjectRepository } from '@nestjs/typeorm';

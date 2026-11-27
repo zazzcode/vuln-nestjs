@@ -53,15 +53,10 @@ const walletOf = async (token: string, asset: string) => {
     { token, variables: { userId: token === erin ? 'u-erin' : 'u-alice' } },
   );
   return (
-    answer.data?.walletOf as Array<{ asset: string; balance: string }>
+    answer.data!.walletOf as Array<{ asset: string; balance: string }>
   ).find((wallet) => wallet.asset === asset)?.balance;
 };
-const ledgerSum = async (token: string, userId: string) => {
-  const answer = await query(
-    'query($userId: ID!) { walletOf(userId: $userId) { asset } ledger { asset amount kind } }',
-    { token, variables: { userId } },
-  );
-  void answer;
+const ledgerSum = async (token: string) => {
   const own = await query('{ ledger { asset amount kind } }', { token });
   return own.data?.ledger as Array<{
     asset: string;
@@ -132,7 +127,7 @@ describe('LOGIC-002 — ten parallel payouts out of five hundred dollars', () =>
     expect(
       answers.filter((answer) => answer.errors === undefined),
     ).toHaveLength(10);
-    const entries = await ledgerSum(erin, 'u-erin');
+    const entries = await ledgerSum(erin);
     const paid = entries
       ?.filter((entry) => entry.kind === 'WITHDRAWAL')
       .reduce((sum, entry) => sum + Number(entry.amount), 0);
@@ -155,7 +150,7 @@ describe('LOGIC-002 — ten parallel payouts out of five hundred dollars', () =>
       new Set(['CONFLICT']),
     );
     expect(await walletOf(erin, 'USD')).toBe('0.00');
-    const entries = await ledgerSum(erin, 'u-erin');
+    const entries = await ledgerSum(erin);
     expect(
       entries?.filter((entry) => entry.kind === 'WITHDRAWAL'),
     ).toHaveLength(1);
@@ -180,7 +175,7 @@ describe('LOGIC-002 — ten parallel payouts out of five hundred dollars', () =>
     expect(statuses.filter((status) => status === 200)).toHaveLength(1);
     expect(statuses.filter((status) => status === 400)).toHaveLength(9);
     expect(await walletOf(erin, 'USD')).toBe('0.00');
-    const entries = await ledgerSum(erin, 'u-erin');
+    const entries = await ledgerSum(erin);
     expect(
       entries?.filter((entry) => entry.kind === 'WITHDRAWAL'),
     ).toHaveLength(1);
@@ -364,7 +359,7 @@ async function tradesOfOrder1(): Promise<Array<{ orderId: string }>> {
     'query($symbol: String!) { trades(symbol: $symbol, limit: 200) { orderId } }',
     { variables: { symbol: 'BTC-USD' } },
   );
-  return (trades.data?.trades as Array<{ orderId: string }>).filter(
+  return (trades.data!.trades as Array<{ orderId: string }>).filter(
     (trade) => trade.orderId === '1',
   );
 }

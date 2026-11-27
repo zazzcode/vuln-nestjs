@@ -15,7 +15,19 @@ export class GiftOrderResolver {
     @Args('input', { type: () => PlaceOrderInput }) input: PlaceOrderInput,
   ): Promise<Order> {
     const order = await this.placed.placeOrder(caller, input);
-    // GQL-006 / CWE-639: the user reference is built from the caller's argument, not from the stored order
-    return { ...order, user: { id: toUserId, orders: [] } };
+    return {
+      id: order.id,
+      userId: order.userId,
+      symbol: order.symbol,
+      side: order.side,
+      type: order.type,
+      limitPrice: order.limitPrice,
+      quantity: order.quantity,
+      memo: order.memo,
+      status: order.status,
+      createdAt: order.createdAt,
+      // GQL-006 / CWE-639: the user reference is built from the caller's argument, not from the stored order
+      user: { id: toUserId, orders: [] },
+    };
   }
 }

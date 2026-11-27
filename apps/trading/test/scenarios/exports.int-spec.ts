@@ -1,6 +1,5 @@
 import { FastifyAdapter } from '@nestjs/platform-fastify';
 import {
-  graphql,
   request,
   runSecret,
   sessionToken,
@@ -33,7 +32,6 @@ afterAll(async () => {
 const tokenOf = (sub: string, role: 'ADMIN' | 'USER' = 'USER'): string =>
   sessionToken(JWT_SECRET, { sub, sid: `s-${sub}`, role });
 const alice = tokenOf('u-alice');
-const bob = tokenOf('u-bob');
 const call = (path: string, token: string) =>
   request(`${service.url}${path}`, {
     headers: { authorization: `Bearer ${token}` },
@@ -143,6 +141,5 @@ describe('the reports of the caller, as the seed left them', () => {
       alice,
     );
     expect(bobResponse.status).toBe(404);
-    void bob;
   });
 });

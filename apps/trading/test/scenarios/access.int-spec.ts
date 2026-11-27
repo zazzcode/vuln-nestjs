@@ -87,7 +87,7 @@ describe('ACCESS-008 — walletOf: another user\u2019s balances by id', () => {
 
     expect(answer.errors).toBeUndefined();
     expect(
-      (answer.data?.wallet as Array<{ asset: string; balance: string }>).find(
+      (answer.data!.wallet as Array<{ asset: string; balance: string }>).find(
         (wallet) => wallet.asset === 'USD',
       ),
     ).toEqual({ asset: 'USD', balance: '10000.00' });
@@ -163,7 +163,7 @@ describe('ACCESS-009 — creditWallet: a user credits a wallet', () => {
     expect(answer.errors).toBeUndefined();
     expect(
       (
-        answer.data?.creditWallet as Array<{ asset: string; balance: string }>
+        answer.data!.creditWallet as Array<{ asset: string; balance: string }>
       ).find((wallet) => wallet.asset === 'USD'),
     ).toEqual({ asset: 'USD', balance: '10500.00' });
   });
@@ -294,7 +294,7 @@ describe('ACCESS-007 — setReferencePrice: a user moves a market', () => {
       token: alice,
     });
     const of = (asset: string) =>
-      (wallets.data?.wallet as Array<{ asset: string; balance: string }>).find(
+      (wallets.data!.wallet as Array<{ asset: string; balance: string }>).find(
         (wallet) => wallet.asset === asset,
       );
     expect(of('BTC')).toEqual({ asset: 'BTC', balance: '1.00000000' });

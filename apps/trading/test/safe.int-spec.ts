@@ -63,7 +63,7 @@ const reset = () =>
 const usdOf = async (token: string): Promise<string> => {
   const answer = await query('{ wallet { asset balance } }', { token });
   return (
-    answer.data?.wallet as Array<{ asset: string; balance: string }>
+    answer.data!.wallet as Array<{ asset: string; balance: string }>
   ).find((wallet) => wallet.asset === 'USD')!.balance;
 };
 const assetOf = async (
@@ -72,7 +72,7 @@ const assetOf = async (
 ): Promise<string | undefined> => {
   const answer = await query('{ wallet { asset balance } }', { token });
   return (
-    answer.data?.wallet as Array<{ asset: string; balance: string }>
+    answer.data!.wallet as Array<{ asset: string; balance: string }>
   ).find((wallet) => wallet.asset === asset)?.balance;
 };
 
@@ -266,7 +266,7 @@ describe('the safe operations (AC2)', () => {
   test('wallet answers the caller\u2019s balances', async () => {
     const answer = await query('{ wallet { asset balance } }', { token: bob });
     expect(
-      (answer.data?.wallet as Array<{ asset: string; balance: string }>).find(
+      (answer.data!.wallet as Array<{ asset: string; balance: string }>).find(
         (wallet) => wallet.asset === 'USD',
       ),
     ).toEqual({ asset: 'USD', balance: '5000.00' });
@@ -322,7 +322,7 @@ describe('the safe operations (AC2)', () => {
       );
       expect(
         (
-          answer.data?.deposit as Array<{ asset: string; balance: string }>
+          answer.data!.deposit as Array<{ asset: string; balance: string }>
         ).find((wallet) => wallet.asset === 'USD'),
       ).toEqual({ asset: 'USD', balance: '1000.00' });
     });
@@ -337,7 +337,7 @@ describe('the safe operations (AC2)', () => {
       );
       expect(
         (
-          answer.data?.withdraw as Array<{ asset: string; balance: string }>
+          answer.data!.withdraw as Array<{ asset: string; balance: string }>
         ).find((wallet) => wallet.asset === 'USD'),
       ).toEqual({ asset: 'USD', balance: '9800.00' });
     });
@@ -358,7 +358,7 @@ describe('the safe operations (AC2)', () => {
         { token: admin },
       );
       const btc = (
-        answer.data?.tickPrices as Array<{
+        answer.data!.tickPrices as Array<{
           symbol: string;
           referencePrice: string;
         }>
@@ -477,7 +477,7 @@ describe('the safe operations (AC2)', () => {
           },
         },
       );
-      const id = (placed.data?.placeOrder as { id: string }).id;
+      const id = (placed.data!.placeOrder as { id: string }).id;
       expect(await usdOf(alice)).toBe('9988.00');
 
       const cancelled = await query(
@@ -707,7 +707,7 @@ describe('money is conserved by the safe operations (AC3)', () => {
         );
       expect(
         summed.eq(new Decimal(wallet.balance)),
-        `${wallet.userId}/${wallet.asset}: ${summed} against ${wallet.balance}`,
+        `${wallet.userId}/${wallet.asset}: ${summed.toString()} against ${wallet.balance}`,
       ).toBe(true);
     }
   });
@@ -944,7 +944,7 @@ describe('concurrency (AC5)', () => {
       { variables: { symbol: 'BTC-USD' } },
     );
     expect(
-      (trades.data?.trades as Array<{ orderId: string }>).filter(
+      (trades.data!.trades as Array<{ orderId: string }>).filter(
         (trade) => trade.orderId === '1',
       ),
     ).toHaveLength(3); // the two the seed wrote, and the one fill

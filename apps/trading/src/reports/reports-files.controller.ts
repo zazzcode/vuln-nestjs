@@ -14,7 +14,6 @@ export class ReportsFilesController {
     @Param('name') name: string,
     @Res() reply: FastifyReply,
   ) {
-    void caller;
     // FS-004 / CWE-22: the name is joined to the directory as it came, and nothing checks where the path lands
     const contents = await readFile(join(REPORTS_DIRECTORY, name));
     reply.header('content-type', 'application/octet-stream').send(contents);

@@ -14,7 +14,6 @@ export class WalletsByUserResolver {
     @UserId() caller: string,
     @Args('userId', { type: () => ID }) userId: string,
   ): Promise<Wallet[]> {
-    void caller;
     return this.wallets.ofUser(userId);
   }
 }

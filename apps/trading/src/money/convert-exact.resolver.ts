@@ -13,7 +13,6 @@ export class ConvertExactResolver {
     @Args('asset', { type: () => Asset }) asset: Asset,
     @Args('amount', { type: () => DecimalScalar }) amount: string,
   ): string {
-    void caller;
     // A decimal library with the rounding mode named: half up, at the asset's scale.
     const minor = new Decimal(amount)
       .times(new Decimal(10).pow(scaleOf(asset)))

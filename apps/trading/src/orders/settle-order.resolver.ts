@@ -91,7 +91,7 @@ export class SettleOrderResolver {
         { id: order.id },
         { status: OrderStatus.FILLED, updatedAt: new Date() },
       );
-      return toOrder({ ...order, status: OrderStatus.FILLED });
+      return toOrder(order, { status: OrderStatus.FILLED });
     });
   }
 }

@@ -86,21 +86,21 @@ describe('RES-002 — allTrades has no cap on limit', () => {
 
     // What was gained: the whole table in one answer, whatever its size — 253 rows for a limit of 100000.
     expect(answer.errors).toBeUndefined();
-    expect((answer.data?.allTrades as unknown[]).length).toBe(253);
+    expect((answer.data!.allTrades as unknown[]).length).toBe(253);
   });
 
   test('the trades counterpart caps the same limit at 200', async () => {
     const answer = await query(CAPPED, { token: bob, variables: PAYLOAD });
 
     expect(answer.errors).toBeUndefined();
-    expect((answer.data?.trades as unknown[]).length).toBe(200);
+    expect((answer.data!.trades as unknown[]).length).toBe(200);
   });
 
   test('the tradesNamed counterpart pages at most 200', async () => {
     const answer = await query(NAMED, { token: bob, variables: PAYLOAD });
 
     expect(answer.errors).toBeUndefined();
-    expect((answer.data?.tradesNamed as unknown[]).length).toBe(200);
+    expect((answer.data!.tradesNamed as unknown[]).length).toBe(200);
   });
 });
 

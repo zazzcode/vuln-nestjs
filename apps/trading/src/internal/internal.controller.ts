@@ -22,7 +22,7 @@ import {
   LedgerKind,
 } from '../wallets/ledger-entry.entity.js';
 import { WalletsService } from '../wallets/wallets.service.js';
-import { DepositDto, UpdateOrderDto, WithdrawDto } from './dto.js';
+import { DepositDto, WithdrawDto } from './dto.js';
 
 /**
  * The REST surface the gateway forwards to: the system's deposits and price

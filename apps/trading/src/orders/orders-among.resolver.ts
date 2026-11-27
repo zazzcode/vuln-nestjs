@@ -33,6 +33,6 @@ export class OrdersAmongResolver {
       where: { userId: caller, id: In(numbers) },
       order: { id: 'ASC' },
     });
-    return rows.map(toOrder);
+    return rows.map((row) => toOrder(row));
   }
 }
