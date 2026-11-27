@@ -198,6 +198,7 @@ Return PASS/FAIL per AC with evidence."
 
 - **`buyAtMarket` no longer computes a slippage ceiling.** The build had `min(reference, reference × 1.02)`, which is always the reference: a control that could not bind, under a comment and a documentation line that said it did. Both now say what the code does: the buy pays the reference price, nothing added. The contract's "with a maximum slippage" is met by never moving the price. The LOGIC-003 counterpart test is unchanged.
 - **RES-002's second counterpart, `tradesNamed`, pages by a capped offset, not by a cursor** as the contract's row says. Section 8 asks for pages of at most 200, which is what was built; the review found the departure recorded nowhere.
+- **The gateway collection's request "A query answered from three services" expects the seed**, Alice's orders 1 and 6. The lead fixed it on this branch, with the twenty-one catalogue entries and the regenerated snapshots, so that `pnpm scenario:check` and `pnpm test:api` pass before the merge: `pnpm test:api` on the port set 4200 to 4212, run by the lead at 13:27 on 2026-11-27, exits 0 with the four collections whole.
 
 Not built, by D-8: `market(symbol)`, `orderBook(symbol)`, `prices(symbol, limit)`, `User.wallets`, `User.trades`, `User.ledger`, `GET /internal/reports`. With them the counts would be 38 safe and 20 vulnerable (1.9); as built, 31 and 20 (1.55).
 
