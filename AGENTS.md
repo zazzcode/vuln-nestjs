@@ -2,11 +2,11 @@
 
 ## Repository facts
 
-- **What this is:** a deliberately vulnerable NestJS application, built to test vulnerability scanners. The flaws are the product.
+- **What this is:** VCX (Vulnerable Crypto Exchange), a deliberately vulnerable NestJS application, built to test vulnerability scanners. The flaws are the product.
 - **Docs root:** `.zazz` (repo-relative). Documentation for readers of the lab is in `docs/`.
 - **Documentation model:** committed Markdown, reviewed through pull requests. Specifications are committed under `.zazz/specifications/`.
 - **Work tracker:** none. The build order and its state are in [`.zazz/project/implementation-plan.md`](.zazz/project/implementation-plan.md). The pull request is the review record.
-- **Branch policy:** one branch per deliverable, `phase-<n>-<slug>`, from its base; one pull request; opened as a draft with the deliverable's specification as its first commit. Commit and push to the feature branch only. Never commit to the base branch directly.
+- **Branch policy:** one branch per deliverable, `phase-<n>-<slug>`, from its base; one pull request; opened as a draft with the deliverable's specification as its first commit. Commit and push to the feature branch only. Never commit to the base branch directly. A pull request is reviewed against its base.
 - **Shared-file coordination:** each sub-agent writes only inside what is its own: its service directory (`apps/<service>/`), its folder of the API collections (`postman/<service>/`), its documentation modules under `docs/vulnerabilities/`, and its deliverable specification under `.zazz/specifications/`. Everything else shared belongs to the lead agent: `libs/`, `catalog/`, `tests/`, the Postman environment, `scripts/`, the root configuration, this file. A sub-agent makes two shared changes without asking, each by running a command and never by editing a file: `pnpm install`, after adding a dependency its specification names, which changes `pnpm-lock.yaml`, and `pnpm audit:update`, which rewrites `tests/expected-audit.json`. For anything else, it stops and asks.
 - **Operating model:** the application is a sample. It is started, preloaded with fake data, exercised, and shut down. Nothing persists.
 
@@ -15,7 +15,7 @@
 1. Read this file before changing anything.
 2. To build a service: its [service specification](.zazz/project/services/README.md) is the contract. Then the step it belongs to in the [implementation plan](.zazz/project/implementation-plan.md), and the sections of the [architecture](.zazz/architecture/README.md) it depends on.
 3. To add a scenario: the [scenario catalogue](.zazz/project/scenario-catalog.md), then [how a deliberate flaw is added](.zazz/architecture/security-model.md#5-how-a-deliberate-flaw-is-added) and the [test pattern](.zazz/architecture/testing-strategy.md#3-scenario-tests-in-both-directions).
-4. To write a deliverable specification: the `spec-builder` skill in [`.agents/skills/`](.agents/skills/README.md).
+4. To write a deliverable specification: the `spec-builder` skill in [`.agents/skills/`](.agents/skills/README.md). Once it is approved, `spec-driven` says how the work is run and recorded. To open or update a pull request: `pr-builder`. To review one: `pr-review`.
 5. Do not preload the whole of `.zazz/` for a small change.
 
 ## Invariants
@@ -58,7 +58,7 @@ Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover w
 
 - **Active artifacts:** `.zazz/ephemeral/` — run logs, handoffs, QA findings, scratch. Ignored by Git and never committed.
 - **Completed specifications:** stay in `.zazz/specifications/`, with their change log and the link to the pull request.
-- **Skills:** vendored in `.agents/skills/`: `spec-builder` and `handoff`, from [zazzcode/zazz-skills](https://github.com/zazzcode/zazz-skills). This repository has no `standards/` directory: when the `spec-builder` skill asks for a standards index, answer "none adopted".
+- **Skills:** vendored in [`.agents/skills/`](.agents/skills/README.md): `spec-builder`, `spec-driven`, `pr-builder`, `pr-review`, `doc-check` and `handoff`. This repository has no `standards/` directory: when a skill asks for a standards index, answer "none adopted". Its conventions are in this file and in the architecture pages under `.zazz/architecture/`.
 
 ## Repo-specific rules
 

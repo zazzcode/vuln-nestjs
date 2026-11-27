@@ -16,6 +16,10 @@ Something running, with its tests passing, is what counts. You finish the servic
 2. Read the service's specification under `.zazz/project/services/`: your contract.
 3. The rest is in the brief you were sent, including the path of your worktree.
 
+## Skills
+
+They are in `.agents/skills/`, and you read one when you reach its step: `spec-builder` to write the specification, `pr-builder` to open and to update the draft pull request, `spec-driven` for how the work is run and recorded once the specification stands, `doc-check` before you commit documentation. When one asks for a standards index, the answer is "none adopted".
+
 ## Where you work
 
 - Only inside the worktree the brief names, on the branch it names. Make it your working directory before anything else, and give file tools paths under it. You never touch the main checkout or another worktree.
