@@ -208,4 +208,55 @@ describe('the configuration scenarios', () => {
     });
     expect(answered.statusCode).toBe(200);
   });
+
+  // CONFIG-004 — a debug endpoint answers the environment and the versions.
+  test('CONFIG-004: the debug page answers environment values and dependency versions to anyone', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/debug' });
+
+    expect(response.statusCode).toBe(200);
+    const body = response.json();
+    // What was gained: the run's own secret — the value of JWT_SECRET — plus
+    // every other variable of the process, and the exact dependency versions
+    // it runs on: enough to look for a known weakness in a known version.
+    expect(body.environment.JWT_SECRET).toBe(process.env.JWT_SECRET);
+    expect(body.environment.INTERNAL_SERVICE_TOKEN).toBe(
+      process.env.INTERNAL_SERVICE_TOKEN,
+    );
+    expect(body.dependencies['@apollo/gateway']).toMatch(/^\d+/);
+    expect(body.versions.node).toBeDefined();
+  });
+
+  test('CONFIG-004 counterpart 1: health answers a status and nothing else', async () => {
+    const response = await app.inject({ method: 'GET', url: '/api/v1/health' });
+
+    expect(response.statusCode).toBe(200);
+    const text = response.body;
+    // Refused by the shape of the answer: a status page has no place for the
+    // environment or a version to appear.
+    expect(text).not.toContain(process.env.JWT_SECRET as string);
+    expect(JSON.parse(text).versions).toBeUndefined();
+  });
+
+  test('CONFIG-004 counterpart 2: the admin diagnostics page answers allowlisted keys only', async () => {
+    const refused = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/diagnostics',
+    });
+    // Refused by the guard: the page is an administrator's.
+    expect(refused.statusCode).toBe(401);
+
+    const answered = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/diagnostics',
+      headers: { authorization: `Bearer ${admin}` },
+    });
+    expect(answered.statusCode).toBe(200);
+    const body = answered.json();
+    // Refused by the allowlist: a key not on it is never read, so its value
+    // cannot leave the process.
+    expect(Object.keys(body.environment)).not.toContain('JWT_SECRET');
+    expect(JSON.stringify(body)).not.toContain(
+      process.env.JWT_SECRET as string,
+    );
+  });
 });
