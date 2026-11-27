@@ -1,13 +1,22 @@
 import 'reflect-metadata';
+import { AuthModule } from '@zazzles/exchange-internal-auth';
+import { EnvironmentModule } from '@zazzles/exchange-config';
+import { Http2Module } from '@zazzles/exchange-http2';
 import { runSecret, sessionToken } from '@zazzles/exchange-testing';
+import { Logger } from '@nestjs/common';
 import {
   FastifyAdapter,
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
-import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test, vi } from 'vitest';
 import { AppModule } from '../../src/app.module.js';
+import { Environment } from '../../src/config/environment.js';
 import { registerEdge } from '../../src/edge/edge.js';
+import { EdgeModule } from '../../src/edge/edge.module.js';
+import { InternalModule } from '../../src/internal/internal.module.js';
+import { MarketsModule } from '../../src/markets/markets.module.js';
+import { PublicApiModule } from '../../src/public-api/public-api.module.js';
 import { standInSubgraphs } from '../subgraphs.js';
 
 /**
@@ -198,5 +207,92 @@ describe('the edge scenarios', () => {
     expect(response.statusCode).toBe(403);
     expect(response.body).toContain('csrf');
     expect(subgraphs.accounts.reached.length).toBe(carried);
+  });
+});
+
+// INFO-002 — the same failure, answered three ways: returned in full by the
+// public diagnostics page, masked by the markets ticker, logged and given a
+// request id by the partner ticker. Trading is gone, which is the failure.
+describe('the INFO-002 diagnostics, with trading gone', () => {
+  let app: NestFastifyApplication;
+
+  beforeAll(async () => {
+    process.env.JWT_SECRET = runSecret();
+    process.env.INTERNAL_SERVICE_TOKEN = runSecret();
+    process.env.PARTNER_ORIGINS = 'http://127.0.0.1:4021';
+    process.env.REDIRECT_ORIGINS = 'http://127.0.0.1:4021';
+    // Nobody listens on port 1: the closest a test gets to a service that is not running.
+    process.env.TRADING_PORT = '1';
+    app = (
+      await Test.createTestingModule({
+        imports: [
+          EnvironmentModule.forRoot(Environment),
+          AuthModule,
+          Http2Module,
+          InternalModule,
+          EdgeModule,
+          MarketsModule,
+          PublicApiModule,
+        ],
+      }).compile()
+    ).createNestApplication<NestFastifyApplication>(new FastifyAdapter());
+    await registerEdge(app);
+    await app.init();
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  test('INFO-002: the public diagnostics returns the failure itself, message and stack', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/public/diagnostics',
+    });
+
+    expect(response.statusCode).toBe(503);
+    const body = response.json();
+    // What was gained: why trading failed and the stack of the call that
+    // failed, in the answer, for anyone who asks and with no credential.
+    expect(String(body.error)).toContain('trading is unreachable');
+    expect(String(body.stack)).toContain('trading is unreachable');
+    expect(String(body.stack)).toContain(' at ');
+  });
+
+  test('INFO-002 counterpart 1: the markets ticker answers one masked sentence', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/markets/ticker',
+    });
+
+    expect(response.statusCode).toBe(503);
+    // Refused by the mask: the same failure is one sentence about the
+    // ticker, with neither the reason nor any stack in the answer.
+    expect(response.json().message).toBe('the ticker is unavailable');
+    expect(response.body).not.toContain('unreachable');
+    expect(response.body).not.toContain('stack');
+  });
+
+  test('INFO-002 counterpart 2: the partner ticker answers a request id, and the stack goes to the log', async () => {
+    const logged = vi.spyOn(Logger.prototype, 'error');
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/partner/ticker',
+    });
+    const calls = logged.mock.calls;
+    logged.mockRestore();
+
+    expect(response.statusCode).toBe(503);
+    const body = response.json();
+    // Refused by the handler: the same failure is one sentence and a request
+    // id to quote; the stack was written to the server's log, not the answer.
+    expect(body.error).toBe('the ticker is unavailable');
+    expect(body.requestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    expect(response.body).not.toContain('unreachable');
+    expect(response.body).not.toContain('stack');
+    expect(calls.length).toBeGreaterThan(0);
+    expect(String(calls[0]?.[0])).toContain(' at ');
   });
 });

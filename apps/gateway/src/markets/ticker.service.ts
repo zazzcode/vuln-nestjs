@@ -27,10 +27,7 @@ export class TickerService {
   async prices(): Promise<readonly MarketPrice[]> {
     let answer: Awaited<ReturnType<InternalClientService['forward']>>;
     try {
-      answer = await this.internal.forward('trading', 'POST', '/graphql', {
-        body: { query: MARKETS_QUERY },
-        contentType: 'application/json',
-      });
+      answer = await this.ask();
     } catch {
       throw new ServiceUnavailableException('the ticker is unavailable');
     }
@@ -41,6 +38,18 @@ export class TickerService {
       throw new ServiceUnavailableException('the ticker is unavailable');
     }
     return markets;
+  }
+
+  /**
+   * The call to `trading` both ticker pages are answered from, as it went
+   * and as it came back. A page that reports the dependency as it was seen
+   * calls this directly: a failure is thrown to its caller, not masked here.
+   */
+  ask(): Promise<Awaited<ReturnType<InternalClientService['forward']>>> {
+    return this.internal.forward('trading', 'POST', '/graphql', {
+      body: { query: MARKETS_QUERY },
+      contentType: 'application/json',
+    });
   }
 
   /** The page of both ticker endpoints. */
