@@ -18,4 +18,15 @@ export class Environment {
   @IsString()
   @MinLength(32)
   INTERNAL_SERVICE_TOKEN!: string;
+
+  /** The origins an avatar may be fetched from, comma-separated: the lab's own fake avatar host by default. */
+  @IsString()
+  AVATAR_ALLOWED_ORIGINS = 'https://avatars.vcx.exchange';
+
+  /** The list, as the avatar client compares it. */
+  get avatarOrigins(): string[] {
+    return this.AVATAR_ALLOWED_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin !== '');
+  }
 }

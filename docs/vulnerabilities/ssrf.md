@@ -43,8 +43,10 @@ And `setAvatarUrl` answers the stored URL and fetches nothing: the stub's count 
 | --- | --- |
 | `POST /internal/profile/avatar` (vulnerable) | The URL is fetched wherever it points, redirects followed |
 | `setAvatarUrl` (protected) | The URL is stored as data; no request is made, so this URL is never fetched |
-| `POST /internal/profile/avatar/fetch` (protected) | The origin allowlist is checked before any request, and a redirect is refused, not followed |
+| `POST /internal/profile/avatar/fetch` (protected) | The origin allowlist is checked before any request, and a redirect is refused, not followed. The allowlist is the service's `AVATAR_ALLOWED_ORIGINS` variable, comma-separated: the lab's own fake avatar host by default |
 
 ### SSRF-002 — tests
 
 `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts`, `SSRF-002`: a loopback stub records the fetch and the followed redirect; `setAvatarUrl` and the allowlisted fetch leave the stub's count unchanged.
+
+`apps/accounts/test/avatar-fetch.int-spec.ts`: the service is started with `AVATAR_ALLOWED_ORIGINS` on a loopback stub of the test's, and the allowlisted fetch is proved in both directions. An allowed origin is fetched and the URL is stored; a redirect, a host that does not serve the avatar and an origin under another name each store nothing, and each refusal says which rule refused.

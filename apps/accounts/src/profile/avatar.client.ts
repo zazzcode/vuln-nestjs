@@ -1,11 +1,17 @@
 import { Injectable } from '@nestjs/common';
 import fetch from 'node-fetch';
-
-/** The only origins an avatar may be fetched from: the lab's own fake avatar host. */
-const ALLOWED_ORIGINS: readonly string[] = ['https://avatars.vcx.exchange'];
+import { Environment } from '../config/environment.js';
 
 /** How long a fetch waits before it gives up. */
 const TIMEOUT_MS = 3_000;
+
+/** Why an avatar was not fetched. */
+export type AvatarRefusal = 'not-allowlisted' | 'redirect' | 'not-served';
+
+/** What came of a fetch: the status when the avatar was served, the reason when it was not. */
+export type AvatarFetch =
+  | { ok: true; status: number }
+  | { ok: false; reason: AvatarRefusal; status?: number };
 
 /**
  * The client that fetches an avatar on the caller's behalf: an allowlist of
@@ -14,31 +20,36 @@ const TIMEOUT_MS = 3_000;
  */
 @Injectable()
 export class AvatarClient {
-  async fetch(url: string): Promise<{ ok: boolean; status?: number }> {
+  constructor(private readonly environment: Environment) {}
+
+  async fetch(url: string): Promise<AvatarFetch> {
     let parsed: URL;
     try {
       parsed = new URL(url);
     } catch {
-      return { ok: false };
+      return { ok: false, reason: 'not-allowlisted' };
     }
-    if (
-      parsed.protocol !== 'https:' ||
-      !ALLOWED_ORIGINS.includes(parsed.origin)
-    ) {
-      return { ok: false };
+    // An origin is compared as written, its scheme included: nothing is
+    // fetched from a host, a port or a scheme the allowlist does not name.
+    if (!this.environment.avatarOrigins.includes(parsed.origin)) {
+      return { ok: false, reason: 'not-allowlisted' };
     }
     try {
       const response = await fetch(url, {
         redirect: 'manual',
         timeout: TIMEOUT_MS,
       });
+      if (response.ok) {
+        return { ok: true, status: response.status };
+      }
       // A redirect is refused, not followed: where it points is not on the allowlist's say-so.
       return {
-        ok: response.ok && response.status < 300,
+        ok: false,
         status: response.status,
+        reason: response.status < 400 ? 'redirect' : 'not-served',
       };
     } catch {
-      return { ok: false };
+      return { ok: false, reason: 'not-served' };
     }
   }
 }

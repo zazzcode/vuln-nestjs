@@ -5,7 +5,19 @@ import {
   type TokenPayload,
 } from '@zazzles/exchange-internal-auth';
 import { UsersService, toUser } from '../users/users.service.js';
-import { AvatarClient } from './avatar.client.js';
+import { AvatarClient, type AvatarRefusal } from './avatar.client.js';
+
+/** What the avatar fetch answers for each way it refused. */
+function refusalOf(reason: AvatarRefusal): string {
+  switch (reason) {
+    case 'not-allowlisted':
+      return 'The avatar URL is not on the allowlist';
+    case 'redirect':
+      return 'The avatar host answered with a redirect, which is not followed';
+    case 'not-served':
+      return 'The avatar host did not serve the avatar';
+  }
+}
 
 /** What the profile route accepts. The whitelist is on: a field the DTO does not declare is refused, not ignored. */
 export class UpdateProfileDto {
@@ -59,7 +71,8 @@ export class ProfileController {
   /**
    * Fetches an avatar from an allowlisted origin, with redirects refused, and
    * stores the URL on success. It is the counterpart of every fetch-what-you-
-   * are-given route: the allowlist is checked before anything is fetched.
+   * are-given route: the allowlist is checked before anything is fetched, and
+   * each refusal says which rule refused.
    */
   @Post('avatar/fetch')
   @HttpCode(200)
@@ -71,7 +84,7 @@ export class ProfileController {
     if (!result.ok) {
       return {
         stored: false,
-        reason: 'The avatar URL is not on the allowlist',
+        reason: refusalOf(result.reason),
       };
     }
     await this.users.update(caller.sub, { avatarUrl: dto.url });
