@@ -98,7 +98,7 @@
                   "const body = pm.response.json();",
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
                   "pm.test('answers with the orders the caller placed', () =>",
-                  "  pm.expect(body.data).to.eql({ orders: [{ id: '2', userId: 'u-bob' }] }));"
+                  "  pm.expect(body.data).to.eql({ orders: [{ id: '2', userId: 'u-bob' }, { id: '7', userId: 'u-bob' }] }));"
                 ]
               }
             }
