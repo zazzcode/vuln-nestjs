@@ -11,10 +11,12 @@ Each record is one decision that is expensive to reverse: what was chosen, what 
 | [ADR-005](ADR-005-three-services-one-store-each.md) | Three backend services, each the only user of its store | Accepted 2026-11-26 |
 | [ADR-006](ADR-006-express-adapter-for-notifications.md) | The `notifications` service uses the Express adapter | Accepted 2026-11-26 |
 | [ADR-007](ADR-007-auth-and-validation-patterns.md) | Established authentication and validation patterns | Accepted 2026-11-26 |
-| [ADR-008](ADR-008-safe-baseline-then-deliberate-flaws.md) | Safe functional baseline first, deliberate flaws as twin operations, about two safe for every vulnerable one | Accepted 2026-11-26 |
+| [ADR-008](ADR-008-safe-baseline-then-deliberate-flaws.md) | Safe functional baseline first, deliberate flaws as twin operations, about two safe for every vulnerable one. The ratio is replaced by [ADR-013](ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md) | Accepted 2026-11-26 |
 | [ADR-009](ADR-009-vulnerable-pins-one-workspace.md) | Vulnerable pins, one workspace each, guarded by an audit snapshot | Accepted 2026-11-26 |
 | [ADR-010](ADR-010-services-never-call-each-other.md) | Services never call each other. The gateway and the client orchestrate | Accepted 2026-11-26 |
 | [ADR-011](ADR-011-native-mongodb-driver-for-accounts.md) | `accounts` uses the native MongoDB driver, not TypeORM | Decided by the Project Owner 2026-11-26 |
+| [ADR-012](ADR-012-http1-relay-in-front-of-http2-services.md) | An HTTP/1.1 relay in front of each service on HTTP/2, for the tools that cannot speak it. A Postman collection per microservice | Proposed 2026-11-26, open for review in pull request 2 |
+| [ADR-013](ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md) | A protected counterpart for every vulnerable operation, and about one and a half safe operations for every vulnerable one. Where the two disagree, the counterpart is built | Decided by the Project Owner 2026-11-26 and 2026-11-27 |
 
 ## Format
 

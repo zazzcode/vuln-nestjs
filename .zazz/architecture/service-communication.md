@@ -1,11 +1,11 @@
 # Service communication
 
-**Status:** revised on 2026-11-26. The gateway-on-Fastify parts were run in a spike the same day.
+**Status:** revised on 2026-11-26. The gateway-on-Fastify parts were run in a spike the same day. Revised again that day, once the scaffolding ran, for the relays in front of the two services on HTTP/2 ([ADR-012](decisions/ADR-012-http1-relay-in-front-of-http2-services.md)).
 
 ## 1. Principles
 
 1. **A star.** The gateway talks to every service. **Services never call each other.** A flow that needs two services is two calls made by the client.
-2. **Clients see one address.** The gateway's `127.0.0.1:3000` is the only listener a client uses.
+2. **Clients see one address.** The application's client uses the gateway's `127.0.0.1:3000` and nothing else. A tool that calls a service directly uses the service's own listener, or, for a service on HTTP/2, the relay in front of it.
 3. **GraphQL federation carries the data API.** REST carries what a graph does not carry well: cookies, file uploads and downloads, CSV, HTML pages.
 4. **HTTP/2 wherever both ends are ours and can speak it.** The gateway and two services talk HTTP/2. The Express service cannot, so it and its caller use HTTP/1.1.
 5. **One port per service.** Each backend service serves its subgraph at `/graphql` and its internal REST endpoints at `/internal/*` on the same listener.
@@ -109,6 +109,19 @@ NestJS's microservices package has no HTTP/2 transport. The gateway uses Node's 
 
 For `notifications` the same call sites use the global `fetch`, chosen by the service registry.
 
+### Relays
+
+curl, Postman, Newman and Burp speak HTTP/2 only over TLS, and the lab has none, so none of them reaches `accounts` or `trading` on their own addresses. The start command opens one relay in front of each ([ADR-012](decisions/ADR-012-http1-relay-in-front-of-http2-services.md)). It is `scripts/relay.mjs`, in the launcher's own process, and it depends on Node alone.
+
+| Relay | Listens on | Carries to | Moved by |
+| --- | --- | --- | --- |
+| `accounts` | `127.0.0.1:3201`, HTTP/1.1 | `127.0.0.1:3101` over HTTP/2 | `ACCOUNTS_RELAY_PORT` |
+| `trading` | `127.0.0.1:3202`, HTTP/1.1 | `127.0.0.1:3102` over HTTP/2 | `TRADING_RELAY_PORT` |
+
+A relay decides nothing. The method, the path, the headers and the body are the caller's, and the status, the headers and the body are the service's. Hop-by-hop headers do not cross, and neither does the caller's `Host`: the service is asked for its own address, as the gateway asks it, so it cannot tell that a request arrived through a relay. Each request gets a connection of its own to the service, closed once the answer has been read to its end, or once the caller goes away. When the service does not answer, the relay answers `502` in the lab's error shape.
+
+A relay opens before its service and closes before anything else stops. The end-to-end suite fails unless nothing listens where one was.
+
 ### Timeouts and failures
 
 | Setting | Value | Behaviour |
@@ -153,6 +166,7 @@ Every `/internal/*` path, with the gateway path that leads to it, is defined in 
 | Client → gateway → service | The client's `Authorization` header or session cookie, forwarded | The service verifies the JWT and checks the session |
 | Gateway → service, on the system's behalf | `x-internal-token` | Compared in constant time with the service's own configuration value |
 | Launcher → service | None | The launcher only reads `/internal/health` |
+| Tool → relay → service | The caller's own credential, carried unchanged | The service checks it as it does for any request. The relay holds no credential and decides nothing |
 
 The rules that make this hold, and the places the scenarios deliberately break them, are in [security-model.md](security-model.md).
 
@@ -165,4 +179,5 @@ The rules that make this hold, and the places the scenarios deliberately break t
 | Constraint | Consequence |
 | --- | --- |
 | The gateway composes at start | The three services must be healthy before the gateway boots. The launcher starts them in order and waits |
+| A relay is a caller of its service | The relays open first, and close first when the lab stops, before the gateway |
 | A service that is down | Every call to it fails with `SERVICE_UNAVAILABLE`. The others are unaffected. The answer is to restart the lab |

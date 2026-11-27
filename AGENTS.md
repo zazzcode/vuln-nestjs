@@ -25,7 +25,7 @@ Violating any of these is a bad change, however green the tests.
 1. **Never "fix" a vulnerable operation.** A test that proves a flaw stopped being exploitable is a regression: restore the flaw, do not weaken the test.
 2. **Never upgrade or remove a vulnerable dependency pin.** Every advisory in `tests/expected-audit.json` is a finding the dependency scanner must report.
 3. **A protected counterpart is a scoped claim.** "This pattern defeats this flaw for identical input" — never "secure in general".
-4. **Every vulnerable operation has a protected counterpart.** A safe operation that is nobody's counterpart exists where a flow, a test or a scenario needs it, not to reach a ratio. (The Project Owner decided this on 2026-11-26, asking for fewer safe routes so the lab is finished sooner. Each service specification records which it left out.)
+4. **Every vulnerable operation has a protected counterpart**, and the lab keeps about one and a half safe operations for every vulnerable one. Where the two disagree, the counterpart is built and the ratio gives way: the evidence for a scenario outranks the number. (Decided by the Project Owner on 2026-11-26 and 2026-11-27, in place of the two to one of ADR-008. See [ADR-013](.zazz/architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md). Each service specification records what it left out.)
 5. **Safety rails stay.** Loopback only, fake data, harmless markers (`42`, `zazzles-lab-marker`), no real credentials or files, no telemetry.
 6. **Services never call each other.** A flow that needs two services is two calls made by the client.
 7. **Generated ground truth is never hand-edited.** Re-snapshot in the same commit as the change that justifies it.
