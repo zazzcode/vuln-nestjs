@@ -474,6 +474,262 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "ACCESS",
+      "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-008 walletOf reads another user\u2019s balances",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('Erin\\'s balances answered to Alice\\'s token', () => {",
+                  "  const usd = body.data.walletOf.find((w) => w.asset === 'USD');",
+                  "  pm.expect(usd).to.eql({ asset: 'USD', balance: '500.00' });",
+                  "  pm.expect(body.data.walletOf).to.have.lengthOf(6);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($userId: ID!) { walletOf(userId: $userId) { asset balance } }\",\n  \"variables\": {\n    \"userId\": \"u-erin\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-002 orderDetails reads Bob\u2019s order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('Bob\\'s order answered to Alice\\'s token', () =>",
+                  "  pm.expect(body.data.orderDetails).to.eql({ id: '2', userId: 'u-bob', memo: 'stop loss above entry', limitPrice: '66000.00' }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: ID!) { orderDetails(id: $id) { id userId memo limitPrice } }\",\n  \"variables\": {\n    \"id\": \"2\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-009 creditWallet credits the caller",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('Alice credited herself five hundred dollars', () =>",
+                  "  pm.expect(body.data.creditWallet.find((w) => w.asset === 'USD')).to.eql({ asset: 'USD', balance: '10500.00' }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($userId: ID!, $amount: Decimal!) { creditWallet(userId: $userId, amount: $amount) { asset balance } }\",\n  \"variables\": {\n    \"userId\": \"u-alice\",\n    \"amount\": \"500.00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-010 PATCH writes status and userId from the body",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('the order came back Bob\\'s and FILLED', () => {",
+                  "  pm.expect(body.order.userId).to.eql('u-bob');",
+                  "  pm.expect(body.order.status).to.eql('FILLED');",
+                  "  pm.expect(body.order.memo).to.eql('patched by the scenario');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/internal/orders/1",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memo\": \"patched by the scenario\",\n  \"status\": \"FILLED\",\n  \"userId\": \"u-bob\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-007 setReferencePrice moves a market, then a bitcoin costs a dollar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('BTC-USD fills at one dollar now', () =>",
+                  "  pm.expect(body.data.setReferencePrice).to.eql({ symbol: 'BTC-USD', referencePrice: '1.00' }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($symbol: String!, $price: Decimal!) { setReferencePrice(symbol: $symbol, price: $price) { symbol referencePrice } }\",\n  \"variables\": {\n    \"symbol\": \"BTC-USD\",\n    \"price\": \"1.00\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

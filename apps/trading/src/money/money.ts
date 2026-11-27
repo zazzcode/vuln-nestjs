@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Decimal } from 'decimal.js';
 
 Decimal.set({ precision: 40, rounding: Decimal.ROUND_HALF_UP });
@@ -55,4 +56,20 @@ export function costOf(
     .times(price)
     .div(new Decimal(10).pow(quantityScale))
     .toFixed(0, rounding);
+}
+
+/**
+ * An amount above zero, as minor units, or a refusal: nothing that is not a
+ * positive whole number of minor units ever changes a balance.
+ */
+export function requireAboveZero(
+  amount: string,
+  scale: number,
+  name = 'amount',
+): string {
+  const minor = toMinorUnits(amount, scale);
+  if (minor === null || minor.startsWith('-') || /^0+$/.test(minor)) {
+    throw new BadRequestException(`${name} must be above zero`);
+  }
+  return minor;
 }

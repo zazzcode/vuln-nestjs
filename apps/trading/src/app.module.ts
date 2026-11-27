@@ -5,6 +5,7 @@ import { DatabaseModule } from './database/database.module.js';
 import { Environment } from './config/environment.js';
 import { GraphqlModule } from './graphql/graphql.module.js';
 import { HealthModule } from './health/health.module.js';
+import { InternalModule } from './internal/internal.module.js';
 import { MarketsModule } from './markets/markets.module.js';
 import { MoneyModule } from './money/money.module.js';
 import { OrdersModule } from './orders/orders.module.js';
@@ -24,6 +25,7 @@ import { WalletsModule } from './wallets/wallets.module.js';
     TradesModule,
     ReportsModule,
     MoneyModule,
+    InternalModule,
     SeedModule,
     HealthModule,
     GraphqlModule,
