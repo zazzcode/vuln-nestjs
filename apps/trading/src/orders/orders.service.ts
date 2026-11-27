@@ -1,8 +1,32 @@
 import { Injectable } from '@nestjs/common';
+import { COIN_SCALE, DOLLAR_SCALE, toDecimal } from '../money/money.js';
 import { OrderEntity } from './order.entity.js';
 import { type Order } from './order.model.js';
 import { OrdersRepository } from './orders.repository.js';
-import { COIN_SCALE, DOLLAR_SCALE, toDecimal } from './money.js';
+
+export const ORDER_REFERENCE_PREFIX = 'ord-';
+
+/** The reference of an order, from its id. Written once the row has an id. */
+export function referenceOf(id: number | string): string {
+  return `${ORDER_REFERENCE_PREFIX}${id}`;
+}
+
+/** Minor units as the graph carries them: cents become dollars, hundred-millionths become coins. */
+export function toOrder(row: OrderEntity): Order {
+  return {
+    id: String(row.id),
+    userId: row.userId,
+    symbol: row.symbol,
+    side: row.side,
+    type: row.type,
+    limitPrice: toDecimal(row.limitPrice, DOLLAR_SCALE),
+    quantity: toDecimal(row.quantity, COIN_SCALE),
+    memo: row.memo,
+    status: row.status,
+    createdAt: row.createdAt,
+    user: { id: row.userId, orders: [] },
+  };
+}
 
 @Injectable()
 export class OrdersService {
@@ -18,15 +42,4 @@ export class OrdersService {
     const row = await this.repository.findById(id);
     return row === null ? null : toOrder(row);
   }
-}
-
-function toOrder(row: OrderEntity): Order {
-  return {
-    id: String(row.id),
-    userId: row.userId,
-    symbol: row.symbol,
-    limitPrice: toDecimal(row.limitPrice, DOLLAR_SCALE),
-    quantity: toDecimal(row.quantity, COIN_SCALE),
-    status: row.status,
-  };
 }

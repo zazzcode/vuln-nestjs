@@ -72,7 +72,7 @@ describe('the trading service, started alone', () => {
   test("answers a caller with the caller's own orders, money as decimal strings, and the order's user as a reference", async () => {
     expect(
       await query(
-        '{ orders { id userId symbol limitPrice quantity status user { id } } }',
+        '{ orders { id userId symbol side type limitPrice quantity memo status user { id } } }',
         { token: tokenOf('u-alice') },
       ),
     ).toEqual({
@@ -82,8 +82,23 @@ describe('the trading service, started alone', () => {
             id: '1',
             userId: 'u-alice',
             symbol: 'BTC-USD',
+            side: 'BUY',
+            type: 'LIMIT',
             limitPrice: '64000.00',
             quantity: '0.50000000',
+            memo: '=zazzles-lab-marker',
+            status: 'OPEN',
+            user: { id: 'u-alice' },
+          },
+          {
+            id: '6',
+            userId: 'u-alice',
+            symbol: 'SOL-USD',
+            side: 'SELL',
+            type: 'LIMIT',
+            limitPrice: '160.00',
+            quantity: '5.00000000',
+            memo: null,
             status: 'OPEN',
             user: { id: 'u-alice' },
           },
@@ -94,7 +109,10 @@ describe('the trading service, started alone', () => {
       (await query('{ orders { id userId } }', { token: tokenOf('u-bob') }))
         .data,
     ).toEqual({
-      orders: [{ id: '2', userId: 'u-bob' }],
+      orders: [
+        { id: '2', userId: 'u-bob' },
+        { id: '7', userId: 'u-bob' },
+      ],
     });
   });
 
@@ -117,7 +135,7 @@ describe('the trading service, started alone', () => {
     expect(
       (await entities(tokenOf('u-admin', 'ADMIN'), order('2'))).data,
     ).toEqual({
-      _entities: [{ id: '2', userId: 'u-bob', symbol: 'ETH-USD' }],
+      _entities: [{ id: '2', userId: 'u-bob', symbol: 'BTC-USD' }],
     });
     expect(errorCode(await entities(tokenOf('u-alice'), order('99')))).toBe(
       'NOT_FOUND',
@@ -136,7 +154,15 @@ describe('the trading service, started alone', () => {
       ),
     ).toBe('UNAUTHENTICATED');
     expect((await entities(tokenOf('u-alice'), user('u-alice'))).data).toEqual({
-      _entities: [{ id: 'u-alice', orders: [{ id: '1', userId: 'u-alice' }] }],
+      _entities: [
+        {
+          id: 'u-alice',
+          orders: [
+            { id: '1', userId: 'u-alice' },
+            { id: '6', userId: 'u-alice' },
+          ],
+        },
+      ],
     });
     expect(errorCode(await entities(tokenOf('u-alice'), user('u-bob')))).toBe(
       'FORBIDDEN',
@@ -144,7 +170,15 @@ describe('the trading service, started alone', () => {
     expect(
       (await entities(tokenOf('u-admin', 'ADMIN'), user('u-bob'))).data,
     ).toEqual({
-      _entities: [{ id: 'u-bob', orders: [{ id: '2', userId: 'u-bob' }] }],
+      _entities: [
+        {
+          id: 'u-bob',
+          orders: [
+            { id: '2', userId: 'u-bob' },
+            { id: '7', userId: 'u-bob' },
+          ],
+        },
+      ],
     });
   });
 
@@ -171,7 +205,10 @@ describe('the trading service, started alone', () => {
       (await query('{ orders { id symbol } }', { token: tokenOf('u-alice') }))
         .data,
     ).toEqual({
-      orders: [{ id: '1', symbol: 'BTC-USD' }],
+      orders: [
+        { id: '1', symbol: 'BTC-USD' },
+        { id: '6', symbol: 'SOL-USD' },
+      ],
     });
   });
 
@@ -196,7 +233,12 @@ describe('the trading service, started alone', () => {
     expect(
       (await query('{ orders { id userId } }', { token: tokenOf('u-bob') }))
         .data,
-    ).toEqual({ orders: [{ id: '2', userId: 'u-bob' }] });
+    ).toEqual({
+      orders: [
+        { id: '2', userId: 'u-bob' },
+        { id: '7', userId: 'u-bob' },
+      ],
+    });
   });
 
   // What the gateway composes from: an order with a key that provides the user's key, and the user entity this service adds to.
