@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { WebhooksModule } from '../webhooks/webhooks.module.js';
 import { AnnouncementEntity } from './announcement.entity.js';
 import { AnnouncementByIdController } from './announcement-by-id.controller.js';
+import { AnnouncementHtmlController } from './announcement-html.controller.js';
 import { AnnouncementPageController } from './announcement-page.controller.js';
 import { AnnouncementsRepository } from './announcements.repository.js';
 import { AnnouncementsResolver } from './announcements.resolver.js';
@@ -28,6 +29,7 @@ import { ViewsService } from './views.service.js';
     AnnouncementsNotifyController,
     AnnouncementsSendController,
     AnnouncementByIdController,
+    AnnouncementHtmlController,
     AnnouncementPageController,
   ],
   exports: [AnnouncementsRepository, AnnouncementsService],
