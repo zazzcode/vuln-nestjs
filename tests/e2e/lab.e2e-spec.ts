@@ -24,7 +24,13 @@ const snapshot = () =>
 
 const FAKE_DATA = {
   data: {
-    user: { displayName: 'Alice', orders: [{ id: '1', symbol: 'BTC-USD' }] },
+    user: {
+      displayName: 'Alice',
+      orders: [
+        { id: '1', symbol: 'BTC-USD' },
+        { id: '6', symbol: 'SOL-USD' },
+      ],
+    },
     announcements: [{ id: '1', title: 'Welcome to VCX' }],
   },
 };
