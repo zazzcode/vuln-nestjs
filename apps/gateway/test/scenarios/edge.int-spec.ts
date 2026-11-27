@@ -149,7 +149,7 @@ describe('the edge scenarios', () => {
         cookie: `vcx_session=${alice}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
-      payload: 'displayName=Cross-site+change',
+      payload: 'displayName=Cross+site+change',
     });
 
     expect(response.statusCode).toBe(200);
@@ -160,7 +160,7 @@ describe('the edge scenarios', () => {
     expect(reached?.path).toBe('/internal/profile');
     expect(reached?.method).toBe('PUT');
     expect((reached?.body as { displayName?: string })?.displayName).toBe(
-      'Cross-site change',
+      'Cross site change',
     );
     expect(reached?.headers.cookie).toBe(`vcx_session=${alice}`);
   });
@@ -173,7 +173,7 @@ describe('the edge scenarios', () => {
         cookie: `vcx_session=${alice}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
-      payload: 'displayName=Cross-site+change',
+      payload: 'displayName=Cross+site+change',
     });
     // Refused by what a cross-site form cannot send: no bearer header to
     // carry, so the cookie alone is not taken for the caller.
@@ -186,7 +186,7 @@ describe('the edge scenarios', () => {
         authorization: `Bearer ${alice}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
-      payload: 'displayName=Cross-site+change',
+      payload: 'displayName=Cross+site+change',
     });
     // And the body a form does send is not the JSON the route carries.
     expect(form.statusCode).toBe(415);
@@ -201,7 +201,7 @@ describe('the edge scenarios', () => {
         cookie: `vcx_session=${alice}`,
         'content-type': 'application/x-www-form-urlencoded',
       },
-      payload: 'displayName=Cross-site+change',
+      payload: 'displayName=Cross+site+change',
     });
 
     // Refused by the CSRF check: a cookie alone is a request a page on

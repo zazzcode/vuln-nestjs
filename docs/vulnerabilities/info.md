@@ -115,8 +115,10 @@ x-request-id: 28a6da0c-4afc-411f-96ec-f784ad312232
 And in the server's own output, not in any answer, the partner route's log
 line: `request 28a6da0c-4afc-411f-96ec-f784ad312232: the ticker is
 unavailable` followed by the stack. In Postman: `GET
-{{gatewayUrl}}/api/v1/public/diagnostics` while the trading service is
-stopped, and read `stack`. In Burp: the same GET from Repeater.
+{{gatewayUrl}}/api/v1/public/diagnostics` — with the lab up it answers the
+dependency's own answer to anyone; stop the trading service and the same
+request answers the message and the stack. In Burp: the same GET from
+Repeater.
 
 ### INFO-002 — vulnerable and protected
 

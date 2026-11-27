@@ -74,9 +74,11 @@ export class InternalClientService {
   ): Promise<UpstreamAnswer> {
     const fetcher = fetcherFor(this.http2, service);
     const url = `${serviceUrl(service, portOf(this.environment, service))}${path}${options.rawQuery ? `?${options.rawQuery}` : ''}`;
+    const body = serialize(options.body);
+    const contentType = contentTypeOf(options.body, options.contentType);
     const headers: Record<string, string> = {
       accept: 'application/json, */*',
-      ...(options.contentType ? { 'content-type': options.contentType } : {}),
+      ...(contentType ? { 'content-type': contentType } : {}),
       ...options.headers,
       [SERVICE_TOKEN_HEADER]: this.environment.INTERNAL_SERVICE_TOKEN,
     };
@@ -85,7 +87,7 @@ export class InternalClientService {
         method,
         signal,
         headers,
-        body: serialize(options.body),
+        body,
       }).then(readAnswer),
     );
   }
@@ -110,6 +112,23 @@ function serialize(body: unknown): unknown {
     return body;
   }
   return JSON.stringify(body);
+}
+
+/**
+ * The content type the crossing carries: a body that leaves as JSON is
+ * declared as the JSON it is, whatever content type the caller's own request
+ * had. The caller's type crosses for a body that crosses as it arrived.
+ */
+function contentTypeOf(body: unknown, asArrived?: string): string | undefined {
+  if (
+    body !== undefined &&
+    body !== null &&
+    typeof body === 'object' &&
+    !(body instanceof Buffer)
+  ) {
+    return 'application/json';
+  }
+  return asArrived;
 }
 
 async function readAnswer(response: Response): Promise<UpstreamAnswer> {
