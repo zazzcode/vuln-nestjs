@@ -2,7 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { Type } from 'class-transformer';
 import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Roles, ServiceToken } from '@zazzles/exchange-internal-auth';
-import { trimEnd } from 'lodash';
+import lodash from 'lodash';
 import { Role, type User } from './user.model.js';
 import { UsersService, toUser } from './users.service.js';
 
@@ -63,7 +63,7 @@ export class UsersController {
   list(@Query() query: ListUsersQuery): Promise<User[]> {
     return this.users.page({
       role: query.role,
-      q: query.q === undefined ? undefined : trimEnd(query.q),
+      q: query.q === undefined ? undefined : lodash.trimEnd(query.q),
       limit: query.limit,
       offset: query.offset,
     });

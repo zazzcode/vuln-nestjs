@@ -187,7 +187,11 @@ describe('ACCESS-005: a header believed as identity', () => {
     const answered = (await response.json()) as {
       id: string;
       email: string;
+      displayName: string;
       role: string;
+      preferences: Record<string, string>;
+      avatarUrl: string | null;
+      createdAt: string;
     };
 
     // gained: the administrator's whole profile, with no credentials at all

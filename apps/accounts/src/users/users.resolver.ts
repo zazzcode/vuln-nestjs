@@ -23,7 +23,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Roles } from '@zazzles/exchange-internal-auth';
-import { trimEnd } from 'lodash';
+import lodash from 'lodash';
 import { Role, User, UserOrderBy } from './user.model.js';
 import { UsersService } from './users.service.js';
 
@@ -115,7 +115,7 @@ export class UsersResolver {
     checkedLimit(limit);
     return this.users.page({
       role,
-      q: q === undefined ? undefined : trimEnd(q),
+      q: q === undefined ? undefined : lodash.trimEnd(q),
       orderBy,
       limit,
       offset,
