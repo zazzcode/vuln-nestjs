@@ -398,6 +398,184 @@
             "url": "{{notificationsUrl}}/internal/deliveries"
           },
           "response": []
+        },
+        {
+          "name": "DESER-002: an alert expression that is code",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the expression is stored as it was given', () =>",
+                  "  pm.expect(body.data.createSmartAlert.label).to.eql('smart alert'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($expression: String!) { createSmartAlert(expression: $expression) { id label } }\",\n  \"variables\": {\n    \"expression\": \"alert.label = \\\"zazzles-lab-marker\\\", true\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-002: the prices arrive",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('a price nothing crossed delivered the smart alert', () =>",
+                  "  pm.expect(body.data.evaluateAlerts.length).to.eql(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"mutation($prices: [PriceInput!]!) { evaluateAlerts(prices: $prices) { alertId } }\",\n  \"variables\": {\n    \"prices\": [\n      {\n        \"symbol\": \"BTC-USD\",\n        \"price\": \"1000.00\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-002: the row the expression rewrote",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('the stored string ran as code and rewrote the row', () => {",
+                  "  const alert = body.data.alerts[body.data.alerts.length - 1];",
+                  "  pm.expect(alert.label).to.eql('zazzles-lab-marker');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ alerts { id label } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DESER-003: an announcement body that is a template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 201', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test('the tags were compiled, not printed', () =>",
+                  "  pm.expect(body.deliveries.some((record) => record.responseBody.includes('49')",
+                  "    && !record.responseBody.includes('<%= 7*7 %>'))).to.be.true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{notificationsUrl}}/internal/announcements/send",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Scheduled maintenance\",\n  \"body\": \"Scheduled maintenance at 02:00 UTC. <%= 7*7 %>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     }
