@@ -30,6 +30,7 @@ They are in `.agents/skills/`, and you read one when you reach its step: `spec-b
 You can be stopped at any moment, by the usage limit most of all. What is pushed is safe; what is only on your disk has to be found by the next builder. So you checkpoint often, and small.
 
 - **One scenario, one commit.** The moment a scenario's test is green — the exploit and the counterpart — you commit it and push it, before the next scenario begins. You never hold scenarios back to commit a family together.
+- **A documentation module is a slice of its own.** It is committed and pushed the moment it is written, never held to go with the other modules of its family. Documentation is where a builder goes quiet: reproducing by hand takes minutes with nothing pushed.
 - **Fifteen minutes at most between pushes.** If fifteen minutes pass with nothing new green, you commit what is on disk as `wip(<service>): <what is written, what is not passing yet>` and push it, then make it green in the next commit. When the tree is clean, the line in your run log is the checkpoint. The tip of the branch is green when you report.
 - **Before you stop, for any reason** — a question to the lead, the limit announced, the end of the work — you commit and push everything, then append a "Where I stopped" section to your run log with the time and what comes next.
 
