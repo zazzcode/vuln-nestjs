@@ -11,6 +11,7 @@ import { LabModule } from './lab/lab.module.js';
 import { MarketsModule } from './markets/markets.module.js';
 import { OpenapiModule } from './openapi/openapi.module.js';
 import { PassthroughModule } from './passthrough/passthrough.module.js';
+import { PublicApiModule } from './public-api/public-api.module.js';
 import { PreferencesModule } from './profile/preferences.module.js';
 import { RedirectsModule } from './redirects/redirects.module.js';
 import { StatusModule } from './status/status.module.js';
@@ -31,6 +32,7 @@ import { StatusModule } from './status/status.module.js';
     RedirectsModule,
     PreferencesModule,
     PassthroughModule,
+    PublicApiModule,
   ],
 })
 export class AppModule {}

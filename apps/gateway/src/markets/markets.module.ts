@@ -7,5 +7,6 @@ import { TickerService } from './ticker.service.js';
   imports: [InternalModule],
   controllers: [MarketsController],
   providers: [TickerService],
+  exports: [TickerService],
 })
 export class MarketsModule {}
