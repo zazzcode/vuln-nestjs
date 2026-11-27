@@ -172,6 +172,308 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "SQL",
+      "item": [
+        {
+          "name": "SQL-001 orderLookup reads an order that is not an id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('Bob gained Alice\\'s order from a payload that is not an id', () =>",
+                  "  pm.expect(body.data.orderLookup).to.eql({ id: '1', userId: 'u-alice', symbol: 'BTC-USD' }));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($id: String!) { orderLookup(id: $id) { id userId symbol } }\",\n  \"variables\": {\n    \"id\": \"1 OR 1=1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-002 tradeHistory returns trades of symbols it never named",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('eleven rows came back for a symbol that matches no market', () =>",
+                  "  pm.expect(body.data.tradeHistory).to.have.lengthOf(11));",
+                  "pm.test('among them symbols the payload never named', () =>",
+                  "  pm.expect(body.data.tradeHistory.map((t) => t.symbol)).to.include('ETH-USD'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($input: TradeHistoryInput!) { tradeHistory(input: $input) { id symbol } }\",\n  \"variables\": {\n    \"input\": {\n      \"symbol\": \"BTC-USD' OR '1'='1\",\n      \"side\": \"BUY\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-003 searchMarkets returns all five markets from a match of none",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('every market answered to text no symbol contains', () =>",
+                  "  pm.expect(body.data.searchMarkets.map((m) => m.symbol)).to.eql(['BTC-USD', 'DOGE-USD', 'ETH-USD', 'SOL-USD', 'XRP-USD']));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($q: String!) { searchMarkets(q: $q) { symbol } }\",\n  \"variables\": {\n    \"q\": \"zzz' OR 1=1 -- \"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-004 tradesSorted: the order of the answer says a balance it never read",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('ascending ids came back reversed, which happens only above 400.00', () =>",
+                  "  pm.expect(body.data.tradesSorted.map((t) => t.id)).to.eql(['3', '2', '1']));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($symbol: String!, $sortBy: String!, $sortDir: String!) { tradesSorted(symbol: $symbol, sortBy: $sortBy, sortDir: $sortDir) { id } }\",\n  \"variables\": {\n    \"symbol\": \"BTC-USD\",\n    \"sortBy\": \"id * (SELECT CASE WHEN w.balance > 40000 THEN -1 ELSE 1 END FROM wallets w WHERE w.userId = 'u-erin' AND w.asset = 'USD')\",\n    \"sortDir\": \"ASC\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-005 volumeFor adds the volume of every market",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('every market\\'s volume together, not one market\\'s', () =>",
+                  "  pm.expect(body.data.volumeFor).to.eql('3907.40000000'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($symbol: String!) { volumeFor(symbol: $symbol) }\",\n  \"variables\": {\n    \"symbol\": \"\\\\' OR 1=1 -- \"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-006 feesPaid adds every user\u2019s fees",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('every user\\'s fees together (66.67), not the caller\\'s own (11.15)', () =>",
+                  "  pm.expect(body.data.feesPaid).to.eql('66.67'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($symbol: String!) { feesPaid(symbol: $symbol) }\",\n  \"variables\": {\n    \"symbol\": \"' OR '1'='1\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SQL-007 ordersByIds returns every user\u2019s orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "pm.test('all ten orders came back, other users\\' among them', () => {",
+                  "  pm.expect(body.data.ordersByIds).to.have.lengthOf(10);",
+                  "  pm.expect(body.data.ordersByIds.map((o) => o.userId)).to.include('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{tradingUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($ids: [ID!]!) { ordersByIds(ids: $ids) { id userId } }\",\n  \"variables\": {\n    \"ids\": [\n      \"0) OR (1=1\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }

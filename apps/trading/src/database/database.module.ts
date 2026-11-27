@@ -8,6 +8,7 @@ import { TradeEntity } from '../trades/trade.entity.js';
 import { LedgerEntryEntity } from '../wallets/ledger-entry.entity.js';
 import { WalletEntity } from '../wallets/wallet.entity.js';
 import { MysqlStore } from './mysql.store.js';
+import { SqlClient } from './sql-client.js';
 
 @Global()
 @Module({
@@ -34,7 +35,7 @@ import { MysqlStore } from './mysql.store.js';
       }),
     }),
   ],
-  providers: [MysqlStore],
-  exports: [MysqlStore, TypeOrmModule],
+  providers: [MysqlStore, SqlClient],
+  exports: [MysqlStore, SqlClient, TypeOrmModule],
 })
 export class DatabaseModule {}

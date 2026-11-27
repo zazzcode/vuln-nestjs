@@ -1,5 +1,11 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
+import {
+  Args,
+  ID,
   Parent,
   Query,
   ResolveField,
@@ -23,6 +29,34 @@ export class OrdersResolver {
   @Query(() => [Order], { name: 'orders' })
   placedByCaller(@UserId() userId: string): Promise<Order[]> {
     return this.orders.byUser(userId);
+  }
+
+  /**
+   * One order by its id. The repository answers, then the order is checked
+   * against the caller: an id that is not a whole number is refused before the
+   * store is asked anything.
+   */
+  @Query(() => Order, { nullable: true })
+  async order(
+    @CurrentUser() caller: TokenPayload,
+    @Args('id', { type: () => ID }) id: string,
+  ): Promise<Order | null> {
+    const whole = Number(id);
+    if (!Number.isInteger(whole)) {
+      throw new BadRequestException(
+        `An order is asked for by its number: ${JSON.stringify(id)} is not one`,
+      );
+    }
+    const order = await this.orders.byId(whole);
+    if (order === null) {
+      throw new NotFoundException(`There is no order ${id}`);
+    }
+    if (order.userId !== caller.sub && caller.role !== 'ADMIN') {
+      throw new ForbiddenException(
+        'An order is read by the user who placed it',
+      );
+    }
+    return order;
   }
 
   /**
