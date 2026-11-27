@@ -130,4 +130,73 @@ describe('the edge scenarios', () => {
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.json().caller).toBe(MARKER);
   });
+
+  // COOKIE-003 — a state change a page on another site can submit.
+  test('COOKIE-003: a form post with the session cookie changes the preference', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profile/preferences',
+      headers: {
+        cookie: `vcx_session=${alice}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      payload: 'theme=dark&language=fr',
+    });
+
+    expect(response.statusCode).toBe(200);
+    const reached = subgraphs.accounts.reached.at(-1);
+    // What was gained: the preference crossed to the profile and was written,
+    // driven by nothing but a form a browser submits and the cookie it adds.
+    expect(reached?.path).toBe('/internal/profile');
+    expect(reached?.method).toBe('PUT');
+    expect((reached?.body as { theme?: string })?.theme).toBe('dark');
+    expect(reached?.headers.cookie).toBe(`vcx_session=${alice}`);
+  });
+
+  test('COOKIE-003 counterpart 1: preferences/json wants a bearer header and a JSON body', async () => {
+    const unauthenticated = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profile/preferences/json',
+      headers: {
+        cookie: `vcx_session=${alice}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      payload: 'theme=dark',
+    });
+    // Refused by what a cross-site form cannot send: no bearer header to
+    // carry, so the cookie alone is not taken for the caller.
+    expect(unauthenticated.statusCode).toBe(401);
+
+    const form = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profile/preferences/json',
+      headers: {
+        authorization: `Bearer ${alice}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      payload: 'theme=dark',
+    });
+    // And the body a form does send is not the JSON the route carries.
+    expect(form.statusCode).toBe(415);
+  });
+
+  test('COOKIE-003 counterpart 2: preferences/csrf refuses the same post without its token', async () => {
+    const carried = subgraphs.accounts.reached.length;
+    const response = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profile/preferences/csrf',
+      headers: {
+        cookie: `vcx_session=${alice}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      payload: 'theme=dark',
+    });
+
+    // Refused by the CSRF check: a cookie alone is a request a page on
+    // another site can arrange; the token it cannot also add is missing, and
+    // nothing is carried to the profile.
+    expect(response.statusCode).toBe(403);
+    expect(response.body).toContain('csrf');
+    expect(subgraphs.accounts.reached.length).toBe(carried);
+  });
 });
