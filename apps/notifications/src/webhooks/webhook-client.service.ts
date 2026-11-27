@@ -69,6 +69,37 @@ export class WebhookClientService implements OnApplicationShutdown {
     return this.deliver(url, payload, 'follow');
   }
 
+  /**
+   * One GET through the outbound guard, for a caller that reads from a URL.
+   * Never follows a redirect; gives up after the same five seconds.
+   */
+  async get(url: string): Promise<DeliveryOutcome> {
+    const decision = await this.guard.check(url);
+    if (!decision.allowed) {
+      return { sent: false, reason: decision.reason };
+    }
+    try {
+      const answer = await fetch(url, {
+        method: 'GET',
+        redirect: 'manual',
+        timeout: TIMEOUT_MS,
+      });
+      const text = await answer.text();
+      if (answer.status >= 300 && answer.status < 400) {
+        return {
+          sent: true,
+          error: `refused: the receiver answered ${answer.status}, a redirect the client does not follow`,
+        };
+      }
+      return { sent: true, answer: { status: answer.status, body: text } };
+    } catch (error) {
+      return {
+        sent: true,
+        error: `the request could not be made: ${error instanceof Error ? error.message : String(error)}`,
+      };
+    }
+  }
+
   private async deliver(
     url: string,
     payload: unknown,

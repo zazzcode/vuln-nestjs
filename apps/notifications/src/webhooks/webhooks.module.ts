@@ -1,30 +1,32 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Environment } from '../config/environment.js';
 import { SettingsModule } from '../settings/settings.module.js';
 import { DeliveryEntity } from './delivery.entity.js';
+import { DeliveriesController } from './deliveries.controller.js';
 import { DeliveriesRepository } from './deliveries.repository.js';
 import { DeliveryService } from './delivery.service.js';
-import { OutboundGuardService } from './outbound-guard.service.js';
+import { OutboundGuardModule } from './outbound-guard.module.js';
+import { PreviewWebhookResolver } from './preview-webhook.resolver.js';
 import { WebhookClientService } from './webhook-client.service.js';
+import { WebhooksTestController } from './webhooks-test.controller.js';
 
 /** Webhook deliveries: their table, the outbound guard, the signed client and the delivery record. */
 @Module({
-  imports: [TypeOrmModule.forFeature([DeliveryEntity]), SettingsModule],
+  imports: [
+    TypeOrmModule.forFeature([DeliveryEntity]),
+    OutboundGuardModule,
+    SettingsModule,
+  ],
   providers: [
     DeliveriesRepository,
-    {
-      provide: OutboundGuardService,
-      useFactory: (environment: Environment) =>
-        new OutboundGuardService(environment.webhookOrigins),
-      inject: [Environment],
-    },
     WebhookClientService,
     DeliveryService,
+    PreviewWebhookResolver,
   ],
+  controllers: [WebhooksTestController, DeliveriesController],
   exports: [
     DeliveriesRepository,
-    OutboundGuardService,
+    OutboundGuardModule,
     WebhookClientService,
     DeliveryService,
     TypeOrmModule,
