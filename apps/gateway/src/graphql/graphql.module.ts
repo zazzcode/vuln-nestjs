@@ -42,6 +42,12 @@ function subgraphsOf(environment: Environment) {
       useFactory: (environment: Environment, http2: Http2ClientService) => {
         const subgraphs = subgraphsOf(environment);
         return {
+          // GQL-001 / CWE-200: introspection is served to anyone who asks.
+          // Hardened value: `introspection: false`.
+          introspection: true,
+          // GQL-001 / CWE-200: the GraphiQL IDE is served to any browser that
+          // opens the endpoint. Hardened value: `graphiql: false`.
+          graphiql: true,
           server: {
             // The lab's error codes, in `extensions.code`.
             formatError: formatGraphQLError,
