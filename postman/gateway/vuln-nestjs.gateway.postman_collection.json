@@ -406,6 +406,137 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "CONFIG",
+      "item": [
+        {
+          "name": "CONFIG-001 the public ticker echoes any origin, with credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: the unlisted origin is echoed, credentials allowed', () => {",
+                  "  pm.expect(pm.response.headers.get('access-control-allow-origin')).to.eql('http://127.0.0.1:4020');",
+                  "  pm.expect(pm.response.headers.get('access-control-allow-credentials')).to.eql('true');",
+                  "});",
+                  "pm.test('counterpart: the markets ticker answers no CORS header at all', async () => {",
+                  "  await pm.sendRequest({ url: pm.variables.get('gatewayUrl') + '/api/v1/markets/ticker', method: 'GET', header: { origin: 'http://127.0.0.1:4020' } }, (error, response) => {",
+                  "    pm.expect(response.headers.get('access-control-allow-origin')).to.be.undefined;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "origin",
+                "value": "http://127.0.0.1:4020",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/public/ticker"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-002 the public status page carries no security headers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: no CSP, no nosniff, no frame options', () => {",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.be.undefined;",
+                  "  pm.expect(pm.response.headers.get('x-content-type-options')).to.be.undefined;",
+                  "  pm.expect(pm.response.headers.get('x-frame-options')).to.be.undefined;",
+                  "});",
+                  "pm.test('counterpart: the default-scope status page sets the three by hand', async () => {",
+                  "  await pm.sendRequest({ url: pm.variables.get('gatewayUrl') + '/api/v1/status', method: 'GET' }, (error, response) => {",
+                  "    pm.expect(response.headers.get('content-security-policy')).to.eql(\"default-src 'self'\");",
+                  "    pm.expect(response.headers.get('x-content-type-options')).to.eql('nosniff');",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/public/status"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-003 the API document is served with no authentication",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const paths = Object.keys(pm.response.json().paths);",
+                  "pm.test('gained: the whole API surface, with no token', () => {",
+                  "  pm.expect(paths).to.include('/api/v1/health');",
+                  "  pm.expect(paths).to.include('/api/v1/auth/sign-in');",
+                  "});",
+                  "pm.test('counterpart: the guarded copy answers 401 to the same caller', async () => {",
+                  "  await pm.sendRequest({ url: pm.variables.get('gatewayUrl') + '/api/v1/admin/openapi.json', method: 'GET' }, (error, response) => {",
+                  "    pm.expect(response.code).to.eql(401);",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/docs/json"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-004 the debug page answers the environment and the versions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('gained: the environment of the process, secret values included', () => {",
+                  "  pm.expect(body.environment.JWT_SECRET).to.be.a('string').and.not.be.empty;",
+                  "  pm.expect(body.dependencies['@apollo/gateway']).to.match(/^\\d+/);",
+                  "});",
+                  "pm.test('counterpart: health answers a status and nothing else', async () => {",
+                  "  await pm.sendRequest({ url: pm.variables.get('gatewayUrl') + '/api/v1/health', method: 'GET' }, (error, response) => {",
+                  "    pm.expect(response.json().versions).to.be.undefined;",
+                  "  });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/debug"
+          },
+          "response": []
+        }
+      ]
     }
   ]
 }
