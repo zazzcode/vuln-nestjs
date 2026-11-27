@@ -76,8 +76,8 @@ logger's format. The same label through the counterpart
 (`createAlert(input: { …, label })`) produces this instead:
 
 ```console
-[Nest] 86257  -  11/27/2026, 6:10:08 PM    LOG [alert-label] {"record":"alert-label","label":"BTC above 70k\n[admin] creditWallet u-bob amount=1000.00 status=ok"}
-[Nest] 86257  -  11/27/2026, 6:10:08 PM    LOG [AlertsService] alert created: {"label":"BTC above 70k\n[admin] creditWallet u-bob amount=1000.00 status=ok","symbol":"ETH-USD","threshold":"2900.00"}
+[Nest] 25070  - 11/27/2026, 6:58:05 PM     LOG [alert-label] {"record":"alert-label","label":"BTC above 70k\n[admin] creditWallet u-bob amount=1000.00 status=ok"}
+[Nest] 25070  - 11/27/2026, 6:58:05 PM     LOG [AlertsService] alert created: {"label":"BTC above 70k\n[admin] creditWallet u-bob amount=1000.00 status=ok","symbol":"BTC-USD","threshold":"70000.00"}
 ```
 
 one line each: the newline is two characters inside a value, in the
