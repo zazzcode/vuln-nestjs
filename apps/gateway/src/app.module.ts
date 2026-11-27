@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from '@zazzles/exchange-internal-auth';
 import { EnvironmentModule } from '@zazzles/exchange-config';
 import { Http2Module } from '@zazzles/exchange-http2';
+import { ApiDocsModule } from './api-docs/api-docs.module.js';
 import { Environment } from './config/environment.js';
 import { DiagnosticsModule } from './diagnostics/diagnostics.module.js';
 import { EdgeModule } from './edge/edge.module.js';
@@ -33,6 +34,7 @@ import { StatusModule } from './status/status.module.js';
     PreferencesModule,
     PassthroughModule,
     PublicApiModule,
+    ApiDocsModule,
   ],
 })
 export class AppModule {}

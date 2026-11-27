@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { runSecret } from '@zazzles/exchange-testing';
+import { runSecret, sessionToken } from '@zazzles/exchange-testing';
 import {
   FastifyAdapter,
   NestFastifyApplication,
@@ -19,11 +19,17 @@ import { standInSubgraphs } from '../subgraphs.js';
 describe('the configuration scenarios', () => {
   let app: NestFastifyApplication;
   let subgraphs: Awaited<ReturnType<typeof standInSubgraphs>>;
+  let admin: string;
 
   beforeAll(async () => {
     process.env.JWT_SECRET = runSecret();
     process.env.INTERNAL_SERVICE_TOKEN = runSecret();
     process.env.PARTNER_ORIGINS = 'http://127.0.0.1:4021';
+    admin = sessionToken(process.env.JWT_SECRET as string, {
+      sub: 'u-admin',
+      sid: 's-admin',
+      role: 'ADMIN',
+    });
     subgraphs = await standInSubgraphs();
     app = (
       await Test.createTestingModule({ imports: [AppModule] }).compile()
@@ -145,5 +151,61 @@ describe('the configuration scenarios', () => {
     );
     expect(response.headers['x-content-type-options']).toBe('nosniff');
     expect(response.headers['x-frame-options']).toBe('DENY');
+  });
+
+  // CONFIG-003 — the API document, served with no authentication.
+  test('CONFIG-003: the API pages answer with no token at all', async () => {
+    const index = await app.inject({ method: 'GET', url: '/docs' });
+    expect(index.statusCode).toBe(200);
+    expect(index.headers['content-type']).toContain('text/html');
+    expect(index.body).toContain('href="/docs/json"');
+
+    const document = await app.inject({ method: 'GET', url: '/docs/json' });
+    expect(document.statusCode).toBe(200);
+    const paths = Object.keys(document.json().paths);
+    // What was gained: the whole API surface — every route the edge carries,
+    // its methods and its schemas — read with no credential at all.
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        '/api/v1/health',
+        '/api/v1/auth/sign-in',
+        '/api/v1/admin/users',
+      ]),
+    );
+  });
+
+  test('CONFIG-003 counterpart 1: the administrator document refuses a caller without the role', async () => {
+    const refused = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/openapi.json',
+    });
+    // Refused by the guard: the document is an administrator's, and this is nobody.
+    expect(refused.statusCode).toBe(401);
+
+    const answered = await app.inject({
+      method: 'GET',
+      url: '/api/v1/admin/openapi.json',
+      headers: { authorization: `Bearer ${admin}` },
+    });
+    expect(answered.statusCode).toBe(200);
+    expect(Object.keys(answered.json().paths)).toContain('/api/v1/health');
+  });
+
+  test('CONFIG-003 counterpart 2: the service-token document refuses a caller without the token', async () => {
+    const refused = await app.inject({
+      method: 'GET',
+      url: '/api/v1/openapi.json',
+    });
+    // Refused by the guard: only the system's own call reads this copy.
+    expect(refused.statusCode).toBe(401);
+
+    const answered = await app.inject({
+      method: 'GET',
+      url: '/api/v1/openapi.json',
+      headers: {
+        'x-internal-token': process.env.INTERNAL_SERVICE_TOKEN as string,
+      },
+    });
+    expect(answered.statusCode).toBe(200);
   });
 });
