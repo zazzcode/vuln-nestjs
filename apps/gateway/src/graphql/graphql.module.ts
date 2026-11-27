@@ -54,6 +54,10 @@ function subgraphsOf(environment: Environment) {
             // GQL-002 / CWE-770: no `validationRules`, so no depth or
             // complexity limit: a query nested to any depth is accepted and
             // planned. Hardened value: a depth rule with a limit of 5.
+            // GQL-003 / CWE-307: one HTTP request may carry an array of
+            // operations, answered as an array, so a brute force fits in a
+            // single call. Hardened value: `allowBatchedHttpRequests: false`.
+            allowBatchedHttpRequests: true,
             // What identifies the caller travels to the service that owns each field.
             context: (request: { headers: Record<string, string> }) => ({
               headers: request.headers,

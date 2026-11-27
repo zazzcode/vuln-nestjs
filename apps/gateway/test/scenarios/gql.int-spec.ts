@@ -117,4 +117,28 @@ describe('the GraphQL scenarios', () => {
       expect(level).toMatchObject({ id: 'u-alice' });
     }
   });
+
+  // GQL-003 — batched requests: one HTTP request carries many operations.
+  test('GQL-003: one request carrying three operations is answered as three', async () => {
+    const response = await post(
+      [
+        { query: '{ __typename }' },
+        { query: 'query { markets { symbol } }' },
+        { query: '{ announcements { id title } }' },
+      ],
+      { authorization: `Bearer ${alice}` },
+    );
+
+    expect(response.statusCode).toBe(200);
+    const bodies = response.json();
+    // What was gained: an array of operations in one call, each answered —
+    // the shape a brute force uses to fit many guesses in one request.
+    expect(Array.isArray(bodies)).toBe(true);
+    expect(bodies).toHaveLength(3);
+    expect(bodies[0].data.__typename).toBe('Query');
+    expect(bodies[1].data.markets).toHaveLength(5);
+    expect(bodies[2].data.announcements).toEqual([
+      { id: '1', title: 'Welcome to VCX' },
+    ]);
+  });
 });
