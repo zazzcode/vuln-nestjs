@@ -10,6 +10,7 @@ import {
 } from '@zazzles/exchange-graphql';
 import { TokenVerifier, graphContext } from '@zazzles/exchange-internal-auth';
 import { fileURLToPath } from 'node:url';
+import { User } from '../alerts/user.model.js';
 
 /** The generated schema of this subgraph, at `apps/notifications/schema.gql` whatever the working directory. */
 export const SCHEMA_FILE = fileURLToPath(
@@ -26,6 +27,10 @@ export const SCHEMA_FILE = fileURLToPath(
       useFactory: (verifier: TokenVerifier) => ({
         // Without a path the driver generates the schema in memory and writes no file.
         autoSchemaFile: { federation: 2, path: SCHEMA_FILE },
+        // The `User` entity this service extends is reached only through the
+        // gateway, so no root of this subgraph references it: it is named as
+        // an orphaned type, or the schema would not carry its fields.
+        buildSchemaOptions: { orphanedTypes: [User] },
         // The request travels in the context of every resolver, with the caller attached when the token verifies.
         context: graphContext(verifier),
         // The lab's error codes, in `extensions.code`, for every resolver.
