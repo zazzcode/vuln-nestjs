@@ -147,34 +147,36 @@ describe('OS-001: a title that reaches a shell', () => {
 });
 
 describe('OS-002: an option where a URL was expected', () => {
-  // One attacker value: a config file curl is made to read, holding the marker.
+  // One attacker value: a file:// URL, one argument every curl takes, naming
+  // a file the caller wrote. The marker is the file's own line.
   let payloadUrl: string;
 
   beforeAll(async () => {
     const file = path.join(markerDirectory, 'marker.conf');
     await writeFile(file, 'zazzles-lab-marker\n');
-    payloadUrl = `-K${file}`;
+    payloadUrl = `file://${file}`;
   });
 
-  test('the exploit: pingWebhook makes curl read a file the caller named', async () => {
+  test('the exploit: pingWebhook makes curl return a file the caller named', async () => {
     await reset();
 
     const exploited = await query(
-      'mutation($url: String!) { pingWebhook(url: $url) { url status attempts lastError } }',
+      'mutation($url: String!) { pingWebhook(url: $url) { url status attempts } }',
       { token: alice(), variables: { url: payloadUrl } },
     );
 
     expect(exploited.errors).toBeUndefined();
     expect(exploited.data).toMatchObject({
-      pingWebhook: { url: payloadUrl, attempts: 1 },
+      pingWebhook: { url: payloadUrl, attempts: 1, status: 'DELIVERED' },
     });
-    // The file's line came back: curl read the file at the path the caller chose.
-    expect(exploited.data).toMatchObject({
-      pingWebhook: { lastError: expect.stringContaining('zazzles-lab-marker') },
-    });
+    // The file's line came back in the record: curl read the file at the path
+    // the caller chose, because the argument was curl's to read, not a URL
+    // the service had decided on.
+    const [record] = await aliceRecords();
+    expect(record?.responseBody).toContain('zazzles-lab-marker');
   });
 
-  test('counterpart 1: previewWebhook refuses the value before any request', async () => {
+  test('counterpart 1: previewWebhook refuses the scheme before any request', async () => {
     await reset();
 
     const refused = await query(
@@ -186,7 +188,7 @@ describe('OS-002: an option where a URL was expected', () => {
     expect(refused.data).toMatchObject({
       previewWebhook: {
         status: 'FAILED',
-        lastError: expect.stringContaining('not an absolute http or https URL'),
+        lastError: expect.stringContaining('is not http or https'),
       },
     });
   });
@@ -208,7 +210,7 @@ describe('OS-002: an option where a URL was expected', () => {
     expect(await response.json()).toMatchObject({
       url: payloadUrl,
       status: 'FAILED',
-      lastError: expect.stringContaining('not an absolute http or https URL'),
+      lastError: expect.stringContaining('is not http or https'),
     });
   });
 });

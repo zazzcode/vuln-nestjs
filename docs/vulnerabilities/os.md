@@ -107,7 +107,7 @@ hidden in its quote — is sent to all three operations:
 - **Source:** `apps/notifications/src/webhooks/ping-webhook.resolver.ts`
 - **Operation:** `pingWebhook(url: String!)`, GraphQL, any user.
 - **Sink:** `execFile('curl', [url])`.
-- **Flow:** `args.url → PingWebhookResolver.ping → execFile('curl', [url]) → curl -K<file>`.
+- **Flow:** `args.url → PingWebhookResolver.ping → execFile('curl', [url]) → curl reads the argument as its own: a file:// URL returns a local file`.
 - **Counterparts:** `apps/notifications/src/webhooks/preview-webhook.resolver.ts` (an HTTP client, no `curl`), `apps/notifications/src/webhooks/webhooks-test.controller.ts` (the outbound guard refuses the URL before anything could start).
 - **Tests:** `apps/notifications/test/scenarios/os.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report caller input passed as a command argument where a leading dash makes it an option.
@@ -123,64 +123,72 @@ const { stdout } = await runFile('curl', [
 ```
 
 `execFile` skips the shell, so there is no injection into a command *line* —
-but an argument that begins with `-` is not a URL to curl at all: it is an
-option. `-K<file>` (short for `--config`) tells curl to read its
-configuration from a path the caller names, and curl reports what it read on
-stderr, which the delivery record keeps as `lastError`. The URL argument and
-the option argument are the same slot: nothing marks which is meant.
+but the argument is still curl's to read, and a URL is only one of the
+things it can name. A `file://` URL makes curl read a local file and print
+it, exactly as it would fetch an HTTP page; an argument that begins with `-`
+is not a URL to curl at all but an option (`-K<file>`, short for
+`--config`, tells it to read its configuration from a path the caller
+names). Whatever curl prints — the fetched file on stdout, its complaints on
+stderr — the delivery record keeps, so the caller reads it back.
 
 The author's belief: "`execFile` is the safe one — no shell, no injection."
 True for the shell; false for the tool. The argument vector is only as fixed
-as the values in it.
+as the values in it, and the service decided on none of them.
 
 ### OS-002 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with
-Alice's token in `$A`. The payload is `-K/tmp/vcx-marker.conf`, a one-line
-file the caller wrote (`zazzles-lab-marker`) before the request.
+Alice's token in `$A`. The payload is `file:///tmp/vcx-marker.conf`, a
+one-line file the caller wrote (`zazzles-lab-marker`) before the request:
+one argument, which every curl takes.
 
 ```console
 $ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' -H "authorization: Bearer $A" \
-    -d '{"query":"mutation($url: String!) { pingWebhook(url: $url) { status attempts lastError } }",
-         "variables":{"url":"-K/tmp/vcx-marker.conf"}}'
-{"data":{"pingWebhook":{"status":"FAILED","attempts":1,
- "lastError":"curl: /tmp/vcx-marker.conf:1: 'zazzles-lab-marker' is unknown\ncurl: cannot read config from '/tmp/vcx-marker.conf'…"}}}
+    -d '{"query":"mutation($url: String!) { pingWebhook(url: $url) { url status attempts } }",
+         "variables":{"url":"file:///tmp/vcx-marker.conf"}}'
+{"data":{"pingWebhook":{"url":"file:///tmp/vcx-marker.conf","status":"DELIVERED","attempts":1}}}
+
+$ curl -s http://127.0.0.1:3103/internal/deliveries -H "authorization: Bearer $A"
+…
+  "status": "DELIVERED",
+  "responseBody": "zazzles-lab-marker\n",
 ```
 
-The file's own line is quoted back in `lastError`: curl read a file at a
-path the caller chose, and what it found there came back through the record.
-In Postman: the request `OS-002: an option where a URL was expected`, whose
-payload is `-h` — with no file to read, curl prints its own usage instead of
+The file's own line came back in the record: curl read a file at a path the
+caller chose, because nothing decided the argument was a URL at all. (On a
+curl that reads `-K<file>` — this machine's 8.7.1 does — the option form
+works too, the file's lines coming back in `lastError`; the `file://` form
+holds everywhere.) In Postman: the request `OS-002: an option where a URL
+was expected`, whose payload is `-h` — curl prints its own usage instead of
 asking for any URL, which is the same fact seen without a filesystem. In
-Burp: send the mutation from Repeater and read `lastError`.
+Burp: send the mutation from Repeater and read the record.
 
 ### OS-002 — vulnerable and protected
 
 | | Operation | What it does with the same value |
 | --- | --- | --- |
-| Vulnerable | `pingWebhook(url)` | Gives it to `curl` as its one argument; a leading dash is read as an option |
-| Counterpart 1 | `previewWebhook(url)` | No process: the HTTP client asks the outbound guard first, which refuses — `not an absolute http or https URL` |
+| Vulnerable | `pingWebhook(url)` | Gives it to `curl` as its one argument; curl reads it as it reads any argument — here, a `file://` URL, and the file's content comes back in the record |
+| Counterpart 1 | `previewWebhook(url)` | No process: the HTTP client asks the outbound guard first, which refuses — `the scheme file is not http or https` |
 | Counterpart 2 | `POST /internal/webhooks/test` | The same refusal, recorded: the delivery is `FAILED` with the guard's reason, and nothing is sent |
 
 **Scoped claim.** Each counterpart defeats this flaw for identical input:
 neither starts a process, and both decide on the value before anything could
-run — the guard's `not an absolute http or https URL` is the refusal for a
-string that starts with `-K`. The claim is not that the guard makes every
-URL safe; only that this value never reaches a tool that would read it as an
-option.
+run — the guard's `the scheme file is not http or https` is the refusal for
+exactly this value. The claim is not that the guard makes every URL safe;
+only that this value never reaches a tool that would read it as curl does.
 
 ### OS-002 — tests
 
 `apps/notifications/test/scenarios/os.int-spec.ts`, describe `OS-002: an
-option where a URL was expected`. One attacker value — `-K<file>`, a file
-the test creates under its own temporary directory holding
+option where a URL was expected`. One attacker value — `file://<file>`, a
+file the test creates under its own temporary directory holding
 `zazzles-lab-marker` — is sent to all three operations:
 
-- **The exploit:** `pingWebhook` answers with `attempts` 1 and a `lastError`
-  holding `zazzles-lab-marker`: the file the caller named was read and its
-  line returned.
-- **Counterpart 1:** `previewWebhook` answers `FAILED` with `not an
-  absolute http or https URL`.
+- **The exploit:** `pingWebhook` answers `DELIVERED` with `attempts` 1, and
+  the record's `responseBody` is `zazzles-lab-marker`: the file the caller
+  named was read and its line returned.
+- **Counterpart 1:** `previewWebhook` answers `FAILED` with `the scheme
+  file is not http or https`.
 - **Counterpart 2:** `POST /internal/webhooks/test` answers `200` with the
   recorded refusal — status `FAILED`, the same reason — and nothing is sent.
 
