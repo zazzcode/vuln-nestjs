@@ -18,4 +18,15 @@ export class Environment {
   @IsString()
   @MinLength(32)
   INTERNAL_SERVICE_TOKEN!: string;
+
+  /** The origins a webhook may be sent to, comma-separated. The loopback test receiver by default. */
+  @IsString()
+  WEBHOOK_ALLOWED_ORIGINS = 'http://127.0.0.1:4010';
+
+  /** The allowlist, as the outbound guard compares it: trimmed, without empty entries. */
+  get webhookOrigins(): string[] {
+    return this.WEBHOOK_ALLOWED_ORIGINS.split(',')
+      .map((origin) => origin.trim())
+      .filter((origin) => origin !== '');
+  }
 }

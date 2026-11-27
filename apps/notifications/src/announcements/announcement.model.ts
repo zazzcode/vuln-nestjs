@@ -19,4 +19,7 @@ export class Announcement {
 
   @Field(() => DateTimeScalar)
   createdAt: Date;
+
+  @Field(() => DateTimeScalar, { nullable: true })
+  sentAt: Date | null;
 }

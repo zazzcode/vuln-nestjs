@@ -25,5 +25,6 @@ function toAnnouncement(row: AnnouncementEntity): Announcement {
     body: row.body,
     authorId: row.authorId,
     createdAt: row.createdAt,
+    sentAt: row.sentAt ?? null,
   };
 }
