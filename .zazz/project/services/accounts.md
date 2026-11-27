@@ -1,6 +1,6 @@
 # `accounts` — service specification
 
-**Adapter:** Fastify, HTTP/2 on `127.0.0.1:3101` · **Store:** MongoDB, database `zazzles_accounts`
+**Adapter:** Fastify, HTTP/2 on `127.0.0.1:3101` · **Store:** MongoDB, database `vcx_accounts`
 **Status:** design agreed with the Project Owner on 2026-11-26. Ready to build.
 
 ## 1. What it owns
@@ -25,8 +25,8 @@ Passwords are scrypt hashes from Node's `crypto`: `scrypt$N$r$p$salt$hash`. A si
 
 | Data | Values |
 | --- | --- |
-| Administrator | `admin@zazzles.exchange`, password `admin-lab-only`, role `ADMIN` |
-| Users | `alice`, `bob`, `carol`, `dave`, `erin` at `@zazzles.exchange`, passwords `<name>-lab-only`, role `USER` |
+| Administrator | `admin@vcx.exchange`, password `admin-lab-only`, role `ADMIN` |
+| Users | `alice`, `bob`, `carol`, `dave`, `erin` at `@vcx.exchange`, passwords `<name>-lab-only`, role `USER` |
 | Preferences | Each user: `{ theme: "dark", language: "en", currency: "USD", marketingEmails: "false" }` |
 | Documents | One PNG and one PDF for alice |
 

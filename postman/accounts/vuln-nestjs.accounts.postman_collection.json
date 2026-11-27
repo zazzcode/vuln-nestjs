@@ -1,7 +1,7 @@
 {
   "info": {
     "_postman_id": "1c2f6331-d0fd-427f-a1e3-92b645b1094a",
-    "name": "Zazzles Exchange: accounts",
+    "name": "VCX: accounts",
     "description": "The accounts microservice, called on its own address. accountsUrl is the relay the start command opens in front of it: the service speaks HTTP/2 in cleartext, which Postman and Newman cannot send, and the relay carries each request to it over HTTP/2.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -98,7 +98,7 @@
                   "const body = pm.response.json();",
                   "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
                   "pm.test('answers with the user', () =>",
-                  "  pm.expect(body.data).to.eql({ user: { id: 'u-alice', email: 'alice@zazzles.exchange' } }));"
+                  "  pm.expect(body.data).to.eql({ user: { id: 'u-alice', email: 'alice@vcx.exchange' } }));"
                 ]
               }
             }

@@ -1,7 +1,7 @@
 # Scaffolding — Deliverable Specification
 
 **Worktree / branch:** `phase-1-foundation`
-**Feature:** Zazzles Exchange, the deliberately vulnerable NestJS lab
+**Feature:** VCX, the deliberately vulnerable NestJS lab
 **Milestone:** M1 — Running skeleton
 **Deliverable:** Step 1, the scaffolding
 **Project Owner:** @zazzcode
@@ -539,7 +539,7 @@ export const Roles = (...roles: Role[]) => SetMetadata(ROLES_KEY, roles);
 export const ServiceToken = () => SetMetadata(SERVICE_TOKEN_KEY, true);
 export const CurrentUser = createParamDecorator((_data, context) => userOf(context));
 
-// Global. Reads `authorization: Bearer …`, else the `zazzles_session` cookie.
+// Global. Reads `authorization: Bearer …`, else the `vcx_session` cookie.
 // Verifies HS256 with the algorithms pinned. Attaches { sub, sid, role } to the request.
 export class AuthGuard implements CanActivate { /* … */ }
 

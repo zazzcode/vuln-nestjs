@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-trading",
   "version": "0.0.0",
-  "description": "Markets, prices, wallets, orders, trades and reports of Zazzles Exchange",
+  "description": "Markets, prices, wallets, orders, trades and reports of VCX",
   "private": true,
   "license": "MIT",
   "type": "module",

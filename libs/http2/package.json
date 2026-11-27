@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-http2",
   "version": "0.0.0",
-  "description": "The HTTP/2 fetch and JSON client the gateway of Zazzles Exchange uses to reach the Fastify services",
+  "description": "The HTTP/2 fetch and JSON client the gateway of VCX uses to reach the Fastify services",
   "private": true,
   "license": "MIT",
   "type": "module",

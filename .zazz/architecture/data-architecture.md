@@ -125,8 +125,8 @@ Each service owns a seed module under `src/seed/`. Boot runs it when the store i
 
 | Data | Values |
 | --- | --- |
-| Administrator | `admin@zazzles.exchange`, password `admin-lab-only`, role `ADMIN`, no wallet |
-| Users | `alice`, `bob`, `carol`, `dave`, `erin` at `@zazzles.exchange`, passwords `<name>-lab-only`, role `USER` |
+| Administrator | `admin@vcx.exchange`, password `admin-lab-only`, role `ADMIN`, no wallet |
+| Users | `alice`, `bob`, `carol`, `dave`, `erin` at `@vcx.exchange`, passwords `<name>-lab-only`, role `USER` |
 | Starting dollars | alice 10,000.00, bob 5,000.00, carol 2,500.00, dave 1,000.00, erin 500.00. Every coin balance 0 |
 | Markets | BTC-USD 65,000.00, ETH-USD 3,200.00, SOL-USD 150.00, XRP-USD 0.50, DOGE-USD 0.12 |
 | Open orders | Two resting limit orders per market, from different users |

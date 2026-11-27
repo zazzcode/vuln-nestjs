@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-export const DATABASE_NAME = 'zazzles_notifications';
+export const DATABASE_NAME = 'vcx_notifications';
 
 /**
  * The store of this service: SQLite, held in the memory of this process as a

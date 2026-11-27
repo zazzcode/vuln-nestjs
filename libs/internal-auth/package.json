@@ -1,7 +1,7 @@
 {
   "name": "@zazzles/exchange-internal-auth",
   "version": "0.0.0",
-  "description": "The guards and decorators every service of Zazzles Exchange authenticates with",
+  "description": "The guards and decorators every service of VCX authenticates with",
   "private": true,
   "license": "MIT",
   "type": "module",

@@ -26,7 +26,7 @@ export class SeedService implements OnApplicationBootstrap {
     await this.announcements.insert([
       {
         id: 1,
-        title: 'Welcome to Zazzles Exchange',
+        title: 'Welcome to VCX',
         body: 'This is a sample exchange. Every account and every coin on it is invented.',
         authorId: 'u-admin',
         createdAt: labStart,

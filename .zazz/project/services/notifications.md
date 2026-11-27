@@ -1,6 +1,6 @@
 # `notifications` — service specification
 
-**Adapter:** Express, HTTP/1.1 on `127.0.0.1:3103` · **Store:** SQLite in memory, database `zazzles_notifications`
+**Adapter:** Express, HTTP/1.1 on `127.0.0.1:3103` · **Store:** SQLite in memory, database `vcx_notifications`
 **Status:** design agreed with the Project Owner on 2026-11-26. Ready to build.
 
 ## 1. What it owns
@@ -24,7 +24,7 @@ This is the one service on the Express adapter. It uses what Express is used for
 
 1. A client calls `tickPrices` on `trading`, which it does not need to know about.
 2. The client calls `evaluateAlerts(prices)` here with the new prices.
-3. Every enabled alert whose threshold was crossed produces one delivery to the owner's webhook URL, signed with `X-Zazzles-Signature` (HMAC-SHA256 of the body).
+3. Every enabled alert whose threshold was crossed produces one delivery to the owner's webhook URL, signed with `X-VCX-Signature` (HMAC-SHA256 of the body).
 4. The delivery attempt is recorded, whatever happened.
 
 There is no queue and there are no retries. One attempt, recorded.

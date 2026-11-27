@@ -2,11 +2,11 @@
 
 ## Repository facts
 
-- **What this is:** a deliberately vulnerable NestJS application, built to test vulnerability scanners. The flaws are the product.
+- **What this is:** VCX (Vulnerable Crypto Exchange), a deliberately vulnerable NestJS application, built to test vulnerability scanners. The flaws are the product.
 - **Docs root:** `.zazz` (repo-relative). Documentation for readers of the lab is in `docs/`.
 - **Documentation model:** committed Markdown, reviewed through pull requests. Specifications are committed under `.zazz/specifications/`.
 - **Work tracker:** none. The build order and its state are in [`.zazz/project/implementation-plan.md`](.zazz/project/implementation-plan.md). The pull request is the review record.
-- **Branch policy:** one branch per deliverable, `phase-<n>-<slug>`, from its base; one pull request; opened as a draft with the deliverable's specification as its first commit. Commit and push to the feature branch only. Never commit to the base branch directly.
+- **Branch policy:** one branch per deliverable, `phase-<n>-<slug>`, from its base; one pull request; opened as a draft with the deliverable's specification as its first commit. Commit and push to the feature branch only. Never commit to the base branch directly. A pull request is reviewed against its base.
 - **Shared-file coordination:** each sub-agent writes only inside what is its own: its service directory (`apps/<service>/`), its folder of the API collections (`postman/<service>/`), its documentation modules under `docs/vulnerabilities/`, and its deliverable specification under `.zazz/specifications/`. Everything else shared belongs to the lead agent: `libs/`, `catalog/`, `tests/`, the Postman environment, `scripts/`, the root configuration, this file. A sub-agent makes two shared changes without asking, each by running a command and never by editing a file: `pnpm install`, after adding a dependency its specification names, which changes `pnpm-lock.yaml`, and `pnpm audit:update`, which rewrites `tests/expected-audit.json`. For anything else, it stops and asks.
 - **Operating model:** the application is a sample. It is started, preloaded with fake data, exercised, and shut down. Nothing persists.
 
@@ -15,7 +15,7 @@
 1. Read this file before changing anything.
 2. To build a service: its [service specification](.zazz/project/services/README.md) is the contract. Then the step it belongs to in the [implementation plan](.zazz/project/implementation-plan.md), and the sections of the [architecture](.zazz/architecture/README.md) it depends on.
 3. To add a scenario: the [scenario catalogue](.zazz/project/scenario-catalog.md), then [how a deliberate flaw is added](.zazz/architecture/security-model.md#5-how-a-deliberate-flaw-is-added) and the [test pattern](.zazz/architecture/testing-strategy.md#3-scenario-tests-in-both-directions).
-4. To write a deliverable specification: the `spec-builder` skill in [`.agents/skills/`](.agents/skills/README.md).
+4. To write a deliverable specification: the `spec-builder` skill in [`.agents/skills/`](.agents/skills/README.md). Once it is approved, `spec-driven` says how the work is run and recorded. To open or update a pull request: `pr-builder`. To review one: `pr-review`.
 5. Do not preload the whole of `.zazz/` for a small change.
 
 ## Invariants
@@ -25,7 +25,7 @@ Violating any of these is a bad change, however green the tests.
 1. **Never "fix" a vulnerable operation.** A test that proves a flaw stopped being exploitable is a regression: restore the flaw, do not weaken the test.
 2. **Never upgrade or remove a vulnerable dependency pin.** Every advisory in `tests/expected-audit.json` is a finding the dependency scanner must report.
 3. **A protected counterpart is a scoped claim.** "This pattern defeats this flaw for identical input" — never "secure in general".
-4. **Every vulnerable operation has a protected counterpart.** A safe operation that is nobody's counterpart exists where a flow, a test or a scenario needs it, not to reach a ratio. (The Project Owner decided this on 2026-11-26, asking for fewer safe routes so the lab is finished sooner. Each service specification records which it left out.)
+4. **Every vulnerable operation has a protected counterpart**, and the lab keeps about one and a half safe operations for every vulnerable one. Where the two disagree, the counterpart is built and the ratio gives way: the evidence for a scenario outranks the number. (Decided by the Project Owner on 2026-11-26 and 2026-11-27, in place of the two to one of ADR-008. See [ADR-013](.zazz/architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md). Each service specification records what it left out.)
 5. **Safety rails stay.** Loopback only, fake data, harmless markers (`42`, `zazzles-lab-marker`), no real credentials or files, no telemetry.
 6. **Services never call each other.** A flow that needs two services is two calls made by the client.
 7. **Generated ground truth is never hand-edited.** Re-snapshot in the same commit as the change that justifies it.
@@ -42,7 +42,7 @@ All from the root. Each was last run on 2026-11-26.
 | `pnpm install --frozen-lockfile` | Installs exactly the lockfile. Refuses if a manifest changed without it. |
 | `pnpm build` | Builds every library and service into its `dist/`. |
 | `pnpm start` | Builds what is missing, starts the lab, prints its addresses, stops everything on Ctrl-C. |
-| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. |
+| `pnpm lint` | oxlint with type awareness, then every workspace's typecheck. Zero warnings is the baseline. It reads the built types of the libraries, so on a fresh checkout `pnpm build` comes first. |
 | `pnpm format`, `pnpm format:check` | Prettier over the repository. |
 | `pnpm test` | Unit tests: every workspace, then the root's own. |
 | `pnpm test:int` | Each service's integration tests, one service at a time. Starts a database engine. |
@@ -58,7 +58,7 @@ Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover w
 
 - **Active artifacts:** `.zazz/ephemeral/` — run logs, handoffs, QA findings, scratch. Ignored by Git and never committed.
 - **Completed specifications:** stay in `.zazz/specifications/`, with their change log and the link to the pull request.
-- **Skills:** vendored in `.agents/skills/`: `spec-builder` and `handoff`, from [zazzcode/zazz-skills](https://github.com/zazzcode/zazz-skills). This repository has no `standards/` directory: when the `spec-builder` skill asks for a standards index, answer "none adopted".
+- **Skills:** vendored in [`.agents/skills/`](.agents/skills/README.md): `spec-builder`, `spec-driven`, `pr-builder`, `pr-review`, `doc-check` and `handoff`. This repository has no `standards/` directory: when a skill asks for a standards index, answer "none adopted". Its conventions are in this file and in the architecture pages under `.zazz/architecture/`.
 
 ## Repo-specific rules
 

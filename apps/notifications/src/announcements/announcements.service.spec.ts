@@ -5,7 +5,7 @@ import { AnnouncementsService } from './announcements.service.js';
 
 const welcome: AnnouncementEntity = {
   id: 1,
-  title: 'Welcome to Zazzles Exchange',
+  title: 'Welcome to VCX',
   body: 'This is a sample exchange.',
   authorId: 'u-admin',
   createdAt: labStart,
@@ -27,7 +27,7 @@ describe('AnnouncementsService', () => {
       await new AnnouncementsService(repositoryHolding([welcome])).byId(1),
     ).toEqual({
       id: '1',
-      title: 'Welcome to Zazzles Exchange',
+      title: 'Welcome to VCX',
       body: 'This is a sample exchange.',
       authorId: 'u-admin',
       createdAt: labStart,

@@ -42,23 +42,25 @@ Step 2 is parallel because the services never call each other. Each one is built
 
 ### Ownership
 
-A sub-agent writes only inside its own service:
+A sub-agent writes only inside what is its own:
 
 | Sub-agent | May write | Reads, never writes |
 | --- | --- | --- |
-| accounts | `apps/accounts/`, `docs/vulnerabilities/` modules for its scenarios | everything else |
-| trading | `apps/trading/`, its documentation modules | everything else |
-| notifications | `apps/notifications/`, its documentation modules | everything else |
-| gateway | `apps/gateway/`, its documentation modules | everything else |
+| accounts | `apps/accounts/`, `postman/accounts/`, its deliverable specification, `docs/vulnerabilities/` modules for its scenarios | everything else |
+| trading | `apps/trading/`, `postman/trading/`, its specification, its documentation modules | everything else |
+| notifications | `apps/notifications/`, `postman/notifications/`, its specification, its documentation modules | everything else |
+| gateway | `apps/gateway/`, `postman/gateway/`, its specification, its documentation modules | everything else |
 
-The lead agent owns everything shared: `libs/`, `catalog/`, `tests/`, `postman/`, `scripts/`, the root configuration, `AGENTS.md`. A sub-agent that needs a change there stops and asks. This is what makes four parallel sub-agents safe: no two of them ever edit the same file.
+The lead agent owns everything shared: `libs/`, `catalog/`, `tests/`, the Postman environment, `scripts/`, the root configuration, `AGENTS.md`. A sub-agent that needs a change there stops and asks, with two exceptions it makes by command and never by editing a file: `pnpm install`, after adding a dependency its specification names, and `pnpm audit:update` after it. This is what makes parallel sub-agents safe: no two of them ever edit the same file. `AGENTS.md` has the full rule.
+
+The four branches will each change `pnpm-lock.yaml` and `tests/expected-audit.json`, and will disagree with each other on both. Reconciling them at merge is the lead's work: install again from the merged manifests, then re-snapshot.
 
 The gateway's pass-through controllers need the `/internal/*` contract of the other three. They are written from the service specifications, not from the other sub-agents' code. The gateway's own tests mock the services. Its end-to-end tests wait for Step 3.
 
 ### Order of work inside a service
 
 1. **Store, fake data, health.** The entities (collections, in `accounts`), the seed module, `GET /internal/health`, `POST /internal/lab/reset`. An integration test proves a round trip to the store.
-2. **Safe operations.** Every safe operation in the specification's API tables, with a functional test for each.
+2. **Safe operations.** The protected counterparts first, every one its specification names, with a functional test for each. Then the other safe operations, the most needed first, until the service has about one and a half safe operations for every vulnerable one ([ADR-013](../architecture/decisions/ADR-013-counterpart-and-one-and-a-half-safe-per-vulnerable.md)). A counterpart outranks the ratio.
 3. **Vulnerable operations.** Every vulnerable operation, with a both-directions test for each of its scenarios.
 4. **Documentation and catalogue.** One documentation module per scenario, with a reproduction that has been run. Catalogue entries for every scenario, counterpart included. Snapshots regenerated.
 
