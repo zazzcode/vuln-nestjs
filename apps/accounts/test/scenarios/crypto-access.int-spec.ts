@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, expect, test } from 'vitest';
 import { errorCode } from '@zazzles/exchange-testing';
-import { gql, startLab, type Lab } from '../lab.js';
+import { bearer, call, gql, startLab, type Lab } from '../lab.js';
 
 let lab: Lab;
 
@@ -60,5 +60,61 @@ describe('ACCESS-001: another account by identifier, with no ownership check', (
 
     // refused: the roles guard stops a user's token before the resolver runs
     expect(errorCode(refused)).toBe('FORBIDDEN');
+  });
+});
+
+describe("ACCESS-003: a user's token opens an administrator's account", () => {
+  const input = () => ({
+    email: 'zazzles-lab-marker@vcx.exchange',
+    displayName: 'Marker Account',
+    password: 'marker-lab-only',
+    role: 'ADMIN',
+  });
+
+  test('createUserAccount answers the administrator it was asked for', async () => {
+    const response = await gql(
+      lab,
+      'mutation ($input: CreateUserInput!) { createUserAccount(input: $input) { id email role } }',
+      { token: lab.bobToken, variables: { input: input() } },
+    );
+
+    // gained: an administrator's account, created with a user's token
+    expect(response.data).toEqual({
+      createUserAccount: {
+        id: (response.data as { createUserAccount: { id: string } })
+          .createUserAccount.id,
+        email: 'zazzles-lab-marker@vcx.exchange',
+        role: 'ADMIN',
+      },
+    });
+    const stats = await gql(lab, 'query { userStats { total admins users } }', {
+      token: lab.adminToken,
+    });
+    expect(stats.data).toEqual({ userStats: { total: 7, admins: 2, users: 5 } });
+  });
+
+  test('createUser refuses the same input from the same token', async () => {
+    const refused = await gql(
+      lab,
+      'mutation ($input: CreateUserInput!) { createUser(input: $input) { id } }',
+      { token: lab.bobToken, variables: { input: input() } },
+    );
+
+    // refused: the mutation is an administrator's, and Bob is a user
+    expect(errorCode(refused)).toBe('FORBIDDEN');
+  });
+
+  test('POST /internal/admin/users refuses it too: the roles guard answers first', async () => {
+    const response = await call(lab, '/internal/admin/users', {
+      method: 'POST',
+      headers: {
+        ...bearer(lab.bobToken),
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(input()),
+    });
+
+    // refused: a user's token never reaches the DTO
+    expect(response.status).toBe(403);
   });
 });
