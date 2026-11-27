@@ -29,4 +29,15 @@ export class AnnouncementsRepository {
       ? Promise.resolve()
       : this.rows.insert(announcements).then(() => undefined);
   }
+
+  /** Stores one row and answers it, with the id the store gave it. */
+  async add(row: DeepPartial<AnnouncementEntity>): Promise<AnnouncementEntity> {
+    await this.insert([row]);
+    const all = await this.rows.find({ order: { id: 'DESC' }, take: 1 });
+    const stored = all[0];
+    if (stored === undefined) {
+      throw new Error('The announcement was not stored');
+    }
+    return stored;
+  }
 }

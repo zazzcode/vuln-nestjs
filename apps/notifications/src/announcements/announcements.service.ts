@@ -16,6 +16,20 @@ export class AnnouncementsService {
     const row = await this.repository.findById(id);
     return row === null ? null : toAnnouncement(row);
   }
+
+  /** Stores one announcement, sent by its author. */
+  async create(
+    authorId: string,
+    input: { title: string; body: string },
+  ): Promise<Announcement> {
+    const row = await this.repository.add({
+      title: input.title,
+      body: input.body,
+      authorId,
+      sentAt: new Date(),
+    });
+    return toAnnouncement(row);
+  }
 }
 
 function toAnnouncement(row: AnnouncementEntity): Announcement {
@@ -25,5 +39,6 @@ function toAnnouncement(row: AnnouncementEntity): Announcement {
     body: row.body,
     authorId: row.authorId,
     createdAt: row.createdAt,
+    sentAt: row.sentAt ?? null,
   };
 }

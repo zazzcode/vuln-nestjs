@@ -1,5 +1,27 @@
 {
   "advisories": {
+    "1089270": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__notifications>ejs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1089270,
+      "title": "ejs template injection vulnerability",
+      "module_name": "ejs",
+      "vulnerable_versions": "<3.1.7",
+      "patched_versions": ">=3.1.7",
+      "severity": "critical",
+      "cwe": "CWE-74",
+      "github_advisory_id": "GHSA-phwq-j96m-2c2q",
+      "url": "https://github.com/advisories/GHSA-phwq-j96m-2c2q"
+    },
     "1090722": {
       "findings": [
         {
@@ -22,6 +44,28 @@
       "cwe": "CWE-502",
       "github_advisory_id": "GHSA-q4v7-4rhw-9hqm",
       "url": "https://github.com/advisories/GHSA-q4v7-4rhw-9hqm"
+    },
+    "1095073": {
+      "findings": [
+        {
+          "version": "2.6.6",
+          "paths": [
+            "apps__notifications>node-fetch"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1095073,
+      "title": "node-fetch forwards secure headers to untrusted sites",
+      "module_name": "node-fetch",
+      "vulnerable_versions": "<2.6.7",
+      "patched_versions": ">=2.6.7",
+      "severity": "high",
+      "cwe": "CWE-173, CWE-200, CWE-601",
+      "github_advisory_id": "GHSA-r683-j2x4-v87g",
+      "url": "https://github.com/advisories/GHSA-r683-j2x4-v87g"
     },
     "1096970": {
       "findings": [
@@ -133,6 +177,28 @@
       "github_advisory_id": "GHSA-hjrf-2m68-5959",
       "url": "https://github.com/advisories/GHSA-hjrf-2m68-5959"
     },
+    "1098366": {
+      "findings": [
+        {
+          "version": "3.1.6",
+          "paths": [
+            "apps__notifications>ejs"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1098366,
+      "title": "ejs lacks certain pollution protection",
+      "module_name": "ejs",
+      "vulnerable_versions": "<3.1.10",
+      "patched_versions": ">=3.1.10",
+      "severity": "moderate",
+      "cwe": "CWE-693, CWE-1321",
+      "github_advisory_id": "GHSA-ghr5-ch3p-vcr6",
+      "url": "https://github.com/advisories/GHSA-ghr5-ch3p-vcr6"
+    },
     "1098617": {
       "findings": [
         {
@@ -154,6 +220,28 @@
       "cwe": "CWE-1321",
       "github_advisory_id": "GHSA-49j4-86m8-q2jw",
       "url": "https://github.com/advisories/GHSA-49j4-86m8-q2jw"
+    },
+    "1102328": {
+      "findings": [
+        {
+          "version": "4.1.0",
+          "paths": [
+            "apps__notifications>dot-prop"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1102328,
+      "title": "dot-prop Prototype Pollution vulnerability",
+      "module_name": "dot-prop",
+      "vulnerable_versions": "<4.2.1",
+      "patched_versions": ">=4.2.1",
+      "severity": "high",
+      "cwe": "CWE-425, CWE-471, CWE-1321",
+      "github_advisory_id": "GHSA-ff7x-qrg7-qggm",
+      "url": "https://github.com/advisories/GHSA-ff7x-qrg7-qggm"
     },
     "1102458": {
       "findings": [
@@ -456,14 +544,14 @@
     "vulnerabilities": {
       "info": 0,
       "low": 0,
-      "moderate": 7,
-      "high": 10,
-      "critical": 3
+      "moderate": 8,
+      "high": 12,
+      "critical": 4
     },
-    "dependencies": 532,
+    "dependencies": 536,
     "devDependencies": 0,
     "optionalDependencies": 19,
-    "totalDependencies": 551
+    "totalDependencies": 555
   },
   "retired": []
 }

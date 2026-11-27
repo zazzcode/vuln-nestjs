@@ -27,4 +27,8 @@ export class AnnouncementEntity {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  /** When the announcement was sent to the users. Nothing until it is. */
+  @Column({ type: 'datetime', nullable: true })
+  sentAt: Date | null;
 }

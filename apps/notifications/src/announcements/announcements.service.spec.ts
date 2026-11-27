@@ -9,6 +9,7 @@ const welcome: AnnouncementEntity = {
   body: 'This is a sample exchange.',
   authorId: 'u-admin',
   createdAt: labStart,
+  sentAt: null,
 };
 
 /** A repository that holds the given rows and does nothing else: the service is tested without a store. */
@@ -31,6 +32,7 @@ describe('AnnouncementsService', () => {
       body: 'This is a sample exchange.',
       authorId: 'u-admin',
       createdAt: labStart,
+      sentAt: null,
     });
   });
 
