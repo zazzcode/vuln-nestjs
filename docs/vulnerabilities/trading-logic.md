@@ -103,7 +103,7 @@ field to send: the schema refuses the payload with the same body,
 `"Field \"price\" is not defined by type \"PlaceOrderInput\""`, `BAD_USER_INPUT`.
 
 **Counterpart 2 — `buyAtMarket(symbol, quantity)`.** The price is computed on
-the server from the reference price, with a maximum slippage of two percent.
+the server: it is the reference price itself, and nothing is added to it.
 The same quantity costs 6.50:
 
 ```console

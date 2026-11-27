@@ -194,6 +194,11 @@ Return PASS/FAIL per AC with evidence."
 - **The skeleton's order-count expectations follow the seed.** The tests of section 7 were kept as written, but `app.int-spec.ts`'s caller's-orders expectations and the collection's skeleton request each knew one order per caller where the seed gives two (Alice 1 and 6, Bob 2 and 7); the expectations were updated to the seed, the queries were not.
 - **Cross-branch, for the lead:** `postman/gateway/`'s skeleton request "A query answered from three services" expects Alice's orders to be `[{id: "1"}]`; the trading seed gives her orders 1 and 6. The file belongs to the gateway builder, so it was left alone and `pnpm test:api` fails on that one request on this branch. Everything else in the run passes, including the whole trading collection.
 
+**2026-11-27, after the review** (two axes, standards and this specification: no blocking finding, eleven optional ones; two are closed here, the rest are left to the owner's discretion and listed in the pull request):
+
+- **`buyAtMarket` no longer computes a slippage ceiling.** The build had `min(reference, reference × 1.02)`, which is always the reference: a control that could not bind, under a comment and a documentation line that said it did. Both now say what the code does: the buy pays the reference price, nothing added. The contract's "with a maximum slippage" is met by never moving the price. The LOGIC-003 counterpart test is unchanged.
+- **RES-002's second counterpart, `tradesNamed`, pages by a capped offset, not by a cursor** as the contract's row says. Section 8 asks for pages of at most 200, which is what was built; the review found the departure recorded nowhere.
+
 Not built, by D-8: `market(symbol)`, `orderBook(symbol)`, `prices(symbol, limit)`, `User.wallets`, `User.trades`, `User.ledger`, `GET /internal/reports`. With them the counts would be 38 safe and 20 vulnerable (1.9); as built, 31 and 20 (1.55).
 
 ---

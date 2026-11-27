@@ -39,11 +39,9 @@ export class BuyAtMarketResolver {
       if (market === null) {
         throw new NotFoundException(`There is no market ${symbol}`);
       }
-      // The price is computed on the server, from the reference price, with a
-      // maximum slippage: two percent above it is the most this buy will pay.
-      const reference = BigInt(market.referencePrice);
-      const ceiling = (reference * 102n) / 100n;
-      const price = reference < ceiling ? reference : ceiling;
+      // The price is computed on the server: it is the reference price itself.
+      // Nothing is added to it, so a buy never pays above the reference.
+      const price = BigInt(market.referencePrice);
       const cost = costOf(
         minorQuantity,
         String(price),
