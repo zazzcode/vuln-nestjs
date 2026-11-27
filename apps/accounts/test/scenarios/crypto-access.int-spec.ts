@@ -30,11 +30,9 @@ describe('ACCESS-001: another account by identifier, with no ownership check', (
   });
 
   test('me answers only the caller, and has no argument to name Bob', async () => {
-    const response = await gql(
-      lab,
-      'query { me { id email preferences } }',
-      { token: lab.aliceToken },
-    );
+    const response = await gql(lab, 'query { me { id email preferences } }', {
+      token: lab.aliceToken,
+    });
 
     // refused: the record is the caller's own — Bob is not reachable through it
     expect(response.data).toEqual({
@@ -51,7 +49,7 @@ describe('ACCESS-001: another account by identifier, with no ownership check', (
     });
   });
 
-  test('user(id) is an administrator\'s operation, and Alice is not one', async () => {
+  test("user(id) is an administrator's operation, and Alice is not one", async () => {
     const refused = await gql(
       lab,
       'query ($id: ID!) { user(id: $id) { id email } }',
@@ -90,7 +88,9 @@ describe("ACCESS-003: a user's token opens an administrator's account", () => {
     const stats = await gql(lab, 'query { userStats { total admins users } }', {
       token: lab.adminToken,
     });
-    expect(stats.data).toEqual({ userStats: { total: 7, admins: 2, users: 5 } });
+    expect(stats.data).toEqual({
+      userStats: { total: 7, admins: 2, users: 5 },
+    });
   });
 
   test('createUser refuses the same input from the same token', async () => {
@@ -119,7 +119,7 @@ describe("ACCESS-003: a user's token opens an administrator's account", () => {
   });
 });
 
-describe("ACCESS-004: the body of the legacy profile editor is the change", () => {
+describe('ACCESS-004: the body of the legacy profile editor is the change', () => {
   const payload = () => ({
     displayName: 'Alice Patched',
     role: 'ADMIN',

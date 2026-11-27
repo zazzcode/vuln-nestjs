@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "1c2f6331-d0fd-427f-a1e3-92b645b1094a",
     "name": "VCX: accounts",
-    "description": "The accounts microservice, called on its own address. accountsUrl is the relay the start command opens in front of it: the service speaks HTTP/2 in cleartext, which Postman and Newman cannot send, and the relay carries each request to it over HTTP/2.",
+    "description": "The accounts microservice, called on its own address. accountsUrl is the relay the start command opens in front of it: the service speaks HTTP/2 in cleartext, which Postman and Newman cannot send, and the relay carries each request to it over HTTP/2. The Tokens folder fills accessToken (Alice), adminToken and bobToken; internalToken comes from the environment. Each family folder holds the requests of that family's scenarios, with a reset where a scenario changes the store.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -214,6 +214,1115 @@
                 }
               }
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tokens",
+      "description": "Three sign-ins that fill accessToken (Alice), adminToken and bobToken for the rest of the collection.",
+      "item": [
+        {
+          "name": "Sign in alice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200 with a token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().accessToken).to.be.a('string');",
+                  "});",
+                  "pm.environment.set('accessToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/typed",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"alice@vcx.exchange\",\"password\":\"alice-lab-only\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign in admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200 with a token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().accessToken).to.be.a('string');",
+                  "});",
+                  "pm.environment.set('adminToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/typed",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"admin@vcx.exchange\",\"password\":\"admin-lab-only\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Sign in bob",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200 with a token', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().accessToken).to.be.a('string');",
+                  "});",
+                  "pm.environment.set('bobToken', pm.response.json().accessToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/typed",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"bob@vcx.exchange\",\"password\":\"bob-lab-only\"}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AUTH",
+      "item": [
+        {
+          "name": "AUTH-001: the published key forges an administrator token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const key = pm.response.json().publicKey;",
+                  "pm.test('the public key answers to any caller', () => pm.expect(key).to.be.a('string'));",
+                  "// the token the legacy guard verifies: HS256, signed with the published key as the secret",
+                  "const b64 = (s) => btoa(unescape(encodeURIComponent(JSON.stringify(s)))).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');",
+                  "const header = b64({ alg: 'HS256', typ: 'JWT' });",
+                  "const payload = b64({ sub: 'u-admin', sid: 'postman-auth-001', role: 'ADMIN' });",
+                  "const signature = CryptoJS.HmacSHA256(header + '.' + payload, key).toString(CryptoJS.enc.Base64).replace(/\\+/g, '-').replace(/\\//g, '_').replace(/=+$/, '');",
+                  "pm.test(\"the key is a usable HMAC secret: the administrator token is forged from it\", () => {",
+                  "  pm.expect(key.split('.')).to.have.lengthOf(1);",
+                  "  pm.expect(signature).to.have.lengthOf(43);",
+                  "  console.log('AUTH-001 token: ' + header + '.' + payload + '.' + signature);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{accountsUrl}}/internal/sessions/public-key"
+          },
+          "response": [],
+          "description": "The guard verifies with no algorithms pinned, so this token \u2014 signed with the key this request just read \u2014 is accepted by whoAmI. The end-to-end proof is in the scenario test and the documentation module."
+        },
+        {
+          "name": "AUTH-002: the decoded route believes an unsigned token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers the administrator the token claims', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql('u-admin');",
+                  "  pm.expect(body.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJzdWIiOiJ1LWFkbWluIiwic2lkIjoicG9zdG1hbi1hdXRoLTAwMiIsInJvbGUiOiJBRE1JTiJ9."
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/decoded"
+          },
+          "response": []
+        },
+        {
+          "name": "AUTH-003: quickSignIn answers the sixth attempt after five wrong passwords",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no lock: the right password answers a token however many came before', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data.quickSignIn.accessToken).to.be.a('string');",
+                  "  pm.expect(body.data.quickSignIn.user.id).to.eql('u-carol');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation { quickSignIn(email: \\\"carol@vcx.exchange\\\", password: \\\"carol-lab-only\\\") { accessToken user { id } } }\"}"
+            }
+          },
+          "response": [],
+          "description": "The five wrong passwords that precede this attempt are part of the scenario; they are sent in the integration test and the documentation module, where the lock that never comes is the observation."
+        },
+        {
+          "name": "AUTH-004: signOutLegacy answers true",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the legacy sign-out answers true', () => {",
+                  "  pm.expect(pm.response.json().data.signOutLegacy).to.be.true;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation { signOutLegacy }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AUTH-004: the same token still authenticates",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('nothing was revoked: me still answers the caller', () => {",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.data.me.id).to.eql('u-alice');",
+                  "  pm.expect(body.errors).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"{ me { id email } }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "AUTH-005: checkAccount separates the existing from the missing",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the existing address is true and the missing one false', () => {",
+                  "  const data = pm.response.json().data;",
+                  "  pm.expect(data.a).to.be.true;",
+                  "  pm.expect(data.b).to.be.false;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query { a: checkAccount(email: \\\"alice@vcx.exchange\\\") b: checkAccount(email: \\\"nobody@vcx.exchange\\\") }\"}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CRYPTO",
+      "item": [
+        {
+          "name": "CRYPTO-001: the first sign-up with the shared password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the sign-up answers a token', () => {",
+                  "  pm.expect(pm.response.json().data.signUp.accessToken).to.match(/^eyJ/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation { signUp(email: \\\"postman-one@vcx.exchange\\\", password: \\\"shared-lab-only\\\", displayName: \\\"Postman One\\\") { accessToken } }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CRYPTO-001: the second sign-up, the same password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the second sign-up answers a token too', () => {",
+                  "  pm.expect(pm.response.json().data.signUp.accessToken).to.match(/^eyJ/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation { signUp(email: \\\"postman-two@vcx.exchange\\\", password: \\\"shared-lab-only\\\", displayName: \\\"Postman Two\\\") { accessToken } }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CRYPTO-001: both accounts hold one unsalted hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('one password, one stored hash', () => {",
+                  "  const rows = pm.response.json().data.findUsers;",
+                  "  pm.expect(rows).to.have.lengthOf(2);",
+                  "  pm.expect(rows[0].passwordHash).to.eql(rows[1].passwordHash);",
+                  "  pm.expect(rows[0].passwordHash).to.match(/^\\$sha1\\$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query ($f: JSON) { findUsers(filter: $f) }\",\"variables\":{\"f\":{\"email\":{\"$in\":[\"postman-one@vcx.exchange\",\"postman-two@vcx.exchange\"]}}}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CRYPTO-002: recoverPassword answers the code itself",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a six-digit code comes back in the answer', () => {",
+                  "  pm.expect(pm.response.json().data.recoverPassword).to.match(/^[0-9]{6}$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation { recoverPassword(email: \\\"alice@vcx.exchange\\\") }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "CRYPTO-003: whoAmI for a token signed with the committed secret",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the committed secret verifies an administrator', () => {",
+                  "  pm.expect(pm.response.json().data.whoAmI.id).to.eql('u-admin');",
+                  "  pm.expect(pm.response.json().data.whoAmI.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1LWFkbWluIiwic2lkIjoicG9zdG1hbi1jcnlwdG8tMDAzIiwicm9sZSI6IkFETUlOIn0.1Kt1JORo3Ev5EfiWoyIDzURT3C2E6MuMakrpz7w7TGc"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"{ whoAmI { id email role } }\"}"
+            }
+          },
+          "response": [],
+          "description": "The token is signed with LEGACY_FALLBACK_SECRET, the string committed in the source."
+        }
+      ]
+    },
+    {
+      "name": "COOKIE",
+      "item": [
+        {
+          "name": "COOKIE-001: the token cookie has no HttpOnly",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the cookie carries the token with no HttpOnly', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const cookie = pm.response.headers.get('set-cookie') ?? '';",
+                  "  pm.expect(cookie).to.contain('vcx_session=');",
+                  "  pm.expect(cookie).to.not.contain('HttpOnly');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"alice@vcx.exchange\",\"password\":\"alice-lab-only\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "COOKIE-002: the remember cookie is thirty days with no SameSite",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a month-long cookie with no SameSite', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const cookie = pm.response.headers.get('set-cookie') ?? '';",
+                  "  pm.expect(cookie).to.match(/max-age=2592000/i);",
+                  "  pm.expect(cookie).to.not.contain('SameSite');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/remember",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"alice@vcx.exchange\",\"password\":\"alice-lab-only\"}"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DESER",
+      "item": [
+        {
+          "name": "DESER-001: the function in the remember cookie runs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the theme is what the function returned', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.eql({ status: 'resumed', userId: 'u-alice', theme: 'zazzles-lab-marker' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_remember={\"userId\":\"u-alice\",\"theme\":\"_$$ND_FUNC$$_function(){return 'zazzles-lab-marker'}()\"}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/resume-legacy"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "INFO",
+      "item": [
+        {
+          "name": "INFO-001: the password and the token reach the log",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('this sign-in put erin-lab-only and the token in the service log', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().accessToken).to.match(/^eyJ/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions/token",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"erin@vcx.exchange\",\"password\":\"erin-lab-only\"}"
+            }
+          },
+          "response": [],
+          "description": "The finding is the log line the service prints for this request; the integration test reads the logger and the documentation module shows the line."
+        }
+      ]
+    },
+    {
+      "name": "GQL",
+      "item": [
+        {
+          "name": "GQL-005: whoAmI returns the password hash",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the stored hash is a selectable field', () => {",
+                  "  pm.expect(pm.response.json().data.whoAmI.id).to.eql('u-alice');",
+                  "  pm.expect(pm.response.json().data.whoAmI.passwordHash).to.match(/^scrypt\\$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1LWFsaWNlIiwic2lkIjoicG9zdG1hbi1ncWwtMDA1Iiwicm9sZSI6IlVTRVIifQ.mvJAFWHrc7yd0lawyLzoOHxJ3JzCVoO1FIr1IOE4Rxo"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"{ whoAmI { id passwordHash } }\"}"
+            }
+          },
+          "response": [],
+          "description": "The token is signed with the committed legacy secret; any token the guard accepts can select the hash."
+        }
+      ]
+    },
+    {
+      "name": "MONGO",
+      "item": [
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the store is back to the fake data', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-001: the operator body signs in as the administrator",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('signs in the first account with no password', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.user.id).to.eql('u-admin');",
+                  "  pm.expect(body.user.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/sessions",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":{\"$ne\":null},\"password\":{\"$ne\":null}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-002: findUsers with an operator as the filter",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers the administrators, hash included', () => {",
+                  "  const rows = pm.response.json().data.findUsers;",
+                  "  pm.expect(rows.map((row) => row.email)).to.eql(['admin@vcx.exchange']);",
+                  "  pm.expect(rows[0].passwordHash).to.match(/^scrypt\\$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query ($f: JSON) { findUsers(filter: $f) }\",\"variables\":{\"f\":{\"role\":{\"$ne\":\"USER\"}}}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-003: the bracketed filter route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the operator reached the query', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const rows = pm.response.json();",
+                  "  pm.expect(rows.map((row) => row.email)).to.eql(['admin@vcx.exchange']);",
+                  "  pm.expect(rows[0].passwordHash).to.match(/^scrypt\\$/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{adminToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/users/filter?filter%5Brole%5D%5B%24ne%5D=USER"
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-004: findUsersByName with a pattern",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('a pattern, not a name: every user answers', () => {",
+                  "  pm.expect(pm.response.json().data.findUsersByName).to.have.lengthOf(6);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query { findUsersByName(q: \\\".*\\\") { id } }\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-005: the caller names the projection and the sort",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('hash-only rows, ordered by hash', () => {",
+                  "  const rows = pm.response.json().data.findUsers;",
+                  "  pm.expect(rows).to.have.lengthOf(6);",
+                  "  for (const row of rows) {",
+                  "    pm.expect(Object.keys(row)).to.eql(['passwordHash']);",
+                  "    pm.expect(row.passwordHash).to.match(/^scrypt\\$/);",
+                  "  }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query ($f: JSON) { findUsers(fields: $f, sortBy: \\\"passwordHash\\\") }\",\"variables\":{\"f\":{\"passwordHash\":1,\"_id\":0}}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "MONGO-006: the preferences document is the $set",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Bob writes himself an administrator role', () => {",
+                  "  pm.expect(pm.response.json().data.updatePreferencesAll).to.eql({ id: 'u-bob', role: 'ADMIN' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation ($p: JSON!) { updatePreferencesAll(prefs: $p) { id role } }\",\"variables\":{\"p\":{\"role\":\"ADMIN\"}}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the store is back to the fake data', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/lab/reset"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ACCESS",
+      "item": [
+        {
+          "name": "ACCESS-001: Alice reads Bob's preferences by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"another account's email and preferences\", () => {",
+                  "  const answered = pm.response.json().data.userPreferences;",
+                  "  pm.expect(answered.email).to.eql('bob@vcx.exchange');",
+                  "  pm.expect(answered.preferences.theme).to.eql('dark');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"query ($u: ID!) { userPreferences(userId: $u) }\",\"variables\":{\"u\":\"u-bob\"}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-003: Bob's token opens an administrator's account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the marker account is an administrator', () => {",
+                  "  const created = pm.response.json().data.createUserAccount;",
+                  "  pm.expect(created.email).to.eql('zazzles-lab-marker@vcx.exchange');",
+                  "  pm.expect(created.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{bobToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"query\":\"mutation ($i: CreateUserInput!) { createUserAccount(input: $i) { id email role } }\",\"variables\":{\"i\":{\"email\":\"zazzles-lab-marker@vcx.exchange\",\"displayName\":\"Marker Account\",\"password\":\"marker-lab-only\",\"role\":\"ADMIN\"}}}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-004: the PATCH body writes the role",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Alice's own record says ADMIN\", () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql('u-alice');",
+                  "  pm.expect(body.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}"
+              },
+              {
+                "key": "content-type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"displayName\":\"Alice Patched\",\"role\":\"ADMIN\"}"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "ACCESS-005: a header believed as identity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the administrator profile with no credentials', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const body = pm.response.json();",
+                  "  pm.expect(body.id).to.eql('u-admin');",
+                  "  pm.expect(body.role).to.eql('ADMIN');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "x-user-id",
+                "value": "u-admin"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/me"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset the store",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('the store is back to the fake data', () => pm.expect(pm.response.json().status).to.eql('ok'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "x-internal-token",
+                "value": "{{internalToken}}"
+              }
+            ],
+            "url": "{{accountsUrl}}/internal/lab/reset"
           },
           "response": []
         }
