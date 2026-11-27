@@ -1,0 +1,19 @@
+#!/bin/sh
+# Runs before a push leaves this working tree.
+#
+# CI runs on every push of a branch that has a pull request, and a red run is
+# a mail to the owner. So a tree that fails the static checks is not pushed:
+# the first builder that pushed without running them (2026-11-27) left a
+# branch red on a promise left floating and two files out of format.
+#
+# Enabled once per clone, because the setting is not committed:
+#
+#   git config core.hooksPath .githooks
+#
+# `pnpm lint` reads the libraries' built types: on a fresh checkout, run
+# `pnpm build` first.
+set -e
+
+echo "pre-push: pnpm lint, then pnpm format:check" >&2
+pnpm lint >&2
+pnpm format:check >&2

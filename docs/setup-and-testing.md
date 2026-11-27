@@ -17,9 +17,10 @@ The lab runs on `127.0.0.1` only, uses fake data, and stops without leaving anyt
 ```sh
 pnpm install --frozen-lockfile
 pnpm build
+git config core.hooksPath .githooks
 ```
 
-Both exit 0. The first installs exactly what the lockfile says and refuses if a manifest changed without it. The second builds every library and service into its `dist/`. `pnpm start` builds anything that is missing by itself.
+Both `pnpm` commands exit 0. The first installs exactly what the lockfile says and refuses if a manifest changed without it. The second builds every library and service into its `dist/`. `pnpm start` builds anything that is missing by itself. The third prints nothing: it enables the pre-push hook, which runs `pnpm lint` and `pnpm format:check` and refuses a push that fails either. It is set once per clone, because Git does not commit that setting.
 
 Build before you lint, on a fresh checkout: a workspace's typecheck reads the built types of the libraries it uses. Continuous integration ran the two the other way round once, on 2026-11-26, and failed with `Cannot find module '@zazzles/exchange-config'` in two libraries.
 

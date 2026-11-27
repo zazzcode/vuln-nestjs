@@ -52,7 +52,9 @@ All from the root. Each was last run on 2026-11-26.
 | `pnpm audit:check`, `pnpm audit:update` | Compares the production audit with `tests/expected-audit.json`, or rewrites it. An advisory leaves only by name: `pnpm audit:update --retire <id>`. |
 | `pnpm audit:lab` | The raw production audit. A nonzero exit is the lab working, once it has its pins. |
 
-Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int`, `test:e2e` and `test:api` take every port of the lab; to run one of them anyway, move the lab with the start command's variables (`GATEWAY_PORT`, `ACCOUNTS_PORT`, `TRADING_PORT`, `NOTIFICATIONS_PORT`, `ACCOUNTS_RELAY_PORT`, `TRADING_RELAY_PORT`).
+Before a commit, run `pnpm lint`, `pnpm format:check` and whatever tests cover what you changed, and read each exit code. Four builders at once share the machine: a service's builder runs only that service's integration tests (`pnpm --filter @zazzles/exchange-<service> test:int`). The root `test:int`, `test:e2e` and `test:api` take every port of the lab; to run one of them anyway, move the lab with the start command's variables (`GATEWAY_PORT`, `ACCOUNTS_PORT`, `TRADING_PORT`, `NOTIFICATIONS_PORT`, `ACCOUNTS_RELAY_PORT`, `TRADING_RELAY_PORT`). While a builder runs database tests on the same machine, do not run those three: the end-to-end suite can hang, and the stop check compares the whole machine. CI is the evidence for them.
+
+Before a push, a pre-push hook runs `pnpm lint` and `pnpm format:check` and refuses the push when either fails. Enable it once per clone, because Git does not commit that setting: `git config core.hooksPath .githooks`. CI runs on every push of a branch that has a pull request, draft or not, and each red run is mail to the owner.
 
 ## Local artifacts and skills
 
