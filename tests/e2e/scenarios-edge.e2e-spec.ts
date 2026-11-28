@@ -193,3 +193,99 @@ describe('COOKIE-003 — a form post with the session cookie changes the profile
     expect(await displayName()).toBe('Alice');
   });
 });
+
+// INFO-002 — the same failure, answered three ways: returned in full by the
+// public diagnostics page, masked by the markets ticker, given a request id
+// and a logged stack by the partner ticker. Hardened value: no page that
+// returns a failure — the masked sentence and the logged stack.
+//
+// This block takes the lab apart — trading is stopped for it, which is the
+// failure — so it runs last in the file: nothing after it may need a service
+// that is gone. What a stopped lab cannot show stays in the service's own
+// tests: the stack written to the server's log is asserted there, in
+// process; here it is the answers the running lab gives that are asserted.
+describe('INFO-002 — the failure itself returned, with trading gone', () => {
+  test('INFO-002: the public diagnostics returns the failure itself, message and stack', async () => {
+    await lab().stopService('trading');
+
+    const response = await call('/api/v1/public/diagnostics');
+
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as {
+      error?: unknown;
+      stack?: unknown;
+    };
+    // What was gained: why trading failed and the stack of the call that
+    // failed, in the answer, for anyone who asks and with no credential.
+    expect(String(body.error)).toContain('trading is unreachable');
+    expect(String(body.stack)).toContain('trading is unreachable');
+    expect(String(body.stack)).toContain(' at ');
+  });
+
+  test('INFO-002 counterpart 1: the markets ticker answers one masked sentence', async () => {
+    const response = await call('/api/v1/markets/ticker');
+
+    expect(response.status).toBe(503);
+    // Refused by the mask: the same failure is one sentence about the
+    // ticker, with neither the reason nor any stack in the answer.
+    const text = await response.text();
+    expect((JSON.parse(text) as { message: string }).message).toBe(
+      'the ticker is unavailable',
+    );
+    expect(text).not.toContain('unreachable');
+    expect(text).not.toContain('stack');
+  });
+
+  test('INFO-002 counterpart 2: the partner ticker answers a request id, not the failure', async () => {
+    const response = await call('/api/v1/partner/ticker');
+
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as {
+      error?: string;
+      requestId?: string;
+    };
+    // Refused by the handler: the same failure is one sentence and a request
+    // id to quote; the stack was written to the server's log, not the answer.
+    expect(body.error).toBe('the ticker is unavailable');
+    expect(body.requestId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
+    );
+    const text = JSON.stringify(body);
+    expect(text).not.toContain('unreachable');
+    expect(text).not.toContain('stack');
+  });
+
+  // What the running lab answers when a service behind it is gone: the
+  // pass-through carries the failure in the lab's error shape, naming the
+  // service that did not answer, and health reports it unavailable.
+  test('the lab with trading gone: a pass-through route answers 503 naming trading', async () => {
+    const response = await call('/api/v1/reports', {
+      headers: { authorization: `Bearer ${tokenOf(lab, 'u-alice')}` },
+    });
+
+    expect(response.status).toBe(503);
+    const body = (await response.json()) as {
+      statusCode?: number;
+      message?: string;
+      error?: string;
+    };
+    expect(body.statusCode).toBe(503);
+    expect(body.message).toMatch(/trading/);
+    expect(body.message).toContain('trading is unreachable');
+    expect(body.error).toBe('Service Unavailable');
+  });
+
+  test('the lab with trading gone: health answers 503 with trading unavailable', async () => {
+    const response = await call('/api/v1/health');
+
+    expect(response.status).toBe(503);
+    expect(await response.json()).toMatchObject({
+      status: 'unavailable',
+      services: {
+        accounts: { status: 'ok' },
+        trading: { status: 'unavailable', service: 'trading' },
+        notifications: { status: 'ok' },
+      },
+    });
+  });
+});
