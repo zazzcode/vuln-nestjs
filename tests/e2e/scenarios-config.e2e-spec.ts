@@ -207,3 +207,59 @@ describe('CONFIG-003 — the API document is served with no authentication', () 
     expect(answered.status).toBe(200);
   });
 });
+
+// CONFIG-004 — a debug endpoint answers the environment and the versions.
+// Hardened value: no open debug route; what a person debugging needs is behind
+// the administrator's guard and an allowlist of keys.
+describe('CONFIG-004 — the debug page answers the environment and the versions', () => {
+  test('CONFIG-004: the debug page answers environment values and dependency versions to anyone', async () => {
+    const response = await get('/api/v1/debug');
+
+    expect(response.status).toBe(200);
+    const body = (await response.json()) as {
+      environment: Record<string, string>;
+      dependencies: Record<string, string>;
+      versions: { node?: string };
+    };
+    // What was gained: the run's own secret — the value of JWT_SECRET — plus
+    // every other variable of the process, and the exact dependency versions
+    // it runs on: enough to look for a known weakness in a known version.
+    expect(body.environment.JWT_SECRET).toBe(lab().secrets.JWT_SECRET);
+    expect(body.environment.INTERNAL_SERVICE_TOKEN).toBe(
+      lab().secrets.INTERNAL_SERVICE_TOKEN,
+    );
+    expect(body.dependencies['@apollo/gateway']).toMatch(/^\d+/);
+    expect(body.versions.node).toBeDefined();
+  });
+
+  test('CONFIG-004 counterpart 1: health answers a status and nothing else', async () => {
+    const response = await get('/api/v1/health');
+
+    expect(response.status).toBe(200);
+    const text = await response.text();
+    // Refused by the shape of the answer: a status page has no place for the
+    // environment or a version to appear.
+    expect(text).not.toContain(lab().secrets.JWT_SECRET);
+    expect(
+      (JSON.parse(text) as { versions?: unknown }).versions,
+    ).toBeUndefined();
+  });
+
+  test('CONFIG-004 counterpart 2: the admin diagnostics page answers allowlisted keys only', async () => {
+    const refused = await get('/api/v1/admin/diagnostics');
+    // Refused by the guard: the page is an administrator's.
+    expect(refused.status).toBe(401);
+
+    const answered = await get('/api/v1/admin/diagnostics', {
+      authorization: `Bearer ${tokenOf(lab, 'u-admin', 'ADMIN')}`,
+    });
+    expect(answered.status).toBe(200);
+    const body = (await answered.json()) as {
+      environment: Record<string, unknown>;
+    };
+    // Refused by the allowlist: a key not on it is never read, so its value
+    // cannot leave the process.
+    expect(Object.keys(body.environment)).not.toContain('JWT_SECRET');
+    expect(JSON.stringify(body)).not.toContain(lab().secrets.JWT_SECRET);
+  });
+});
