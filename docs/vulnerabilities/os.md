@@ -18,7 +18,7 @@ The reproductions were run on 2026-11-27 against the service alone on `127.0.0.1
 - **Scenario:** OS-001, a title interpolated into a shell command.
 - **Source:** `apps/notifications/src/announcements/announcements-send.controller.ts`
 - **Operation:** `POST /internal/announcements/send` (gateway: `POST /api/v1/admin/announcements/send`), REST, administrator.
-- **Sink:** `exec` of a `node` command line, run from the service's directory with its script `apps/notifications/scripts/notify.js` first: `` node scripts/notify.js --title "${title}" --body "${rendered}" --url "${url}" ``.
+- **Sink:** `exec` of a `node` command line that runs the notifier script `apps/notifications/scripts/notify.js`, named as the code names it, relative to the service's directory, with the title, the rendered body and the URL interpolated into its arguments.
 - **Flow:** `body.title → AnnouncementsSendController.send → exec(command) → /bin/sh -c`.
 - **Counterparts:** `apps/notifications/src/announcements/broadcast-announcement.resolver.ts` (`execFile` with a fixed argument vector), `apps/notifications/src/announcements/announcements-notify.controller.ts` (a function call, no process).
 - **Tests:** `apps/notifications/test/scenarios/os.int-spec.ts`.
