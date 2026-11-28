@@ -14,6 +14,7 @@ import {
   DESIGNED_IN,
   POSTMAN_IN,
   checkScenarios,
+  counterpartsOf,
   designedIds,
   filesOf,
   hashesOf,
@@ -224,6 +225,30 @@ describe('the ground truth made from the catalogue', () => {
       'apps/lab/src/trades/trades.resolver.ts',
       'apps/lab/src/trades/trades.sorted.resolver.ts',
     ]);
+  });
+
+  // A builder may name one file as both `safeControl` and in `safeControls`: it is one
+  // counterpart. The documentation pass found 25 entries that do, and 25 rows twice.
+  test('counts a counterpart named twice once, in the files and in the rows', () => {
+    const twice = entry({
+      safeControl: 'apps/lab/src/markets/markets.resolver.ts',
+      safeControls: [
+        'apps/lab/src/markets/markets.resolver.ts',
+        'apps/lab/src/markets/markets-by-assets.resolver.ts',
+      ],
+    });
+
+    expect(counterpartsOf(twice)).toEqual([
+      'apps/lab/src/markets/markets.resolver.ts',
+      'apps/lab/src/markets/markets-by-assets.resolver.ts',
+    ]);
+    // The vulnerable file beside them: three registered files, not four.
+    expect(registeredFiles([twice])).toHaveLength(3);
+    expect(
+      scannerFindingsIn([twice]).sources.filter(
+        (row: { expectedFinding: boolean }) => !row.expectedFinding,
+      ),
+    ).toHaveLength(2);
   });
 
   test('says which files a scanner must report and which it must leave alone', () => {

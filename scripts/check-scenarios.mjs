@@ -159,10 +159,16 @@ function describe(value) {
 
 // --- The catalogue as a catalogue ------------------------------------------------
 
-/** The protected counterparts of an entry, in order. */
+/**
+ * The protected counterparts of an entry, in order, each once: an entry may
+ * name one file as both `safeControl` and in `safeControls`, and it is one
+ * counterpart — one file to hash, one row for a scanner to leave alone.
+ */
 export const counterpartsOf = (entry) => [
-  ...(entry.safeControl ? [entry.safeControl] : []),
-  ...(entry.safeControls ?? []),
+  ...new Set([
+    ...(entry.safeControl ? [entry.safeControl] : []),
+    ...(entry.safeControls ?? []),
+  ]),
 ];
 
 /** Every file that must exist for an entry: its own, its counterparts', its documentation and its test. */

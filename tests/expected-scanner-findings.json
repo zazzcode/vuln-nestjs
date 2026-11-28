@@ -240,14 +240,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "AUTH-001-safeControl",
-      "controlFor": "AUTH-001",
-      "source": "apps/accounts/src/auth/auth.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-347",
-      "scanner": "SAST"
-    },
-    {
       "id": "AUTH-002",
       "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
       "expectedFinding": true,
@@ -332,25 +324,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "AUTH-005-safeControl",
-      "controlFor": "AUTH-005",
-      "source": "apps/accounts/src/auth/auth.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-204",
-      "scanner": "SAST"
-    },
-    {
       "id": "CONFIG-001",
       "source": "apps/gateway/src/edge/edge.ts",
       "expectedFinding": true,
-      "cwe": "CWE-942",
-      "scanner": "SAST"
-    },
-    {
-      "id": "CONFIG-001-safeControl",
-      "controlFor": "CONFIG-001",
-      "source": "apps/gateway/src/markets/markets.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-942",
       "scanner": "SAST"
     },
@@ -401,14 +377,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "CONFIG-003-safeControl",
-      "controlFor": "CONFIG-003",
-      "source": "apps/gateway/src/openapi/openapi.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-200",
-      "scanner": "SAST"
-    },
-    {
       "id": "CONFIG-004",
       "source": "apps/gateway/src/debug/debug.controller.ts",
       "expectedFinding": true,
@@ -447,14 +415,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "COOKIE-001-safeControl",
-      "controlFor": "COOKIE-001",
-      "source": "apps/accounts/src/auth/auth.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-1004",
-      "scanner": "SAST"
-    },
-    {
       "id": "COOKIE-002",
       "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
       "expectedFinding": true,
@@ -470,25 +430,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "COOKIE-002-safeControl",
-      "controlFor": "COOKIE-002",
-      "source": "apps/accounts/src/auth/auth.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-1275",
-      "scanner": "SAST"
-    },
-    {
       "id": "COOKIE-003",
       "source": "apps/gateway/src/profile/cookie-preferences.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-352",
-      "scanner": "SAST"
-    },
-    {
-      "id": "COOKIE-003-safeControl",
-      "controlFor": "COOKIE-003",
-      "source": "apps/gateway/src/profile/preferences.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-352",
       "scanner": "SAST"
     },
@@ -539,14 +483,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "CRYPTO-002-safeControl",
-      "controlFor": "CRYPTO-002",
-      "source": "apps/accounts/src/auth/auth.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-338",
-      "scanner": "SAST"
-    },
-    {
       "id": "CRYPTO-003",
       "source": "apps/accounts/src/legacy/legacy-token.guard.ts",
       "expectedFinding": true,
@@ -562,25 +498,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "CRYPTO-003-safeControl",
-      "controlFor": "CRYPTO-003",
-      "source": "apps/accounts/src/auth/auth.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-798",
-      "scanner": "SAST"
-    },
-    {
       "id": "DESER-001",
       "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-502",
-      "scanner": "SAST"
-    },
-    {
-      "id": "DESER-001-safeControl",
-      "controlFor": "DESER-001",
-      "source": "apps/accounts/src/auth/auth.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-502",
       "scanner": "SAST"
     },
@@ -654,14 +574,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "FS-001-safeControl",
-      "controlFor": "FS-001",
-      "source": "apps/accounts/src/documents/documents.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-22",
-      "scanner": "SAST"
-    },
-    {
       "id": "FS-002",
       "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
       "expectedFinding": true,
@@ -677,25 +589,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "FS-002-safeControl",
-      "controlFor": "FS-002",
-      "source": "apps/accounts/src/documents/documents.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-22",
-      "scanner": "SAST"
-    },
-    {
       "id": "FS-003",
       "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-434",
-      "scanner": "SAST"
-    },
-    {
-      "id": "FS-003-safeControl",
-      "controlFor": "FS-003",
-      "source": "apps/accounts/src/documents/documents.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-434",
       "scanner": "SAST"
     },
@@ -846,14 +742,6 @@
       "id": "INFO-002",
       "source": "apps/gateway/src/public-api/public-diagnostics.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-209",
-      "scanner": "SAST"
-    },
-    {
-      "id": "INFO-002-safeControl",
-      "controlFor": "INFO-002",
-      "source": "apps/gateway/src/markets/markets.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-209",
       "scanner": "SAST"
     },
@@ -1057,25 +945,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "MONGO-002-safeControl",
-      "controlFor": "MONGO-002",
-      "source": "apps/accounts/src/users/users.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-943",
-      "scanner": "SAST"
-    },
-    {
       "id": "MONGO-003",
       "source": "apps/accounts/src/legacy/users-filter.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-943",
-      "scanner": "SAST"
-    },
-    {
-      "id": "MONGO-003-safeControl",
-      "controlFor": "MONGO-003",
-      "source": "apps/accounts/src/users/users.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-943",
       "scanner": "SAST"
     },
@@ -1103,14 +975,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "MONGO-004-safeControl",
-      "controlFor": "MONGO-004",
-      "source": "apps/accounts/src/users/users.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-943",
-      "scanner": "SAST"
-    },
-    {
       "id": "MONGO-005",
       "source": "apps/accounts/src/legacy/users-lookup.resolver.ts",
       "expectedFinding": true,
@@ -1126,25 +990,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "MONGO-005-safeControl",
-      "controlFor": "MONGO-005",
-      "source": "apps/accounts/src/users/users.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-943",
-      "scanner": "SAST"
-    },
-    {
       "id": "MONGO-006",
       "source": "apps/accounts/src/legacy/preferences-bulk.resolver.ts",
       "expectedFinding": true,
-      "cwe": "CWE-915",
-      "scanner": "SAST"
-    },
-    {
-      "id": "MONGO-006-safeControl",
-      "controlFor": "MONGO-006",
-      "source": "apps/accounts/src/profile/profile.resolver.ts",
-      "expectedFinding": false,
       "cwe": "CWE-915",
       "scanner": "SAST"
     },
@@ -1218,25 +1066,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "PROTO-001-safeControl",
-      "controlFor": "PROTO-001",
-      "source": "apps/accounts/src/profile/profile.resolver.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-1321",
-      "scanner": "SAST"
-    },
-    {
       "id": "PROTO-002",
       "source": "apps/accounts/src/legacy/notification-settings.resolver.ts",
       "expectedFinding": true,
-      "cwe": "CWE-1321",
-      "scanner": "SAST"
-    },
-    {
-      "id": "PROTO-002-safeControl",
-      "controlFor": "PROTO-002",
-      "source": "apps/accounts/src/profile/profile.resolver.ts",
-      "expectedFinding": false,
       "cwe": "CWE-1321",
       "scanner": "SAST"
     },
@@ -1298,14 +1130,6 @@
       "id": "REDIR-001",
       "source": "apps/gateway/src/redirects/redirect.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-601",
-      "scanner": "SAST"
-    },
-    {
-      "id": "REDIR-001-safeControl",
-      "controlFor": "REDIR-001",
-      "source": "apps/gateway/src/redirects/continue.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-601",
       "scanner": "SAST"
     },
@@ -1632,14 +1456,6 @@
       "scanner": "SAST"
     },
     {
-      "id": "XSS-002-safeControl",
-      "controlFor": "XSS-002",
-      "source": "apps/accounts/src/documents/documents.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-79",
-      "scanner": "SAST"
-    },
-    {
       "id": "XSS-003",
       "source": "apps/gateway/src/public-api/public-status.controller.ts",
       "expectedFinding": true,
@@ -1655,25 +1471,9 @@
       "scanner": "SAST"
     },
     {
-      "id": "XSS-003-safeControl",
-      "controlFor": "XSS-003",
-      "source": "apps/gateway/src/status/status.controller.ts",
-      "expectedFinding": false,
-      "cwe": "CWE-79",
-      "scanner": "SAST"
-    },
-    {
       "id": "XSS-004",
       "source": "apps/accounts/src/legacy/admin-html.controller.ts",
       "expectedFinding": true,
-      "cwe": "CWE-79",
-      "scanner": "SAST"
-    },
-    {
-      "id": "XSS-004-safeControl",
-      "controlFor": "XSS-004",
-      "source": "apps/accounts/src/admin/admin.controller.ts",
-      "expectedFinding": false,
       "cwe": "CWE-79",
       "scanner": "SAST"
     },
