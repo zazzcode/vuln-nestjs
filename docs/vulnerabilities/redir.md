@@ -1,19 +1,13 @@
 # `REDIR` — open redirect
 
-1 scenario: `REDIR-001` in `gateway`.
+One weakness of the edge of the `gateway`: its post-sign-in redirect takes the caller wherever the link's `next` parameter points, on the strength of an address the caller trusts. Two routes take them only where the operator listed, in `apps/gateway/src/redirects/continue.controller.ts`.
 
-**In `gateway`.**
+The reproduction was run on 2026-11-27 against the gateway alone on `127.0.0.1:4400`, with stand-ins for the three subgraphs. `$A` is Alice's token. Each counterpart's claim is scoped: this route, receiving the identical `next`, lands the caller where it says. Nothing here says any endpoint is secure in general.
 
-**Family:** `REDIR` · **Service:** `gateway` · **Surface:** REST · **Scanner:** DAST · **OWASP:** A01
-
-The edge's post-sign-in redirect: one route takes the caller wherever the
-link's `next` parameter points, and two take them only where the operator
-listed. The reproductions were run on 2026-11-27 against the gateway alone on
-`127.0.0.1:4400`, with stand-ins for the three subgraphs. `$A` is Alice's
-token.
-
+<a id="redir-001"></a>
 ## REDIR-001 — the post-sign-in redirect follows `next` wherever it points
 
+<a id="redir-001-agent"></a>
 ### REDIR-001 — agent reference
 
 - **Source:** `apps/gateway/src/redirects/redirect.controller.ts` — `reply.redirect(next)` with the caller's `next`.
@@ -21,9 +15,10 @@ token.
 - **Sink:** the `location` header of a 302 the edge itself signs.
 - **Flow:** a link or a page the attacker controls carries `?next=http://127.0.0.1:4010/landing`; the caller, signed in, is redirected off-site by the lab's own address.
 - **Counterparts:** `apps/gateway/src/redirects/continue.controller.ts` — `continue` (a fixed relative path), `continue-allowlisted` (an origin in `REDIRECT_ORIGINS`).
-- **Documentation:** this module. **Tests:** `apps/gateway/test/scenarios/edge.int-spec.ts`.
+- **Tests:** `apps/gateway/test/scenarios/edge.int-spec.ts` (the gateway alone, against stand-ins) and `tests/e2e/scenarios-edge.e2e-spec.ts` (the whole lab).
 - **Expected finding:** CWE-601 on the redirect controller. A report on the two counterpart routes for this CWE is a false positive.
 
+<a id="redir-001-student"></a>
 ### REDIR-001 — student guide
 
 An open redirect borrows the trust a user has in an address: the link begins
@@ -34,6 +29,7 @@ why phishing loves it: the visible URL is right up to the moment the browser
 follows the header. The weak route reads `next` and hands it to
 `reply.redirect` unchanged; neither counterpart reads an unlisted target.
 
+<a id="redir-001-exploit"></a>
 ### REDIR-001 — exploit lab
 
 ```console
@@ -64,6 +60,7 @@ it lands on is the accounts service's own health page: an origin no operator
 listed, reached on the edge's signature. In Burp: `next=http://127.0.0.1:4010/landing`
 from Repeater, and read the `location` header the edge answers.
 
+<a id="redir-001-safe"></a>
 ### REDIR-001 — vulnerable and protected
 
 | | What it does with the same `next` | Why that holds |
@@ -77,6 +74,7 @@ from Repeater, and read the `location` header the edge answers.
 edge's own status page on the other two. The claim is not that the allowlist
 makes every redirect safe; only that this unlisted target is not followed.
 
+<a id="redir-001-tests"></a>
 ### REDIR-001 — tests
 
 `apps/gateway/test/scenarios/edge.int-spec.ts`: one test sends
@@ -85,7 +83,4 @@ makes every redirect safe; only that this unlisted target is not followed.
 the same `next` to the counterparts and assert both answer 302 to
 `/api/v1/status` and never to `4010` — why each was refused.
 
-## Scope of the counterparts
-
-Each claim above names the route and what it refuses for identical input.
-Nothing in this module says any endpoint is secure in general.
+`tests/e2e/scenarios-edge.e2e-spec.ts` makes the same three proofs against the whole lab. The collection `postman/gateway/vuln-nestjs.gateway.postman_collection.json` carries three requests: `REDIR-001 the redirect follows next wherever it points`, `REDIR-001 continue redirects to a fixed relative path` and `REDIR-001 continue-allowlisted does not follow an unlisted origin`.
