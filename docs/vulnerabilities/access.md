@@ -453,7 +453,7 @@ The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` car
 - **Operation:** GraphQL `walletOf(userId: ID!)`, a signed-in user.
 - **Sink:** `@Args('userId', { type: () => ID }) userId: string`: the caller names any user, and the balances answer to the token alone.
 - **Flow:** `args.userId` → the repository's where clause → that user's balances answered to the caller.
-- **Counterparts:** `apps/trading/src/wallets/wallet.resolver.ts` (`wallet`, and `ledger` beside it: the caller's own data, no `userId` argument on either), `apps/trading/src/wallets/wallets-by-user.resolver.ts` (`wallets(userId: ID!)`, `@Roles('ADMIN')`).
+- **Counterparts:** `apps/trading/src/wallets/wallet.resolver.ts` (`wallet`: the caller's own balances, no `userId` argument), `apps/trading/src/wallets/wallets-by-user.resolver.ts` (`wallets(userId: ID!)`, `@Roles('ADMIN')`). `ledger`, in `apps/trading/src/wallets/ledger.resolver.ts`, takes the user from the token the same way.
 - **Tests:** `apps/trading/test/scenarios/access.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report a read whose user comes from the request and is never compared with the caller: CWE-639.
 
@@ -489,7 +489,7 @@ Alice gained Erin's six balances, her 500.00 dollars among them.
 | | Operation | What it does with the same id |
 | --- | --- | --- |
 | Vulnerable | `walletOf(userId)` | Answers the balances of the user the id names, to whoever asks |
-| Counterpart 1 | `wallet` and `ledger` | No `userId` argument exists on either: both answer the caller's own data (Alice's `10000.00`, her one deposit entry) |
+| Counterpart 1 | `wallet` (and `ledger`) | No `userId` argument exists on either: both answer the caller's own data (Alice's `10000.00`, her one deposit entry) |
 | Counterpart 2 | `wallets(userId: ID!)` | `@Roles('ADMIN')`: the identical payload on a user's token is refused, `FORBIDDEN`, `This operation needs one of the roles ADMIN` |
 
 **Scoped claim.** Each counterpart defeats this flaw for identical input: the id `u-erin` that reads Erin's balances through `walletOf` has no argument to travel through on the caller's own queries, and is refused by the roles guard on the administrator's lookup. The claim is not that an administrator's `wallets(userId)` is harmless; only that a user's token reads no other user's balances through them.
