@@ -1,30 +1,15 @@
 # `SSRF` — server-side request forgery
 
-3 scenarios: `SSRF-001` in `notifications`, `SSRF-002` in `accounts`, `SSRF-003` in `notifications`.
+Three weaknesses that take a URL from a caller and go there. A webhook try-out posts to any address (`notifications`, `SSRF-001`); an alert import from a URL fetches it and returns the answer's body (`notifications`, `SSRF-003`); the old profile page's avatar import fetches wherever the URL points, redirects followed (`accounts`, `SSRF-002`). The service's own view of the machine is the prize: a request made from inside the lab reaches listeners that bind loopback for the lab alone. The protected counterparts are in `apps/notifications/src/settings/set-webhook-url.resolver.ts`, `apps/notifications/src/settings/register-webhook.resolver.ts`, `apps/notifications/src/alerts/alerts-import.controller.ts`, `apps/notifications/src/alerts/alerts-import-url.controller.ts`, `apps/accounts/src/profile/profile.resolver.ts` and `apps/accounts/src/profile/profile.controller.ts`.
 
-**In `accounts`.**
+Every other outbound path in `notifications` goes through the outbound guard: the scheme must be `http` or `https`, the origin must be on `WEBHOOK_ALLOWED_ORIGINS` (the loopback test receiver on `4010` by default), the host must resolve to loopback, redirects are not followed, and the timeout is five seconds. The allowlisted fetch of `accounts` checks the origin before any request and refuses a redirect.
 
-One weakness of the old profile page's avatar import in `accounts`. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults). The in-lab target named here is the lab's own HTTP/1.1 health route — the gateway's — because the backend services speak HTTP/2 in cleartext, which an HTTP/1.1 client cannot fetch; the scenario's test observes the fetch with a stub the test itself starts on loopback, and proves the redirect-following with a 302 from that stub.
+The `accounts` reproduction runs against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults). Its in-lab target is the lab's own HTTP/1.1 health route, the gateway's, because the backend services speak HTTP/2 in cleartext, which an HTTP/1.1 client cannot fetch; the scenario's test observes the fetch with a stub the test itself starts on loopback, and proves the redirect-following with a 302 from that stub. The `notifications` reproductions were run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with Alice's token in `$A` and a one-line listener on `4310` standing in for another service's internal endpoint. Each counterpart's claim is scoped: this operation, receiving the identical URL, sends nothing for the reason given. Nothing here says any operation is secure in general.
 
-**In `notifications`.**
-
-**Family:** `SSRF` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A10 · API7
-
-Two operations take a URL from a caller and go there: the webhook try-out and
-the alert import from a URL. Both are delivery conveniences, and both trust
-the address. Every other outbound path in this service goes through the
-outbound guard: the scheme must be `http` or `https`, the origin must be on
-`WEBHOOK_ALLOWED_ORIGINS` (the loopback test receiver on `4010` by default),
-the host must resolve to loopback, redirects are not followed, and the
-timeout is five seconds.
-
-| ID | The operation | The sink | CWE |
-| --- | --- | --- | --- |
-| SSRF-001 | `testWebhook(url: String!)` | `WebhookClientService.send` — a POST with no guard | CWE-918 |
-| SSRF-003 | `POST /internal/alerts/fetch` | `WebhookClientService.read` — a GET whose answer is returned | CWE-918 |
-
+<a id="ssrf-001"></a>
 ## SSRF-001 — a webhook posted inside the lab
 
+<a id="ssrf-001-agent"></a>
 ### SSRF-001 — agent reference
 
 - **Scenario:** SSRF-001, a webhook posted to any URL.
@@ -33,9 +18,10 @@ timeout is five seconds.
 - **Sink:** `WebhookClientService.send(url, payload)` — `node-fetch`, `redirect: 'follow'`, no outbound guard.
 - **Flow:** `args.url → TestWebhookResolver.test → DeliveryService.deliverToUnchecked → client.send → fetch(url, { method: 'POST' })`.
 - **Counterparts:** `apps/notifications/src/settings/set-webhook-url.resolver.ts` (refused at save time), `apps/notifications/src/settings/register-webhook.resolver.ts` (saved, refused at delivery time by `evaluateAlerts`).
-- **Tests:** `apps/notifications/test/scenarios/ssrf.int-spec.ts`.
+- **Tests:** `apps/notifications/test/scenarios/ssrf.int-spec.ts` (the service alone, a stand-in for the target) and `tests/e2e/scenarios-ssrf.e2e-spec.ts` (the whole lab, a sibling service as the target).
 - **Expected finding:** yes. A SAST tool must report the caller-controlled URL reaching a network request.
 
+<a id="ssrf-001-student"></a>
 ### SSRF-001 — student guide
 
 The line (`apps/notifications/src/webhooks/test-webhook.resolver.ts`):
@@ -65,6 +51,7 @@ they could curl it anyway." The difference is position: the request is made
 from inside the lab, so it reaches listeners that bind loopback for the lab
 alone, and it carries the service's identity, not the user's.
 
+<a id="ssrf-001-exploit"></a>
 ### SSRF-001 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103` (the lab's
@@ -95,6 +82,7 @@ address the allowlist does not name. In Burp: send the same GraphQL mutation
 to the gateway's `/api/v1/graphql` from Repeater and read `responseBody` in
 the answer.
 
+<a id="ssrf-001-safe"></a>
 ### SSRF-001 — vulnerable and protected
 
 | | Operation | What it does with the same URL |
@@ -109,6 +97,7 @@ reached the internal endpoint through `testWebhook` is refused — at the save
 in the first, at the delivery in the second. Neither claim is wider than
 that: they say nothing about URLs already on the allowlist.
 
+<a id="ssrf-001-tests"></a>
 ### SSRF-001 — tests
 
 `apps/notifications/test/scenarios/ssrf.int-spec.ts`, describe
@@ -128,8 +117,12 @@ that: they say nothing about URLs already on the allowlist.
 A fourth test proves the guarded client follows no redirect (AC5), so the
 unguarded twin's `redirect: 'follow'` is a difference a scanner can see.
 
+`tests/e2e/scenarios-ssrf.e2e-spec.ts` sends each URL through the gateway to a sibling service of the running lab, and asserts that service's own answer came back; each counterpart receives the identical URL, and the assertion names why it was refused. The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries two requests: `SSRF-001: a webhook posted inside the lab` and `SSRF-001: the internal answer read back from the record`.
+
+<a id="ssrf-002"></a>
 ## SSRF-002 — the avatar URL is fetched wherever it points
 
+<a id="ssrf-002-agent"></a>
 ### SSRF-002 — agent reference
 
 | | |
@@ -138,13 +131,15 @@ unguarded twin's `redirect: 'follow'` is a difference a scanner can see.
 | Sink | `fetch(url)` with the default redirect following, in `apps/accounts/src/legacy/legacy-avatar.controller.ts` (`node-fetch` 2) |
 | Flow | the caller's URL → the service fetches it → whatever the URL names on the machine's loopback is reached from inside |
 | Counterparts | `apps/accounts/src/profile/profile.resolver.ts` (`setAvatarUrl`: stores, fetches nothing), `apps/accounts/src/profile/profile.controller.ts` (`avatar/fetch`: an allowlisted origin, redirects refused) |
-| Tests | `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts` |
+| Tests | `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts` (the service alone, a stub for the target), `apps/accounts/test/avatar-fetch.int-spec.ts` (the allowlisted fetch), `tests/e2e/scenarios-ssrf.e2e-spec.ts` (the whole lab, a sibling service as the target) |
 | Expected finding | Yes, CWE-918, SAST |
 
+<a id="ssrf-002-student"></a>
 ### SSRF-002 — student guide
 
 A URL the caller chooses is a request the service will make. Fetched with no allowlist, it reaches everything that listens on the machine — including services no client was ever meant to point at — and following redirects hands the destination to whoever answers first.
 
+<a id="ssrf-002-exploit"></a>
 ### SSRF-002 — exploit lab
 
 ```console
@@ -163,6 +158,7 @@ $ curl -s $RELAY/internal/profile/avatar/fetch -H 'content-type: application/jso
 
 And `setAvatarUrl` answers the stored URL and fetches nothing: the stub's count of hits does not move.
 
+<a id="ssrf-002-safe"></a>
 ### SSRF-002 — vulnerable and protected
 
 | | Why |
@@ -171,14 +167,21 @@ And `setAvatarUrl` answers the stored URL and fetches nothing: the stub's count 
 | `setAvatarUrl` (protected) | The URL is stored as data; no request is made, so this URL is never fetched |
 | `POST /internal/profile/avatar/fetch` (protected) | The origin allowlist is checked before any request, and a redirect is refused, not followed. The allowlist is the service's `AVATAR_ALLOWED_ORIGINS` variable, comma-separated: the lab's own fake avatar host by default |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the URL that the avatar route fetches wherever it points is stored and never fetched by `setAvatarUrl`, and is refused by the allowlisted fetch, which finds its origin on no list before any request is made. The claim is not that the allowlist makes every allowed origin safe to fetch; only that this URL is fetched through neither of them.
+
+<a id="ssrf-002-tests"></a>
 ### SSRF-002 — tests
 
 `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts`, `SSRF-002`: a loopback stub records the fetch and the followed redirect; `setAvatarUrl` and the allowlisted fetch leave the stub's count unchanged.
 
 `apps/accounts/test/avatar-fetch.int-spec.ts`: the service is started with `AVATAR_ALLOWED_ORIGINS` on a loopback stub of the test's, and the allowlisted fetch is proved in both directions. An allowed origin is fetched and the URL is stored; a redirect, a host that does not serve the avatar and an origin under another name each store nothing, and each refusal says which rule refused.
 
+`tests/e2e/scenarios-ssrf.e2e-spec.ts` sends each URL through the gateway to a sibling service of the running lab, and asserts that service's own answer came back; each counterpart receives the identical URL, and the assertion names why it was refused. The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries two requests: `SSRF-002: the avatar URL is fetched wherever it points` and `SSRF-002: the allowlisted fetch refuses the same URL`.
+
+<a id="ssrf-003"></a>
 ## SSRF-003 — a URL fetched and its body returned
 
+<a id="ssrf-003-agent"></a>
 ### SSRF-003 — agent reference
 
 - **Scenario:** SSRF-003, a URL fetched and the response returned.
@@ -187,9 +190,10 @@ And `setAvatarUrl` answers the stored URL and fetches nothing: the stub's count 
 - **Sink:** `WebhookClientService.read(url)` — a GET with no outbound guard, whose status and body are returned to the caller.
 - **Flow:** `body.url → AlertsFetchController.fetch → client.read → fetch(url, { method: 'GET' }) → { status, body } returned`.
 - **Counterparts:** `apps/notifications/src/alerts/alerts-import.controller.ts` (takes the content, fetches nothing), `apps/notifications/src/alerts/alerts-import-url.controller.ts` (fetches through the outbound guard).
-- **Tests:** `apps/notifications/test/scenarios/ssrf.int-spec.ts`.
+- **Tests:** `apps/notifications/test/scenarios/ssrf.int-spec.ts` (the service alone, a stand-in for the target) and `tests/e2e/scenarios-ssrf.e2e-spec.ts` (the whole lab, a sibling service as the target).
 - **Expected finding:** yes. A SAST tool must report the caller-controlled URL reaching a network request whose response is returned.
 
+<a id="ssrf-003-student"></a>
 ### SSRF-003 — student guide
 
 The line (`apps/notifications/src/alerts/alerts-fetch.controller.ts`):
@@ -211,6 +215,7 @@ The author's belief: "reading is harmless; the importing route is the one
 that needs care." But the read is the whole attack: internal endpoints answer
 internal callers, and this route makes the service one and returns the page.
 
+<a id="ssrf-003-exploit"></a>
 ### SSRF-003 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with Alice's
@@ -229,6 +234,7 @@ state — was returned to the caller. In Postman: the request
 send the same POST to the gateway's `/api/v1/alerts/fetch` from Repeater and
 read the `body` field.
 
+<a id="ssrf-003-safe"></a>
 ### SSRF-003 — vulnerable and protected
 
 | | Operation | What it does with the same URL |
@@ -242,6 +248,7 @@ request leaves the service for a URL the allowlist does not name — the first
 because no request is ever made, the second because the guard refuses the
 origin before the fetch. Neither says the import is safe for every content.
 
+<a id="ssrf-003-tests"></a>
 ### SSRF-003 — tests
 
 `apps/notifications/test/scenarios/ssrf.int-spec.ts`, describe
@@ -255,3 +262,5 @@ sent to all three routes:
   says the value is not an alert document, and the stand-in received nothing.
 - **Counterpart 2:** `/internal/alerts/import-url` answers `400` with the
   allowlist reason, and the stand-in received nothing.
+
+`tests/e2e/scenarios-ssrf.e2e-spec.ts` sends each URL through the gateway to a sibling service of the running lab, and asserts that service's own answer came back; each counterpart receives the identical URL, and the assertion names why it was refused. The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries the request `SSRF-003: a URL fetched and read`.

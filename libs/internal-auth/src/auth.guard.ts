@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
-import { createHash, timingSafeEqual } from 'node:crypto';
 import { IS_PUBLIC_KEY, SERVICE_TOKEN_KEY } from './decorators.js';
 import { accessTokenOf, requestOf, serviceTokenOf } from './request.js';
+import { sameSecret } from './secret.js';
 import { INTERNAL_SERVICE_TOKEN } from './token.js';
 import { TokenVerifier } from './token-verifier.js';
 
@@ -58,10 +58,4 @@ export class AuthGuard implements CanActivate {
     }
     return true;
   }
-}
-
-/** Equal only to the expected value, and compared in time that does not depend on where they differ. */
-function sameSecret(given: string, expected: string): boolean {
-  const digest = (value: string) => createHash('sha256').update(value).digest();
-  return timingSafeEqual(digest(given), digest(expected));
 }

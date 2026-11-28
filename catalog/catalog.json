@@ -16,7 +16,7 @@
     "flow": "args.id -> template literal -> dataSource.query(`SELECT ... WHERE id = ${id} LIMIT 1`): the id is SQL text",
     "safeControl": "apps/trading/src/orders/orders.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -37,7 +37,7 @@
     "flow": "args.input.symbol -> `t.symbol = '${symbol}' AND t.side = '${side}'` -> createQueryBuilder.where(raw fragment)",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -58,7 +58,7 @@
     "flow": "args.q -> `m.symbol LIKE '%${q}%'` -> createQueryBuilder.where(raw fragment)",
     "safeControl": "apps/trading/src/markets/markets.resolver.ts",
     "safeControls": ["apps/trading/src/markets/markets-by-assets.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -79,7 +79,7 @@
     "flow": "args.sortBy -> orderBy(`t.${sortBy}`, direction): an expression of the caller's choosing orders the rows",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -100,7 +100,7 @@
     "flow": "args.symbol -> sqlText tag (escapes quotes, joins pieces) -> dataSource.query(one string)",
     "safeControl": "apps/trading/src/trades/high-price.resolver.ts",
     "safeControls": ["apps/trading/src/markets/markets.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -121,7 +121,7 @@
     "flow": "args.symbol -> template literal with no placeholder -> SqlClient.execute(interpolated string)",
     "safeControl": "apps/trading/src/markets/settlement-price.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -142,7 +142,7 @@
     "flow": "args.ids -> ids.join(', ') inside `... id IN (${...})` -> dataSource.query(one string)",
     "safeControl": "apps/trading/src/orders/orders-among.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -163,7 +163,7 @@
     "flow": "args.userId -> repository where clause: the caller names any user, the balances answer to the token alone",
     "safeControl": "apps/trading/src/wallets/wallet.resolver.ts",
     "safeControls": ["apps/trading/src/wallets/wallets-by-user.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -184,7 +184,7 @@
     "flow": "args.id -> OrdersService.byId -> returned to the caller with no check of who placed the order",
     "safeControl": "apps/trading/src/orders/orders.resolver.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -205,7 +205,7 @@
     "flow": "args.userId, args.amount -> WalletsService.adjust: the amount is checked, the role never is",
     "safeControl": "apps/trading/src/wallets/deposit.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -226,7 +226,7 @@
     "flow": "request body -> Object.assign(order, body) -> repository.save: status and userId are properties of the entity",
     "safeControl": "apps/trading/src/orders/update-order.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -247,7 +247,7 @@
     "flow": "args.price -> repository.update(referencePrice): no role check, any signed-in caller moves the price",
     "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -268,7 +268,7 @@
     "flow": "args.amount -> taken exactly as it came -> balance = balance - amount: a negative payout is a deposit",
     "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -289,7 +289,7 @@
     "flow": "findOneBy(balance) -> ... -> update(balance - amount): between the two statements any number of payouts run",
     "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -310,7 +310,7 @@
     "flow": "args.price -> costOf(quantity, price) -> balance charged the caller's own number",
     "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
     "safeControls": ["apps/trading/src/orders/buy-at-market.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -330,7 +330,7 @@
     "flow": "args.amount (Float) -> Math.floor(amount * 10 ** scale): 8.2 dollars is 819.9999... cents as a float",
     "safeControl": "apps/trading/src/money/convert-exact.resolver.ts",
     "safeControls": ["apps/trading/src/orders/place-order.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -351,7 +351,7 @@
     "flow": "findOneBy (status OPEN seen) -> adjust (credit) -> update (status FILLED): two writes in no transaction",
     "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
     "safeControls": ["apps/trading/src/orders/settle-order.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -371,7 +371,7 @@
     "flow": "orders.memo -> CSV cell written as it is: =zazzles-lab-marker stays a formula",
     "safeControl": "apps/trading/src/reports/reports.controller.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-inject.md",
+    "documentation": "docs/vulnerabilities/inject.md",
     "test": "apps/trading/test/scenarios/exports.int-spec.ts",
     "expectedFinding": true
   },
@@ -391,7 +391,7 @@
     "flow": ":name param -> join(REPORTS_DIRECTORY, name) -> readFile: ..%2F..%2Fpackage.json reads the service manifest",
     "safeControl": "apps/trading/src/reports/reports.controller.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-fs.md",
+    "documentation": "docs/vulnerabilities/fs.md",
     "test": "apps/trading/test/scenarios/exports.int-spec.ts",
     "expectedFinding": true
   },
@@ -412,7 +412,7 @@
     "flow": "args.limit -> repository take: the caller's number, uncapped, sizes the answer",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-res.md",
+    "documentation": "docs/vulnerabilities/res.md",
     "test": "apps/trading/test/scenarios/graph.int-spec.ts",
     "expectedFinding": true
   },
@@ -433,7 +433,7 @@
     "flow": "args.toUserId -> { ...order, user: { id: toUserId } }: the reference the gateway resolves is the caller's choice",
     "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
     "safeControls": ["apps/trading/src/orders/orders.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-gql.md",
+    "documentation": "docs/vulnerabilities/gql.md",
     "test": "apps/trading/test/scenarios/graph.int-spec.ts",
     "expectedFinding": true
   },
@@ -1113,6 +1113,493 @@
     "safeControls": ["apps/accounts/src/profile/profile.controller.ts"],
     "documentation": "docs/vulnerabilities/ssrf.md",
     "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SSRF-001",
+    "title": "A webhook posted to any URL",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-918",
+    "owasp": {
+      "top10": "A10",
+      "api": "API7"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "testWebhook(url: String!)",
+    "source": "apps/notifications/src/webhooks/test-webhook.resolver.ts",
+    "flow": "args.url → TestWebhookResolver.test → DeliveryService.deliverToUnchecked → WebhookClientService.send → fetch(url, { method: 'POST', redirect: 'follow' })",
+    "safeControl": "apps/notifications/src/settings/set-webhook-url.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/settings/register-webhook.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/ssrf.md",
+    "test": "apps/notifications/test/scenarios/ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SSRF-003",
+    "title": "A URL fetched and its body returned",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-918",
+    "owasp": {
+      "top10": "A10",
+      "api": "API7"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/alerts/fetch",
+    "source": "apps/notifications/src/alerts/alerts-fetch.controller.ts",
+    "flow": "body.url → AlertsFetchController.fetch → WebhookClientService.read → fetch(url, { method: 'GET' }) → { status, body } returned to the caller",
+    "safeControl": "apps/notifications/src/alerts/alerts-import.controller.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/alerts-import-url.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/ssrf.md",
+    "test": "apps/notifications/test/scenarios/ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "OS-001",
+    "title": "A title interpolated into a shell command",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-78",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/announcements/send",
+    "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+    "flow": "body.title → AnnouncementsSendController.send → exec(`node scripts/notify.js --title \"${input.title}\" …`) → /bin/sh -c → stdout in the delivery record",
+    "safeControl": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcements-notify.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/os.md",
+    "test": "apps/notifications/test/scenarios/os.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "OS-002",
+    "title": "A caller URL passed to curl as an argument",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-88",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "pingWebhook(url: String!)",
+    "source": "apps/notifications/src/webhooks/ping-webhook.resolver.ts",
+    "flow": "args.url → PingWebhookResolver.ping → execFile('curl', [url]) → the argument is curl's to read: a file:// URL returns a local file's content in the record",
+    "safeControl": "apps/notifications/src/webhooks/preview-webhook.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/webhooks/webhooks-test.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/os.md",
+    "test": "apps/notifications/test/scenarios/os.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "DESER-002",
+    "title": "A user expression run with eval",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-95",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "createSmartAlert(expression: String!)",
+    "source": "apps/notifications/src/alerts/smart-alert.evaluation.ts",
+    "flow": "args.expression → stored on the alert → AlertEvaluationService.evaluate → evaluateExpression → eval(alert.expression), the row in scope",
+    "safeControl": "apps/notifications/src/alerts/create-alert.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/create-rule-alert.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/deser.md",
+    "test": "apps/notifications/test/scenarios/deser.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "DESER-003",
+    "title": "An announcement body compiled as a template",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1336",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/announcements/send",
+    "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+    "flow": "body.body → AnnouncementsSendController.send → ejs.render(input.body, { user, title }) → the rendered text on the notifier's command line",
+    "safeControl": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcements-notify.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/deser.md",
+    "test": "apps/notifications/test/scenarios/deser.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "XSS-001",
+    "title": "Script in an announcement page",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-79",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "GET /internal/announcements/:id/html",
+    "source": "apps/notifications/src/announcements/announcement-html.controller.ts",
+    "flow": "stored body → AnnouncementHtmlController.html → res.render('announcement-html', { body }) → views/announcement-html.ejs writes <%- body %> → text/html, no policy",
+    "safeControl": "apps/notifications/src/announcements/announcement-by-id.controller.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcement-page.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/xss.md",
+    "test": "apps/notifications/test/scenarios/xss.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "PROTO-003",
+    "title": "A path that reaches every object",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1321",
+    "owasp": {
+      "top10": "A08"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "setChannelByPath(path: String!, enabled: Boolean!)",
+    "source": "apps/notifications/src/settings/set-channel-by-path.resolver.ts",
+    "flow": "args.path → dotProp.set(row, path, enabled) in dot-prop 4.1.0 → __proto__ followed as a segment → the row's prototype gains the channel, and every settings entity inherits it",
+    "safeControl": "apps/notifications/src/settings/set-channel.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/settings/set-channels.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/proto.md",
+    "test": "apps/notifications/test/scenarios/proto.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "INJECT-002",
+    "title": "A label forged into a log line",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-117",
+    "owasp": {
+      "top10": "A09"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "createLabeledAlert(label: String!, symbol: String!, direction: AlertDirection!, threshold: Decimal!)",
+    "source": "apps/notifications/src/alerts/create-labeled-alert.resolver.ts",
+    "flow": "args.label → Logger.log(`label accepted: ${label}`) → one message of two physical lines → the second line reads as an administrator action that never happened",
+    "safeControl": "apps/notifications/src/alerts/create-alert.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/label-record.interceptor.ts"
+    ],
+    "documentation": "docs/vulnerabilities/inject.md",
+    "test": "apps/notifications/test/scenarios/inject.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-006",
+    "title": "Another user's alerts by id",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "alertsOf(userId: ID!)",
+    "source": "apps/notifications/src/alerts/alerts-of.resolver.ts",
+    "flow": "args.userId → AlertsService.of(userId) → AlertsRepository.findByUserId(userId) → the named user's alerts answered to any caller",
+    "safeControl": "apps/notifications/src/alerts/alerts.resolver.ts",
+    "safeControls": ["apps/notifications/src/alerts/user-alerts.resolver.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/notifications/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-001",
+    "title": "Introspection and the GraphiQL IDE served to anyone",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-200",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "setting",
+    "operation": "introspection: true, graphiql: true (POST /graphql, GET /graphql with Accept: text/html)",
+    "source": "apps/gateway/src/graphql/graphql.module.ts",
+    "flow": "any caller -> POST /graphql __schema -> the whole composed graph; any browser -> GET /graphql Accept: text/html -> the GraphiQL IDE page",
+    "hardenedValue": "introspection: false and graphiql: false",
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "apps/gateway/test/scenarios/gql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-002",
+    "title": "No depth or complexity limit on the graph",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-770",
+    "owasp": {
+      "top10": "A05",
+      "api": "API4"
+    },
+    "service": "gateway",
+    "surface": "setting",
+    "operation": "no validationRules (POST /graphql)",
+    "source": "apps/gateway/src/graphql/graphql.module.ts",
+    "flow": "a document nested to any depth -> no depth rule -> the planner walks me { orders { user { orders { ... } } } } without bound",
+    "hardenedValue": "a depth rule with a limit of 5 in validationRules",
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "apps/gateway/test/scenarios/gql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-003",
+    "title": "One HTTP request carries an array of GraphQL operations",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-307",
+    "owasp": {
+      "top10": "A07",
+      "api": "API6"
+    },
+    "service": "gateway",
+    "surface": "setting",
+    "operation": "allowBatchedHttpRequests: true (POST /graphql)",
+    "source": "apps/gateway/src/graphql/graphql.module.ts",
+    "flow": "a JSON array of operations -> one HTTP request -> every operation executed, answered as an array: a brute force fits in one call",
+    "hardenedValue": "allowBatchedHttpRequests: false",
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "apps/gateway/test/scenarios/gql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-004",
+    "title": "A stack trace in every GraphQL error",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-209",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "setting",
+    "operation": "includeStacktraceInErrorResponses: true (POST /graphql)",
+    "source": "apps/gateway/src/graphql/graphql.module.ts",
+    "flow": "an invalid document -> the error formatter -> extensions.stacktrace carries the server's frames and file paths to the client",
+    "hardenedValue": "includeStacktraceInErrorResponses: false",
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "apps/gateway/test/scenarios/gql.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "GQL-007",
+    "title": "The backend federation queries answer any caller; the gateway proves itself, one subgraph asks for it, two do not",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-306",
+    "owasp": {
+      "top10": "A05",
+      "api": "API9"
+    },
+    "service": "gateway",
+    "surface": "setting",
+    "operation": "accounts and notifications ask no credential on _entities and _service; the gateway presents x-internal-token on every subgraph fetch",
+    "source": "apps/accounts/src/graphql/graphql.module.ts",
+    "flow": "a direct POST /graphql to a subgraph's own port with _entities -> no credential asked -> any user read by key, where user(id) is admin only",
+    "safeControl": "apps/gateway/src/graphql/subgraph-data.source.ts",
+    "hardenedValue": "a subgraph requires x-internal-token on _entities and _service: trading registers a plugin that answers both only to the service token and refuses any other caller with 403",
+    "documentation": "docs/vulnerabilities/gql.md",
+    "test": "tests/e2e/scenarios-graphql.e2e-spec.ts",
+    "expectedFinding": true,
+    "safeControls": ["apps/trading/src/graphql/graphql.module.ts"]
+  },
+  {
+    "id": "CONFIG-001",
+    "title": "CORS reflects any origin, with credentials",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-942",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/public/ticker",
+    "source": "apps/gateway/src/edge/edge.ts",
+    "flow": "a page on another origin fetches the public scope with credentials -> the scope's hook echoes the request's Origin with Access-Control-Allow-Credentials: true -> the browser hands the answer to the page",
+    "safeControl": "apps/gateway/src/markets/markets.controller.ts",
+    "safeControls": ["apps/gateway/src/markets/markets.controller.ts"],
+    "documentation": "docs/vulnerabilities/config.md",
+    "test": "apps/gateway/test/scenarios/config.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CONFIG-002",
+    "title": "No security headers on the public scope",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-693",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/public/status",
+    "source": "apps/gateway/src/edge/edge.ts",
+    "flow": "the public scope's hook removes the headers helmet set -> the HTML answer reaches a browser with no CSP, no nosniff, no frame options",
+    "safeControl": "apps/gateway/src/lab/lab.controller.ts",
+    "safeControls": ["apps/gateway/src/status/status.controller.ts"],
+    "documentation": "docs/vulnerabilities/config.md",
+    "test": "apps/gateway/test/scenarios/config.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CONFIG-003",
+    "title": "The OpenAPI document served with no authentication",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-200",
+    "owasp": {
+      "top10": "A05",
+      "api": "API9"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /docs, GET /docs/json",
+    "source": "apps/gateway/src/api-docs/docs.controller.ts",
+    "flow": "no token is asked -> the OpenAPI document of every route the edge carries is read in one request",
+    "safeControl": "apps/gateway/src/openapi/openapi.controller.ts",
+    "safeControls": ["apps/gateway/src/openapi/openapi.controller.ts"],
+    "documentation": "docs/vulnerabilities/config.md",
+    "test": "apps/gateway/test/scenarios/config.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "CONFIG-004",
+    "title": "A debug endpoint returns the environment and the versions",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-215",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/debug",
+    "source": "apps/gateway/src/debug/debug.controller.ts",
+    "flow": "{ ...process.env } is returned -> the run's JWT_SECRET and INTERNAL_SERVICE_TOKEN, every environment value, and the dependency versions are read with no credential",
+    "safeControl": "apps/gateway/src/lab/lab.controller.ts",
+    "safeControls": ["apps/gateway/src/diagnostics/diagnostics.controller.ts"],
+    "documentation": "docs/vulnerabilities/config.md",
+    "test": "apps/gateway/test/scenarios/config.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "REDIR-001",
+    "title": "The post-sign-in redirect follows next wherever it points",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-601",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/auth/redirect",
+    "source": "apps/gateway/src/redirects/redirect.controller.ts",
+    "flow": "the caller's next -> reply.redirect(next) -> a 302 the edge signed carries the caller to an origin no operator listed",
+    "safeControl": "apps/gateway/src/redirects/continue.controller.ts",
+    "safeControls": ["apps/gateway/src/redirects/continue.controller.ts"],
+    "documentation": "docs/vulnerabilities/redir.md",
+    "test": "apps/gateway/test/scenarios/edge.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "XSS-003",
+    "title": "The public status page greets the caller with their own markup",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-79",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/public/status",
+    "source": "apps/gateway/src/public-api/public-status.controller.ts",
+    "flow": "the name parameter is interpolated into the HTML greeting unescaped, served as text/html from a scope with no security headers",
+    "safeControl": "apps/gateway/src/status/status.controller.ts",
+    "safeControls": ["apps/gateway/src/status/status.controller.ts"],
+    "documentation": "docs/vulnerabilities/xss.md",
+    "test": "apps/gateway/test/scenarios/edge.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "COOKIE-003",
+    "title": "A preference change a cross-site form can submit",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-352",
+    "owasp": {
+      "top10": "A05"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "POST /api/v1/profile/preferences",
+    "source": "apps/gateway/src/profile/cookie-preferences.controller.ts",
+    "flow": "a page on another origin posts a form -> the browser adds the session cookie -> PUT /internal/profile is carried out on the cookie alone, no token asked",
+    "safeControl": "apps/gateway/src/profile/preferences.controller.ts",
+    "safeControls": ["apps/gateway/src/profile/preferences.controller.ts"],
+    "documentation": "docs/vulnerabilities/cookie.md",
+    "test": "apps/gateway/test/scenarios/edge.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "INFO-002",
+    "title": "The public diagnostics page answers a failure in full",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-209",
+    "owasp": {
+      "top10": "A05",
+      "api": "API8"
+    },
+    "service": "gateway",
+    "surface": "rest",
+    "operation": "GET /api/v1/public/diagnostics",
+    "source": "apps/gateway/src/public-api/public-diagnostics.controller.ts",
+    "flow": "the trading call fails -> the catch answers the failure itself: why it failed and the stack of the call, 503, to any caller",
+    "safeControl": "apps/gateway/src/markets/markets.controller.ts",
+    "safeControls": ["apps/gateway/src/markets/markets.controller.ts"],
+    "documentation": "docs/vulnerabilities/info.md",
+    "test": "apps/gateway/test/scenarios/edge.int-spec.ts",
     "expectedFinding": true
   }
 ]

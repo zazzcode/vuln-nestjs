@@ -1,9 +1,13 @@
 # `PROTO` — prototype pollution
 
-Two weaknesses of the legacy settings paths in `accounts`. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults). Both are observed through the service itself: after the pollution, a field another caller omitted gains a value.
+Three weaknesses, two of the legacy settings paths of `accounts` and one of `notifications`. A dotted preference path is walked without checks, a settings string is parsed and deep-merged without checks, and a channel is written by a path the caller brings, which the library that walks it follows like any other segment. Each is observed through the service itself: after the pollution, a field another caller omitted gains a value. The protected counterparts are in `apps/accounts/src/profile/profile.resolver.ts`, `apps/notifications/src/settings/set-channel.resolver.ts` and `apps/notifications/src/settings/set-channels.resolver.ts`; they name a key with an enum or a typed input, so no path exists to walk. The notifications scenario needs the `dot-prop` 4.1.0 pin ([SCA-006](dependencies.md)): from 4.2.1 the walk refuses `__proto__`.
 
+The `accounts` reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults), with Alice's token in `$ALICE`; the `notifications` one was run on 2026-11-27 against the service alone on `127.0.0.1:3103`. Each counterpart's claim is scoped: this operation, receiving the identical input, writes nothing outside the caller's own document for the reason given. Nothing here says any operation is secure in general.
+
+<a id="proto-001"></a>
 ## PROTO-001 — the dotted path is walked without checks
 
+<a id="proto-001-agent"></a>
 ### PROTO-001 — agent reference
 
 | | |
@@ -15,10 +19,12 @@ Two weaknesses of the legacy settings paths in `accounts`. Reproductions run aga
 | Tests | `apps/accounts/test/scenarios/proto-re-res.int-spec.ts` |
 | Expected finding | Yes, CWE-1321, SAST |
 
+<a id="proto-001-student"></a>
 ### PROTO-001 — student guide
 
 A dotted path is a walk over objects. When no segment is checked, `__proto__` is a segment like any other, and what the walk writes then is not the caller's document but the prototype every object in the process inherits from. The observation needs no access to memory: any later reader of an absent field reads the pollution.
 
+<a id="proto-001-exploit"></a>
 ### PROTO-001 — exploit lab
 
 ```console
@@ -43,6 +49,7 @@ The theme came from the prototype, not the cookie: an argument another caller om
 
 And `setPreference(name: THEME, …)` writes the caller's own theme and nothing else — the enum names the one key it may write.
 
+<a id="proto-001-safe"></a>
 ### PROTO-001 — vulnerable and protected
 
 | | Why |
@@ -51,12 +58,19 @@ And `setPreference(name: THEME, …)` writes the caller's own theme and nothing 
 | `setPreference` (protected) | An enum names the single key; no path exists to walk |
 | `setPreferencePath` (protected) | Segments are allowlisted, only own properties are followed, and the walk runs over a map with no prototype |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the path `__proto__.theme` is refused by name by `setPreferencePath`, whose segments are allowlisted and followed only as own properties over a map with no prototype, and the enum of `setPreference` has no such name, so that mutation writes only the caller's own theme. The claim is not that a dotted path can be made harmless in general; only that this path writes no prototype through them.
+
+<a id="proto-001-tests"></a>
 ### PROTO-001 — tests
 
 `apps/accounts/test/scenarios/proto-re-res.int-spec.ts`, `PROTO-001` (the last describe of the file): the path write pollutes and the omitted theme gains the marker; the enum mutation writes only its own key; the allowlisted walk refuses `__proto__`.
 
+The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries three requests: `PROTO-001: the dotted path is walked as written`, `PROTO-001: a cookie that names no theme gains one` and `PROTO-001: the allowlisted walk refuses the path`.
+
+<a id="proto-002"></a>
 ## PROTO-002 — the settings string is parsed and deep-merged
 
+<a id="proto-002-agent"></a>
 ### PROTO-002 — agent reference
 
 | | |
@@ -68,10 +82,12 @@ And `setPreference(name: THEME, …)` writes the caller's own theme and nothing 
 | Tests | `apps/accounts/test/scenarios/proto-re-res.int-spec.ts` |
 | Expected finding | Yes, CWE-1321, SAST |
 
+<a id="proto-002-student"></a>
 ### PROTO-002 — student guide
 
 `JSON.parse` does not call the `__proto__` setter: it defines an own property, which is exactly why a merge that follows keys can be pointed at the prototype. The string form gets past the body parser's guard too — the guard protects the transport, not what a resolver does with a string it was handed.
 
+<a id="proto-002-exploit"></a>
 ### PROTO-002 — exploit lab
 
 ```console
@@ -89,6 +105,7 @@ $ curl -s $RELAY/internal/sessions/resume-legacy -X POST -H 'cookie: vcx_remembe
 
 The user came from the prototype. The same document as `updatePreferences` input does not even arrive: the body parser refuses it (`Body is not valid JSON`). The same text to `importSettings` succeeds with the preferences unchanged — the parsed document is turned into a typed input whose transformation drops the key, so no merge ever sees it.
 
+<a id="proto-002-safe"></a>
 ### PROTO-002 — vulnerable and protected
 
 | | Why |
@@ -97,6 +114,115 @@ The user came from the prototype. The same document as `updatePreferences` input
 | `updatePreferences` (protected) | A typed input of four fields; the document's extra key cannot even be handed to it |
 | `importSettings` (protected) | The same text parses, and the DTO's transformation drops the key before any merge |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the document with its `__proto__` key cannot be handed to `updatePreferences` at all, the body parser refusing it, and at `importSettings` the parsed document is turned into a typed input whose transformation drops the key before any merge runs, so the preferences are as they were. The claim is not that every merge in the service is safe; only that this key reaches no merge through them.
+
+<a id="proto-002-tests"></a>
 ### PROTO-002 — tests
 
 `apps/accounts/test/scenarios/proto-re-res.int-spec.ts`, `PROTO-002`: the merge pollutes and the omitted userId gains `u-admin`; the typed input cannot be handed the document; `importSettings` leaves the preferences as they were.
+
+The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries two requests: `PROTO-002: the settings string is merged` and `PROTO-002: a cookie that names no user gains one`.
+
+<a id="proto-003"></a>
+## PROTO-003 — a path that reaches every object
+
+<a id="proto-003-agent"></a>
+### PROTO-003 — agent reference
+
+- **Scenario:** PROTO-003, prototype pollution through a settings path.
+- **Source:** `apps/notifications/src/settings/set-channel-by-path.resolver.ts`
+- **Operation:** GraphQL `setChannelByPath(path: String!, enabled: Boolean!)`, user.
+- **Sink:** `dotProp.set(row, path, enabled)` in `dot-prop` 4.1.0, whose walk follows `__proto__` as a segment.
+- **Flow:** `path = "__proto__.webhook"` → the walk leaves the caller's row → the row's prototype gains the channel, and every settings entity inherits it.
+- **Counterparts:** `apps/notifications/src/settings/set-channel.resolver.ts` (an enum names the channel), `apps/notifications/src/settings/set-channels.resolver.ts` (a typed input of fixed properties).
+- **Tests:** `apps/notifications/test/scenarios/proto.int-spec.ts`.
+- **Expected finding:** yes. A SAST tool must report a caller-supplied dotted path reaching a deep-set.
+
+<a id="proto-003-student"></a>
+### PROTO-003 — student guide
+
+The line (`apps/notifications/src/settings/set-channel-by-path.resolver.ts`):
+
+```ts
+const row = await this.settings.of(caller);
+dotProp.set(row, path, enabled); // PROTO-003 / CWE-1321: the caller's path is walked as it was given, so __proto__ reaches every object
+```
+
+`dot-prop`'s `set` walks one segment at a time: `row`, then whatever the
+first segment names, and so on to the end of the path. In 4.1.0 no segment
+is refused, and `__proto__` is a segment like any other — so
+`__proto__.webhook` does not write the caller's row at all. It writes
+`webhook` onto the row's prototype, where every settings entity in the
+process looks for the fields it does not own. From 4.2.1 the walk refuses
+`__proto__` in a path, which is why this service is pinned to 4.1.0
+([SCA-006](dependencies.md)). The author's belief: "a path is friendlier
+than a mutation per channel shape the client happens to bring."
+
+<a id="proto-003-exploit"></a>
+### PROTO-003 — exploit lab
+
+Run on 2026-11-27 against the service alone on `127.0.0.1:3103`. `$A` is
+Alice's token. The channel is off first, so the row's own answer cannot
+move:
+
+```console
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"mutation { setChannel(name: WEBHOOK, enabled: false) { webhook } }"}'
+{"data":{"setChannel":{"webhook":false}}}
+
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"mutation { setChannelByPath(path: \"__proto__.webhook\", enabled: true) { webhook } }"}'
+{"data":{"setChannelByPath":{"webhook":false}}}
+```
+
+The row answers `false` still: what the path wrote is not the row but its
+prototype. The proof is read where the service runs, and the test reads it
+there: after the mutation, `UserSettingsEntity.prototype.webhook` is `true`
+in the service's process, and a plain `({}).webhook` is `undefined`, which
+is what pins the write to the entity's prototype rather than the row. The
+walk can also be pointed one level deeper — `__proto__.__proto__.webhook`
+reaches `Object.prototype` itself — and then the damage is observable from
+outside: the next `setChannels(input: { email: false })` answers
+`INTERNAL_SERVER_ERROR`, because the process's own validation library now
+reads the polluted prototype (`grouped[metadata.propertyName].push is not
+a function`). In Postman: the request `PROTO-003: a path that reaches every
+object`. In Burp: send the two mutations from Repeater and compare the
+answers.
+
+<a id="proto-003-safe"></a>
+### PROTO-003 — vulnerable and protected
+
+| | Operation | What it does with the same path |
+| --- | --- | --- |
+| Vulnerable | `setChannelByPath` | Walks it as it was given: `__proto__.webhook` writes the prototype |
+| Counterpart 1 | `setChannel` | The channel is named by an enum; the path is not a name the enum has, `BAD_USER_INPUT` |
+| Counterpart 2 | `setChannels` | The input's properties are fixed; `path` and `enabled` are refused, `BAD_USER_INPUT` |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input:
+the path that walks onto the prototype on the first cannot be handed to
+either of them as a channel name or an input property, and nothing is
+written, in a row or anywhere else. The claim is not that typed inputs make
+every settings write safe; only that this path reaches no prototype through
+them.
+
+<a id="proto-003-tests"></a>
+### PROTO-003 — tests
+
+`apps/notifications/test/scenarios/proto.int-spec.ts`, describe `PROTO-003:
+a path that reaches every object`. One attacker value — the path
+`__proto__.webhook` with `enabled: true` — is sent to the vulnerable
+operation and to each counterpart, and the tests delete the written
+property again before the next one runs:
+
+- **The exploit:** `setChannelByPath` answers as if a channel had been
+  written, and in the service's process `UserSettingsEntity.prototype.webhook`
+  is `true` while a plain object's is `undefined`: the write left the row.
+- **Counterpart 1:** the enum refuses the value by name
+  (`BAD_USER_INPUT`: no `ChannelName` it has matches the path) and nothing
+  is polluted.
+- **Counterpart 2:** the input refuses both properties (`BAD_USER_INPUT`)
+  and nothing is polluted.
+
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries four requests: `PROTO-003: the channel is off first`, `PROTO-003: a path that reaches every object`, `PROTO-003: the enum refuses the same value` and `PROTO-003: the typed input refuses both properties`.

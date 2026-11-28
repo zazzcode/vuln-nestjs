@@ -1,12 +1,10 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   runSecret,
   request,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
 import { labStart } from '@zazzles/exchange-lab-data';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 import { AlertsRepository } from '../src/alerts/alerts.repository.js';
 import { AnnouncementsRepository } from '../src/announcements/announcements.repository.js';
 import { DeliveriesRepository } from '../src/webhooks/deliveries.repository.js';
@@ -27,11 +25,7 @@ let settings: UserSettingsRepository;
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   alerts = service.app.get(AlertsRepository);
   announcements = service.app.get(AnnouncementsRepository);
   deliveries = service.app.get(DeliveriesRepository);

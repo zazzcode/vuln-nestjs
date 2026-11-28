@@ -158,6 +158,875 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "GQL",
+      "item": [
+        {
+          "name": "GQL-001 introspection answers the whole graph to anyone",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "const names = body.data.__schema.types.map((t) => t.name);",
+                  "pm.test('gained: every type of all three services, with no credential', () => {",
+                  "  pm.expect(names).to.include.members(['User', 'Order', 'Market', 'Announcement']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ __schema { types { name } } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-001 the GraphiQL IDE is served to a browser",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('served as HTML', () => pm.expect(pm.response.headers.get('content-type')).to.include('text/html'));",
+                  "pm.test('gained: the IDE itself', () => pm.expect(pm.response.text()).to.include('<title>GraphiQL</title>'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "accept",
+                "value": "text/html",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql"
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-002 a query nested far past any limit is answered with data",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('carries no error', () => pm.expect(body.errors).to.be.undefined);",
+                  "let level = body.data.me;",
+                  "for (let walked = 0; walked < 12; walked++) {",
+                  "  level = level.orders[0].user;",
+                  "}",
+                  "pm.test('gained: data twelve levels deep, no limit stood in the way', () => {",
+                  "  pm.expect(level.id).to.eql('u-alice');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query { me { displayName orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id orders { id user { id }}}}}}}}}}}}}}}}}}}}}}}} } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-003 one request carries an array of operations",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const bodies = pm.response.json();",
+                  "pm.test('gained: an array of answers, one per operation', () => {",
+                  "  pm.expect(Array.isArray(bodies)).to.be.true;",
+                  "  pm.expect(bodies).to.have.lengthOf(3);",
+                  "  for (const body of bodies) pm.expect(body.data.__typename).to.eql('Query');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\"query\": \"{ __typename }\"},\n  {\"query\": \"{ __typename }\"},\n  {\"query\": \"{ __typename }\"}\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-004 an error answers the server stack",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 400 for the invalid field', () => pm.response.to.have.status(400));",
+                  "const error = pm.response.json().errors[0];",
+                  "pm.test('gained: the server stack in extensions.stacktrace', () => {",
+                  "  pm.expect(Array.isArray(error.extensions.stacktrace)).to.be.true;",
+                  "  pm.expect(error.extensions.stacktrace.length).to.be.above(3);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"{ me { nope } }\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GQL-007 a direct _entities call reads any user by key",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('gained: the administrator record by key, with no credential', () => {",
+                  "  pm.expect(body.data._entities[0]).to.eql({ id: 'u-admin', email: 'admin@vcx.exchange' });",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "content-type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": "{{accountsUrl}}/graphql",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"query\": \"query($r: [_Any!]!) { _entities(representations: $r) { ... on User { id email } } }\",\n  \"variables\": {\n    \"r\": [\n      {\n        \"__typename\": \"User\",\n        \"id\": \"u-admin\"\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CONFIG",
+      "item": [
+        {
+          "name": "CONFIG-001 the public ticker echoes any origin, with credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: the unlisted origin is echoed, credentials allowed', () => {",
+                  "  pm.expect(pm.response.headers.get('access-control-allow-origin')).to.eql('http://127.0.0.1:4020');",
+                  "  pm.expect(pm.response.headers.get('access-control-allow-credentials')).to.eql('true');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "origin",
+                "value": "http://127.0.0.1:4020",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/public/ticker"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-001 the markets ticker answers no CORS header at all",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the same Origin meets no CORS header at all', () => {",
+                  "  pm.expect(pm.response.headers.get('access-control-allow-origin')).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "origin",
+                "value": "http://127.0.0.1:4020",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/markets/ticker"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-002 the public status page carries no security headers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: no CSP, no nosniff, no frame options', () => {",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.be.undefined;",
+                  "  pm.expect(pm.response.headers.get('x-content-type-options')).to.be.undefined;",
+                  "  pm.expect(pm.response.headers.get('x-frame-options')).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/public/status"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-002 the default status page sets the security headers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: content-security-policy and nosniff are set by hand', () => {",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.eql(\"default-src 'self'\");",
+                  "  pm.expect(pm.response.headers.get('x-content-type-options')).to.eql('nosniff');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/status"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-003 the API document is served with no authentication",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const paths = Object.keys(pm.response.json().paths);",
+                  "pm.test('gained: the whole API surface, with no token', () => {",
+                  "  pm.expect(paths).to.include('/api/v1/health');",
+                  "  pm.expect(paths).to.include('/api/v1/auth/sign-in');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/docs/json"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-003 the guarded copy of the API document answers 401 without a token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('counterpart: the same caller is refused with 401', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/admin/openapi.json"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-004 the debug page answers the environment and the versions",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test('gained: the environment of the process, secret values included', () => {",
+                  "  pm.expect(body.environment.JWT_SECRET).to.be.a('string').and.not.be.empty;",
+                  "  pm.expect(body.dependencies['@apollo/gateway']).to.match(/^\\d+/);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/debug"
+          },
+          "response": []
+        },
+        {
+          "name": "CONFIG-004 health answers a status and nothing else",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: no versions, no environment', () => {",
+                  "  pm.expect(pm.response.json().versions).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/health"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "REDIR",
+      "item": [
+        {
+          "name": "REDIR-001 the redirect follows next wherever it points",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test(\"gained: the edge's own 302 carried the caller to another service's door — an origin no operator listed\", () => {",
+                  "  pm.expect(pm.response.json().service).to.eql('accounts');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/auth/redirect?next={{accountsUrl}}/internal/health"
+          },
+          "response": []
+        },
+        {
+          "name": "REDIR-001 continue redirects to a fixed relative path",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the same next is not read; a relative path cannot leave the edge', () => {",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.include('text/html');",
+                  "  pm.expect(pm.response.text()).to.include('VCX status');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/auth/continue?next={{accountsUrl}}/internal/health"
+          },
+          "response": []
+        },
+        {
+          "name": "REDIR-001 continue-allowlisted does not follow an unlisted origin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the origin of next is not in REDIRECT_ORIGINS, so the caller lands on the fixed path', () => {",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.include('text/html');",
+                  "  pm.expect(pm.response.text()).to.include('VCX status');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/auth/continue-allowlisted?next={{accountsUrl}}/internal/health"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "XSS",
+      "item": [
+        {
+          "name": "XSS-003 the public status page serves the caller's markup unescaped",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('served as a page', () => pm.expect(pm.response.headers.get('content-type')).to.include('text/html'));",
+                  "const marker = \"<img src=x onerror=\\\"window.__zazzles='zazzles-lab-marker'\\\">\";",
+                  "pm.test('gained: the name is the page markup, unescaped, with no policy above it', () => {",
+                  "  pm.expect(pm.response.text()).to.include(marker);",
+                  "  pm.expect(pm.response.text()).to.not.include('&lt;img');",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.be.undefined;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/public/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-003 the default status page escapes the same name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the name arrives as data, escaped, behind a policy', () => {",
+                  "  pm.expect(pm.response.text()).to.include('&lt;img src=x');",
+                  "  pm.expect(pm.response.text()).to.not.include('<img src=x');",
+                  "  pm.expect(pm.response.headers.get('content-security-policy')).to.eql(\"default-src 'self'\");",
+                  "  pm.expect(pm.response.headers.get('x-frame-options')).to.eql('DENY');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+          },
+          "response": []
+        },
+        {
+          "name": "XSS-003 status.json answers the name as a JSON value with nosniff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: JSON is not a document to run markup in, and nosniff keeps a browser from reading it as one', () => {",
+                  "  pm.expect(pm.response.headers.get('content-type')).to.include('application/json');",
+                  "  pm.expect(pm.response.headers.get('x-content-type-options')).to.eql('nosniff');",
+                  "  pm.expect(pm.response.json().caller).to.include(\"window.__zazzles='zazzles-lab-marker'\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/status.json?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "COOKIE",
+      "item": [
+        {
+          "name": "COOKIE-003 a form post with the session cookie changes the profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: the change was written from nothing but a form and the cookie the browser adds', () => {",
+                  "  pm.expect(pm.response.json().displayName).to.eql('Cross site change');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_session={{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/profile/preferences",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "displayName",
+                  "value": "Cross site change",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "COOKIE-003 preferences/json refuses the form without a bearer header",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('counterpart: a cross-site form has no bearer header to send, and the cookie alone is not the caller', () => {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_session={{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/profile/preferences/json",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "displayName",
+                  "value": "Cross site change",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "COOKIE-003 preferences/json refuses a form body even with one",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('counterpart: the body a form does send is not the application/json the route carries', () => {",
+                  "  pm.response.to.have.status(415);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/profile/preferences/json",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "displayName",
+                  "value": "Cross site change",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "COOKIE-003 preferences/csrf refuses the same post without its token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('counterpart: the token a page on another origin never saw is missing, and nothing is carried on', () => {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "cookie",
+                "value": "vcx_session={{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": "{{gatewayUrl}}/api/v1/profile/preferences/csrf",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "displayName",
+                  "value": "Cross site change",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "INFO",
+      "item": [
+        {
+          "name": "INFO-002 the public diagnostics page answers the dependency as it was seen",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('gained: the dependency raw answer, its own shape, to a caller with no credential', () => {",
+                  "  pm.expect(pm.response.json().data.markets).to.be.an('array');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/public/diagnostics"
+          },
+          "response": [],
+          "description": "With the trading service down, this same page answers the failure itself: its message and its stack, as the integration test asserts (apps/gateway/test/scenarios/edge.int-spec.ts) and the documentation module shows (docs/vulnerabilities/info.md). Against the running lab the page shows the other half of the flaw: it publishes the dependency's internals to anyone, unmasked in shape as in failure."
+        },
+        {
+          "name": "INFO-002 the markets ticker answers one shape, with no room for a failure in it",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the same dependency through the mask, a shape with one chosen key', () => {",
+                  "  pm.expect(Object.keys(pm.response.json())).to.eql(['markets']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/markets/ticker"
+          },
+          "response": [],
+          "description": "With the trading service down this route answers one masked sentence, with neither the reason nor any stack in the answer; the integration test reads that failure path and this shape is why nothing else can ride in it."
+        },
+        {
+          "name": "INFO-002 the partner ticker answers a request id with every answer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('answers 200', () => pm.response.to.have.status(200));",
+                  "pm.test('counterpart: the handle the operator quotes, and a shape with one chosen key', () => {",
+                  "  pm.expect(pm.response.headers.get('x-request-id')).to.match(/^[0-9a-f-]{36}$/);",
+                  "  pm.expect(Object.keys(pm.response.json())).to.eql(['markets']);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{gatewayUrl}}/api/v1/partner/ticker"
+          },
+          "response": [],
+          "description": "On failure this route answers the masked sentence with this request id and writes the stack to the server's log; the integration test reads that failure path."
+        }
+      ]
     }
   ]
 }

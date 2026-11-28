@@ -19,6 +19,10 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(
     AppModule,
     adapter,
+    // The JSON body parser is JsonBodyMiddleware, registered in AppModule:
+    // Nest's default parser is turned off, here and in every test that
+    // starts the service (test/support/service.ts).
+    { bodyParser: false },
   );
   stopOnSignal(app);
   await app.listen(app.get(Environment).NOTIFICATIONS_PORT, LOOPBACK_HOST);

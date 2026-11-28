@@ -34,8 +34,11 @@ import { WebhooksModule } from './webhooks/webhooks.module.js';
 export class AppModule implements NestModule {
   /**
    * The JSON body parser as an Express idiom: one NestJS middleware class,
-   * applied to the `/internal` routes that receive a JSON body. GraphQL
-   * parses its own body.
+   * applied to every route that receives a JSON body. The application is
+   * created with `bodyParser: false` (main.ts, test/support/service.ts), so
+   * this middleware is the parser: a route not listed here receives its
+   * body unparsed. GraphQL does not parse its own body either — Apollo
+   * reads what the framework parsed.
    */
   configure(consumer: MiddlewareConsumer): void {
     consumer
@@ -46,6 +49,8 @@ export class AppModule implements NestModule {
         { path: 'internal/alerts/fetch', method: RequestMethod.POST },
         { path: 'internal/webhooks/test', method: RequestMethod.POST },
         { path: 'internal/announcements/notify', method: RequestMethod.POST },
+        { path: 'internal/announcements/send', method: RequestMethod.POST },
+        { path: 'graphql', method: RequestMethod.POST },
       );
   }
 }

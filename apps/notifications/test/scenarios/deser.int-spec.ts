@@ -1,14 +1,12 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   errorCode,
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../../src/app.module.js';
+import { startNotificationsService } from '../support/service.js';
 import { WebhookReceiver } from '../support/receiver.js';
 
 // DESER-002 and DESER-003: one payload, sent to the vulnerable operation and
@@ -28,11 +26,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
 }, 300_000);

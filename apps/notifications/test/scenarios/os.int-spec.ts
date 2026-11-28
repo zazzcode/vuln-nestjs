@@ -1,4 +1,3 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -7,10 +6,9 @@ import {
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../../src/app.module.js';
+import { startNotificationsService } from '../support/service.js';
 import { WebhookReceiver } from '../support/receiver.js';
 
 // OS-001 and OS-002: one payload, sent to the vulnerable operation and to
@@ -30,11 +28,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
   markerDirectory = await mkdtemp(path.join(tmpdir(), 'vcx-os-002-'));

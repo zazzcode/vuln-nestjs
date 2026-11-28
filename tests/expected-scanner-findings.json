@@ -110,6 +110,29 @@
       "scanner": "SAST"
     },
     {
+      "id": "ACCESS-006",
+      "source": "apps/notifications/src/alerts/alerts-of.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-006-safeControl",
+      "controlFor": "ACCESS-006",
+      "source": "apps/notifications/src/alerts/alerts.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-006-safeControl",
+      "controlFor": "ACCESS-006",
+      "source": "apps/notifications/src/alerts/user-alerts.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
       "id": "ACCESS-007",
       "source": "apps/trading/src/markets/set-reference-price.resolver.ts",
       "expectedFinding": true,
@@ -317,6 +340,98 @@
       "scanner": "SAST"
     },
     {
+      "id": "CONFIG-001",
+      "source": "apps/gateway/src/edge/edge.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-942",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-001-safeControl",
+      "controlFor": "CONFIG-001",
+      "source": "apps/gateway/src/markets/markets.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-942",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-001-safeControl",
+      "controlFor": "CONFIG-001",
+      "source": "apps/gateway/src/markets/markets.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-942",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-002",
+      "source": "apps/gateway/src/edge/edge.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-693",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-002-safeControl",
+      "controlFor": "CONFIG-002",
+      "source": "apps/gateway/src/lab/lab.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-693",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-002-safeControl",
+      "controlFor": "CONFIG-002",
+      "source": "apps/gateway/src/status/status.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-693",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-003",
+      "source": "apps/gateway/src/api-docs/docs.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-003-safeControl",
+      "controlFor": "CONFIG-003",
+      "source": "apps/gateway/src/openapi/openapi.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-003-safeControl",
+      "controlFor": "CONFIG-003",
+      "source": "apps/gateway/src/openapi/openapi.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-004",
+      "source": "apps/gateway/src/debug/debug.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-215",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-004-safeControl",
+      "controlFor": "CONFIG-004",
+      "source": "apps/gateway/src/diagnostics/diagnostics.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-215",
+      "scanner": "SAST"
+    },
+    {
+      "id": "CONFIG-004-safeControl",
+      "controlFor": "CONFIG-004",
+      "source": "apps/gateway/src/lab/lab.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-215",
+      "scanner": "SAST"
+    },
+    {
       "id": "COOKIE-001",
       "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
       "expectedFinding": true,
@@ -360,6 +475,29 @@
       "source": "apps/accounts/src/auth/auth.controller.ts",
       "expectedFinding": false,
       "cwe": "CWE-1275",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-003",
+      "source": "apps/gateway/src/profile/cookie-preferences.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-352",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-003-safeControl",
+      "controlFor": "COOKIE-003",
+      "source": "apps/gateway/src/profile/preferences.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-352",
+      "scanner": "SAST"
+    },
+    {
+      "id": "COOKIE-003-safeControl",
+      "controlFor": "COOKIE-003",
+      "source": "apps/gateway/src/profile/preferences.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-352",
       "scanner": "SAST"
     },
     {
@@ -455,6 +593,52 @@
       "scanner": "SAST"
     },
     {
+      "id": "DESER-002",
+      "source": "apps/notifications/src/alerts/smart-alert.evaluation.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-95",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-002-safeControl",
+      "controlFor": "DESER-002",
+      "source": "apps/notifications/src/alerts/create-alert.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-95",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-002-safeControl",
+      "controlFor": "DESER-002",
+      "source": "apps/notifications/src/alerts/create-rule-alert.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-95",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-003",
+      "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1336",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-003-safeControl",
+      "controlFor": "DESER-003",
+      "source": "apps/notifications/src/announcements/announcements-notify.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1336",
+      "scanner": "SAST"
+    },
+    {
+      "id": "DESER-003-safeControl",
+      "controlFor": "DESER-003",
+      "source": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1336",
+      "scanner": "SAST"
+    },
+    {
       "id": "FS-001",
       "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
       "expectedFinding": true,
@@ -539,6 +723,34 @@
       "scanner": "SAST"
     },
     {
+      "id": "GQL-001",
+      "source": "apps/gateway/src/graphql/graphql.module.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-200",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-002",
+      "source": "apps/gateway/src/graphql/graphql.module.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-770",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-003",
+      "source": "apps/gateway/src/graphql/graphql.module.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-307",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-004",
+      "source": "apps/gateway/src/graphql/graphql.module.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-209",
+      "scanner": "SAST"
+    },
+    {
       "id": "GQL-005",
       "source": "apps/accounts/src/legacy/whoami.resolver.ts",
       "expectedFinding": true,
@@ -585,6 +797,29 @@
       "scanner": "SAST"
     },
     {
+      "id": "GQL-007",
+      "source": "apps/accounts/src/graphql/graphql.module.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-306",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-007-safeControl",
+      "controlFor": "GQL-007",
+      "source": "apps/gateway/src/graphql/subgraph-data.source.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-306",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-007-safeControl",
+      "controlFor": "GQL-007",
+      "source": "apps/trading/src/graphql/graphql.module.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-306",
+      "scanner": "SAST"
+    },
+    {
       "id": "INFO-001",
       "source": "apps/accounts/src/legacy/legacy-sessions.controller.ts",
       "expectedFinding": true,
@@ -608,6 +843,29 @@
       "scanner": "SAST"
     },
     {
+      "id": "INFO-002",
+      "source": "apps/gateway/src/public-api/public-diagnostics.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-209",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INFO-002-safeControl",
+      "controlFor": "INFO-002",
+      "source": "apps/gateway/src/markets/markets.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-209",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INFO-002-safeControl",
+      "controlFor": "INFO-002",
+      "source": "apps/gateway/src/markets/markets.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-209",
+      "scanner": "SAST"
+    },
+    {
       "id": "INJECT-001",
       "source": "apps/trading/src/reports/trades-raw.controller.ts",
       "expectedFinding": true,
@@ -620,6 +878,29 @@
       "source": "apps/trading/src/reports/reports.controller.ts",
       "expectedFinding": false,
       "cwe": "CWE-1236",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INJECT-002",
+      "source": "apps/notifications/src/alerts/create-labeled-alert.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-117",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INJECT-002-safeControl",
+      "controlFor": "INJECT-002",
+      "source": "apps/notifications/src/alerts/create-alert.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-117",
+      "scanner": "SAST"
+    },
+    {
+      "id": "INJECT-002-safeControl",
+      "controlFor": "INJECT-002",
+      "source": "apps/notifications/src/alerts/label-record.interceptor.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-117",
       "scanner": "SAST"
     },
     {
@@ -876,6 +1157,52 @@
       "scanner": "SAST"
     },
     {
+      "id": "OS-001",
+      "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-78",
+      "scanner": "SAST"
+    },
+    {
+      "id": "OS-001-safeControl",
+      "controlFor": "OS-001",
+      "source": "apps/notifications/src/announcements/announcements-notify.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-78",
+      "scanner": "SAST"
+    },
+    {
+      "id": "OS-001-safeControl",
+      "controlFor": "OS-001",
+      "source": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-78",
+      "scanner": "SAST"
+    },
+    {
+      "id": "OS-002",
+      "source": "apps/notifications/src/webhooks/ping-webhook.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-88",
+      "scanner": "SAST"
+    },
+    {
+      "id": "OS-002-safeControl",
+      "controlFor": "OS-002",
+      "source": "apps/notifications/src/webhooks/preview-webhook.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-88",
+      "scanner": "SAST"
+    },
+    {
+      "id": "OS-002-safeControl",
+      "controlFor": "OS-002",
+      "source": "apps/notifications/src/webhooks/webhooks-test.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-88",
+      "scanner": "SAST"
+    },
+    {
       "id": "PROTO-001",
       "source": "apps/accounts/src/legacy/preferences-path.resolver.ts",
       "expectedFinding": true,
@@ -922,6 +1249,29 @@
       "scanner": "SAST"
     },
     {
+      "id": "PROTO-003",
+      "source": "apps/notifications/src/settings/set-channel-by-path.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-003-safeControl",
+      "controlFor": "PROTO-003",
+      "source": "apps/notifications/src/settings/set-channel.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
+      "id": "PROTO-003-safeControl",
+      "controlFor": "PROTO-003",
+      "source": "apps/notifications/src/settings/set-channels.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-1321",
+      "scanner": "SAST"
+    },
+    {
       "id": "RE-001",
       "source": "apps/accounts/src/legacy/display-name.resolver.ts",
       "expectedFinding": true,
@@ -942,6 +1292,29 @@
       "source": "apps/accounts/src/profile/profile.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-1333",
+      "scanner": "SAST"
+    },
+    {
+      "id": "REDIR-001",
+      "source": "apps/gateway/src/redirects/redirect.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-601",
+      "scanner": "SAST"
+    },
+    {
+      "id": "REDIR-001-safeControl",
+      "controlFor": "REDIR-001",
+      "source": "apps/gateway/src/redirects/continue.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-601",
+      "scanner": "SAST"
+    },
+    {
+      "id": "REDIR-001-safeControl",
+      "controlFor": "REDIR-001",
+      "source": "apps/gateway/src/redirects/continue.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-601",
       "scanner": "SAST"
     },
     {
@@ -1152,6 +1525,29 @@
       "scanner": "SAST"
     },
     {
+      "id": "SSRF-001",
+      "source": "apps/notifications/src/webhooks/test-webhook.resolver.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-001-safeControl",
+      "controlFor": "SSRF-001",
+      "source": "apps/notifications/src/settings/register-webhook.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-001-safeControl",
+      "controlFor": "SSRF-001",
+      "source": "apps/notifications/src/settings/set-webhook-url.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
       "id": "SSRF-002",
       "source": "apps/accounts/src/legacy/legacy-avatar.controller.ts",
       "expectedFinding": true,
@@ -1175,6 +1571,52 @@
       "scanner": "SAST"
     },
     {
+      "id": "SSRF-003",
+      "source": "apps/notifications/src/alerts/alerts-fetch.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-003-safeControl",
+      "controlFor": "SSRF-003",
+      "source": "apps/notifications/src/alerts/alerts-import-url.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "SSRF-003-safeControl",
+      "controlFor": "SSRF-003",
+      "source": "apps/notifications/src/alerts/alerts-import.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-918",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-001",
+      "source": "apps/notifications/src/announcements/announcement-html.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-001-safeControl",
+      "controlFor": "XSS-001",
+      "source": "apps/notifications/src/announcements/announcement-by-id.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-001-safeControl",
+      "controlFor": "XSS-001",
+      "source": "apps/notifications/src/announcements/announcement-page.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
       "id": "XSS-002",
       "source": "apps/accounts/src/legacy/legacy-documents.controller.ts",
       "expectedFinding": true,
@@ -1193,6 +1635,29 @@
       "id": "XSS-002-safeControl",
       "controlFor": "XSS-002",
       "source": "apps/accounts/src/documents/documents.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-003",
+      "source": "apps/gateway/src/public-api/public-status.controller.ts",
+      "expectedFinding": true,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-003-safeControl",
+      "controlFor": "XSS-003",
+      "source": "apps/gateway/src/status/status.controller.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-79",
+      "scanner": "SAST"
+    },
+    {
+      "id": "XSS-003-safeControl",
+      "controlFor": "XSS-003",
+      "source": "apps/gateway/src/status/status.controller.ts",
       "expectedFinding": false,
       "cwe": "CWE-79",
       "scanner": "SAST"
