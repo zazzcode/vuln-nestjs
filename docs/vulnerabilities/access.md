@@ -53,7 +53,6 @@ Bob's email and preferences, on Alice's token. `me` answers the caller's own rec
 
 The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries the request `ACCESS-001: Alice reads Bob's preferences by id`.
 
-
 <a id="access-002"></a>
 ## ACCESS-002 — `orderDetails`: no ownership check
 
@@ -114,7 +113,6 @@ Alice gained Bob's order: its id, his note, the price he named.
 - **Counterpart 2:** the entity counterpart refuses it: `FORBIDDEN`, no identifier to change.
 
 The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `ACCESS-002 orderDetails reads Bob’s order`.
-
 
 <a id="access-003"></a>
 ## ACCESS-003 — a user's token opens an administrator's account
@@ -444,7 +442,6 @@ One whole bitcoin for one dollar: the price a market fills at moved on a user's 
 
 The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `ACCESS-007 setReferencePrice moves a market, then a bitcoin costs a dollar`.
 
-
 <a id="access-008"></a>
 ## ACCESS-008 — `walletOf`: another user's balances by id
 
@@ -508,7 +505,6 @@ Alice gained Erin's six balances, her 500.00 dollars among them.
 
 The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `ACCESS-008 walletOf reads another user’s balances`.
 
-
 <a id="access-009"></a>
 ## ACCESS-009 — `creditWallet`: a user credits a wallet
 
@@ -570,7 +566,6 @@ Alice credited herself five hundred dollars on her own token.
 - **Counterpart 2:** the REST counterpart refuses a user: 403, the roles guard.
 
 The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `ACCESS-009 creditWallet credits the caller`.
-
 
 <a id="access-010"></a>
 ## ACCESS-010 — `PATCH /internal/orders/:id`: mass assignment
