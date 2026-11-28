@@ -12,6 +12,25 @@ import { OpenapiService } from '../../src/openapi/openapi.service.js';
 import { standInSubgraphs } from '../subgraphs.js';
 
 /**
+ * Whether a header name is a security header, by the conventions the security
+ * middleware of the platform follows (`x-*`, `cross-origin-*`, and the spelled
+ * out policies). Derived on each answer rather than copied from any one
+ * middleware's current set, so the comparison below survives an upgrade.
+ */
+function isSecurityHeader(name: string): boolean {
+  return (
+    name.startsWith('x-') ||
+    name.startsWith('cross-origin-') ||
+    [
+      'content-security-policy',
+      'permissions-policy',
+      'referrer-policy',
+      'strict-transport-security',
+    ].includes(name)
+  );
+}
+
+/**
  * The security-misconfiguration scenarios of the gateway's public scope and
  * open pages: one payload, sent to the vulnerable endpoint and to each
  * protected counterpart.
@@ -128,6 +147,29 @@ describe('the configuration scenarios', () => {
     expect(response.headers['content-security-policy']).toBeUndefined();
     expect(response.headers['x-content-type-options']).toBeUndefined();
     expect(response.headers['x-frame-options']).toBeUndefined();
+
+    // The set is derived, not hand-kept: whatever security header the default
+    // scope's answer carries, this scope's answer must not carry. A helmet
+    // upgrade that adds a header then widens the comparison by itself, so the
+    // public scope cannot drift toward safe without this test seeing it.
+    const defaultScope = await app.inject({
+      method: 'GET',
+      url: '/api/v1/health',
+    });
+    const carried = Object.keys(defaultScope.headers).filter((name) =>
+      isSecurityHeader(name),
+    );
+    // The default answer does carry security headers for the comparison.
+    expect(carried).toEqual(
+      expect.arrayContaining([
+        'content-security-policy',
+        'x-content-type-options',
+        'x-frame-options',
+      ]),
+    );
+    for (const name of carried) {
+      expect(response.headers[name]).toBeUndefined();
+    }
   });
 
   test('CONFIG-002 counterpart 1: health answers with helmet on', async () => {
