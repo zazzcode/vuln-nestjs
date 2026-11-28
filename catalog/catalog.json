@@ -268,7 +268,7 @@
     "flow": "args.amount -> taken exactly as it came -> balance = balance - amount: a negative payout is a deposit",
     "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -289,7 +289,7 @@
     "flow": "findOneBy(balance) -> ... -> update(balance - amount): between the two statements any number of payouts run",
     "safeControl": "apps/trading/src/wallets/withdraw.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -310,7 +310,7 @@
     "flow": "args.price -> costOf(quantity, price) -> balance charged the caller's own number",
     "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
     "safeControls": ["apps/trading/src/orders/buy-at-market.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -330,7 +330,7 @@
     "flow": "args.amount (Float) -> Math.floor(amount * 10 ** scale): 8.2 dollars is 819.9999... cents as a float",
     "safeControl": "apps/trading/src/money/convert-exact.resolver.ts",
     "safeControls": ["apps/trading/src/orders/place-order.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
@@ -351,7 +351,7 @@
     "flow": "findOneBy (status OPEN seen) -> adjust (credit) -> update (status FILLED): two writes in no transaction",
     "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
     "safeControls": ["apps/trading/src/orders/settle-order.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-logic.md",
+    "documentation": "docs/vulnerabilities/logic.md",
     "test": "apps/trading/test/scenarios/logic.int-spec.ts",
     "expectedFinding": true
   },
