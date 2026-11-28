@@ -11,6 +11,8 @@ import {
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module.js';
 import { Environment } from './config/environment.js';
+import { registerEdge } from './edge/edge.js';
+import { OpenapiService } from './openapi/openapi.service.js';
 
 /**
  * HTTP/1.1 at the edge. curl, Postman, Newman and Burp negotiate HTTP/2 only
@@ -24,6 +26,10 @@ async function bootstrap() {
     adapter,
   );
   stopOnSignal(app);
+  // The edge's security middleware, on the routes the modules just registered.
+  await registerEdge(app);
+  // The API document, built once from the routes that exist.
+  app.get(OpenapiService).buildFor(app);
   await app.listen(app.get(Environment).GATEWAY_PORT, LOOPBACK_HOST);
   assertLoopbackListener(app.getHttpServer().address());
 }

@@ -32,9 +32,9 @@ The gateway's own default configuration is weak on purpose. A local sample that 
 | Scope | Security headers | CORS | Holds |
 | --- | --- | --- | --- |
 | Default | `@fastify/helmet` | none, so a browser refuses a cross-origin read | `/api/v1/health`, `/api/v1/status`, `/api/v1/markets/*`, `/api/v1/partner/*`, the pass-through |
-| `/api/v1/public/*` | off | `@fastify/cors` with `origin: true` and `credentials: true`, which reflects any origin | The three public endpoints in section 4 |
+| `/api/v1/public/*` | off | any origin reflected, with credentials — first planned as `@fastify/cors` with `origin: true` and `credentials: true`; built as three headers written by hand, see below | The three public endpoints in section 4 |
 
-The `public` scope is a Fastify plugin registered with a prefix, which is how a small part of an application ends up with weaker settings than the rest.
+The `public` scope is an `onRequest` hook on the root instance, gated on the `/api/v1/public` prefix, which is how a small part of an application ends up with weaker settings than the rest. It was first planned as a Fastify plugin registered with a prefix, answering CORS through `@fastify/cors`. A plugin registered with a prefix does not reach the routes the root instance holds, where Nest's controllers are, so its hooks never fired for them: observed on 2026-11-27 and recorded in [002d-gateway.md](../../specifications/002d-gateway.md), section 13. What the table asks of the scope is unchanged.
 
 ## 4. API
 
