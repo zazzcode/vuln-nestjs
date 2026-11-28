@@ -1,26 +1,13 @@
 # `INJECT` — injection into documents and logs
 
-2 scenarios: `INJECT-001` in `trading`, `INJECT-002` in `notifications`.
+Two weaknesses that write a caller's string into something a machine parses. An order's memo is written into a CSV as it is, so a spreadsheet opens it as a formula (`trading`); an alert label is written into a log line as it is, so a newline in it forges a line of the caller's (`notifications`). The protected counterparts carry the same string as data: one writes text, one answers JSON, one logs the label encoded inside a value on one line, one makes it a field of a structured record.
 
-`INJECT-002` is the notifications scenario of the family; `INJECT-001`, trading's, follows at the end of the module.
+The `trading` reproduction was run on 2026-11-27 against the service alone on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`, with Alice's token in `$A`; the `notifications` one the same day, against the service alone on `127.0.0.1:3103`, with `$A` Alice's token. Each counterpart's claim is scoped: this operation, receiving the identical input, keeps the string data for the reason given. Nothing here says any export or log is secure in general.
 
-**In `notifications`.**
-
-**Family:** `INJECT` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A09
-
-An alert's label is free text, and one of the ways of creating an alert
-writes it into a log line as it is. A newline in the label ends the log's
-line and starts one of the caller's own, formatted like every real line
-around it. The two protected ways to record a label carry it as data: one
-encodes it inside a JSON value on one line, the other makes it a field of a
-structured record.
-
-| ID | The operation | The sink | CWE |
-| --- | --- | --- | --- |
-| INJECT-002 | GraphQL `createLabeledAlert(label: String!, …)` | `` this.logger.log(`label accepted: ${label}`) ``, the label unencoded in the message | CWE-117 |
-
+<a id="inject-002"></a>
 ## INJECT-002 — a label that forges a log line
 
+<a id="inject-002-agent"></a>
 ### INJECT-002 — agent reference
 
 - **Scenario:** INJECT-002, log injection through an alert label.
@@ -32,6 +19,7 @@ structured record.
 - **Tests:** `apps/notifications/test/scenarios/inject.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report caller text concatenated into a log message unencoded.
 
+<a id="inject-002-student"></a>
 ### INJECT-002 — student guide
 
 The line (`apps/notifications/src/alerts/create-labeled-alert.resolver.ts`):
@@ -51,6 +39,7 @@ happened — a defacement of the audit trail, or a step social-engineering a
 operator who greps the log. The author's belief: "the label is the
 caller's own text, and logs are only for us."
 
+<a id="inject-002-exploit"></a>
 ### INJECT-002 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`. `$A` is
@@ -86,6 +75,7 @@ the request `INJECT-002: a label that forges a log line`, which asserts the
 label was stored as it was sent. In Burp: send the mutation from Repeater
 and read the service's output.
 
+<a id="inject-002-safe"></a>
 ### INJECT-002 — vulnerable and protected
 
 | | Operation | What it does with the same label |
@@ -100,6 +90,7 @@ either of them, because both carry it inside a value no reader of the log
 parses as a line. The claim is not that JSON-encoding makes every log
 forgery impossible; only that this label cannot forge a line through them.
 
+<a id="inject-002-tests"></a>
 ### INJECT-002 — tests
 
 `apps/notifications/test/scenarios/inject.int-spec.ts`, describe `INJECT-002:
@@ -117,20 +108,26 @@ the counterpart, with the logger spied where the service runs:
 - **Counterpart 2:** one structured record, on one line, in which `label`
   is a field whose value is the payload.
 
-**In `trading`.**
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries two requests: `INJECT-002: a label that forges a log line` and `INJECT-002: the counterpart carries the same label as data`.
+<a id="inject-001"></a>
+## INJECT-001 — spreadsheet-formula injection in a CSV export
 
-**Family:** `INJECT` · **Service:** `trading` · **Surface:** REST · **Scanner:** SAST · **OWASP:** A03
+<a id="inject-001-agent"></a>
+### INJECT-001 — agent reference
 
-An order's `memo` is free text. Written to a CSV as it is, a memo that begins
-with `=`, `+`, `-` or `@` is a formula to whichever spreadsheet opens the
-export — on the machine of whoever downloads it, in the context of whoever
-opened the file.
+- **Service:** `trading`.
+- **Source:** `apps/trading/src/reports/trades-raw.controller.ts`
+- **Operation:** `GET /internal/reports/trades-raw.csv`, REST, a signed-in user.
+- **Sink:** `row.o_memo ?? ''`: the memo written to the CSV as it is.
+- **Flow:** an order's `memo` → the CSV cell written as it is → `=zazzles-lab-marker` stays a formula.
+- **Counterparts:** `apps/trading/src/reports/reports.controller.ts`: `GET /internal/reports/trades.csv` (every cell text: a cell that begins like a formula is prefixed with an apostrophe), `GET /internal/reports/trades.json` (JSON, an attachment).
+- **Tests:** `apps/trading/test/scenarios/exports.int-spec.ts`.
+- **Expected finding:** yes. A SAST tool must report caller text written into a spreadsheet cell as it is: CWE-1236.
 
-The reproduction was run on 2026-11-27 against the service alone, on
-`127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`. `$A` is
-Alice's token. Alice's seed order carries the memo `=zazzles-lab-marker`.
+<a id="inject-001-student"></a>
+### INJECT-001 — student guide
 
-## INJECT-001 — `GET /internal/reports/trades-raw.csv`
+An order's `memo` is free text. Written to a CSV as it is, a memo that begins with `=`, `+`, `-` or `@` is a formula to whichever spreadsheet opens the export: on the machine of whoever downloads it, in the context of whoever opened the file. Nothing in the export says the cell is text, so the spreadsheet does not either.
 
 The line (`apps/trading/src/reports/trades-raw.controller.ts`):
 
@@ -138,6 +135,11 @@ The line (`apps/trading/src/reports/trades-raw.controller.ts`):
 // INJECT-001 / CWE-1236: the memo is written to the CSV as it is; a cell that starts with = is a formula
 row.o_memo ?? '',
 ```
+
+<a id="inject-001-exploit"></a>
+### INJECT-001 — exploit lab
+
+The reproduction was run on 2026-11-27 against the service alone, on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`. `$A` is Alice's token. Alice's seed order carries the memo `=zazzles-lab-marker`.
 
 ```console
 $ curl -s $URL/internal/reports/trades-raw.csv -H "authorization: Bearer $A"
@@ -147,11 +149,7 @@ id,symbol,side,price,quantity,fee,memo
 8,SOL-USD,SELL,15200,100000000,152,
 ```
 
-Two cells of the export are formulas: what was gained is code that runs when
-the file is opened, written by nothing more than a memo.
-
-**Counterpart 1 — `GET /internal/reports/trades.csv`.** The same export, every
-cell text: a cell that begins like a formula is prefixed with an apostrophe.
+Two cells of the export are formulas: what was gained is code that runs when the file is opened, written by nothing more than a memo. The same memo through the counterparts. `GET /internal/reports/trades.csv`, the same export with every cell text:
 
 ```console
 $ curl -s $URL/internal/reports/trades.csv -H "authorization: Bearer $A"
@@ -161,8 +159,7 @@ id,symbol,side,price,quantity,fee,memo
 8,SOL-USD,SELL,152.00,1.00000000,1.52,
 ```
 
-**Counterpart 2 — `GET /internal/reports/trades.json`.** JSON, an attachment:
-nothing parses a JSON string as a formula.
+`GET /internal/reports/trades.json`, JSON and an attachment: nothing parses a JSON string as a formula.
 
 ```console
 $ curl -s -D - -o trades.json $URL/internal/reports/trades.json -H "authorization: Bearer $A" | grep -iE 'content-type|content-disposition'
@@ -174,15 +171,24 @@ $ head -c 120 trades.json
 
 The memo is still the same string — as data, not as a cell.
 
-## The tests
+<a id="inject-001-safe"></a>
+### INJECT-001 — vulnerable and protected
 
-`apps/trading/test/scenarios/exports.int-spec.ts` — one payload, sent to the
-raw export and to both counterparts. The exploit assertion names what was
-gained (a formula cell); the counterpart assertions name why it is refused.
-The Postman collection `postman/trading/` carries one request in its `INJECT`
-folder.
+| | Operation | What it does with the same memo |
+| --- | --- | --- |
+| Vulnerable | `GET /internal/reports/trades-raw.csv` | Writes it into the CSV as it is: a cell that begins with `=` is a formula to the spreadsheet that opens the file |
+| Counterpart 1 | `GET /internal/reports/trades.csv` | Writes every cell as text: a cell that begins like a formula is prefixed with an apostrophe |
+| Counterpart 2 | `GET /internal/reports/trades.json` | Answers JSON, as an attachment: nothing parses a JSON string as a formula |
 
-## Scope of the counterparts
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the memo that reaches the first export as a formula reaches the second as text, the apostrophe first, and the third as a value inside a JSON document. The claim is not that an apostrophe or a JSON answer is harmless in every reader; only that this memo opens as no formula through them.
 
-Each counterpart claim is scoped: this export, carrying this memo, writes text.
-Nothing here says any export is secure in general.
+<a id="inject-001-tests"></a>
+### INJECT-001 — tests
+
+`apps/trading/test/scenarios/exports.int-spec.ts`, describe `INJECT-001 — trades-raw.csv writes the memo as it is`. One payload — Alice's seed order, whose memo is `=zazzles-lab-marker` — read through the three exports:
+
+- **The exploit:** the raw export's cell is `=zazzles-lab-marker`, with no apostrophe before it.
+- **Counterpart 1:** the CSV writes the same memo as text, an apostrophe first.
+- **Counterpart 2:** the JSON export answers `application/json`, as an attachment, with the memo as it was sent.
+
+The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `INJECT-001 the raw export writes the memo as a formula`.
