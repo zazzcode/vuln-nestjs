@@ -16,7 +16,7 @@
     "flow": "args.id -> template literal -> dataSource.query(`SELECT ... WHERE id = ${id} LIMIT 1`): the id is SQL text",
     "safeControl": "apps/trading/src/orders/orders.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -37,7 +37,7 @@
     "flow": "args.input.symbol -> `t.symbol = '${symbol}' AND t.side = '${side}'` -> createQueryBuilder.where(raw fragment)",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -58,7 +58,7 @@
     "flow": "args.q -> `m.symbol LIKE '%${q}%'` -> createQueryBuilder.where(raw fragment)",
     "safeControl": "apps/trading/src/markets/markets.resolver.ts",
     "safeControls": ["apps/trading/src/markets/markets-by-assets.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -79,7 +79,7 @@
     "flow": "args.sortBy -> orderBy(`t.${sortBy}`, direction): an expression of the caller's choosing orders the rows",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -100,7 +100,7 @@
     "flow": "args.symbol -> sqlText tag (escapes quotes, joins pieces) -> dataSource.query(one string)",
     "safeControl": "apps/trading/src/trades/high-price.resolver.ts",
     "safeControls": ["apps/trading/src/markets/markets.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -121,7 +121,7 @@
     "flow": "args.symbol -> template literal with no placeholder -> SqlClient.execute(interpolated string)",
     "safeControl": "apps/trading/src/markets/settlement-price.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
@@ -142,7 +142,7 @@
     "flow": "args.ids -> ids.join(', ') inside `... id IN (${...})` -> dataSource.query(one string)",
     "safeControl": "apps/trading/src/orders/orders-among.resolver.ts",
     "safeControls": ["apps/trading/src/orders/order-by-reference.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-sql.md",
+    "documentation": "docs/vulnerabilities/sql.md",
     "test": "apps/trading/test/scenarios/sql.int-spec.ts",
     "expectedFinding": true
   },
