@@ -99,6 +99,28 @@ describe('the federated graph over three stand-ins', () => {
     expect(seen?.headers['x-request-id']).toBeUndefined();
   });
 
+  test('forwarded a session cookie to the service that owns the field, and nothing else of the caller', async () => {
+    const before = subgraphs.trading.reached.length;
+    const answer = await query('{ orders { id } }', {
+      cookie: 'vcx_session=zazzles-lab-marker',
+      'x-request-id': 'zazzles-lab-marker',
+    });
+
+    expect(answer.errors).toBeUndefined();
+    const seen = subgraphs.trading.reached
+      .slice(before)
+      .find(
+        (reached) =>
+          typeof (reached.body as { query?: string })?.query === 'string' &&
+          (reached.body as { query: string }).query.includes('orders'),
+      );
+    // The session cookie crosses with the query, as the authorization header
+    // does: the service that owns a field sees the caller's session.
+    expect(seen?.headers.cookie).toBe('vcx_session=zazzles-lab-marker');
+    // And a header the caller sent that is not in the forwarded list does not.
+    expect(seen?.headers['x-request-id']).toBeUndefined();
+  });
+
   test('presented the internal service token on every subgraph fetch, composition included', () => {
     for (const standIn of [
       subgraphs.accounts,
