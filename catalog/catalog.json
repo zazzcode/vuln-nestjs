@@ -391,7 +391,7 @@
     "flow": ":name param -> join(REPORTS_DIRECTORY, name) -> readFile: ..%2F..%2Fpackage.json reads the service manifest",
     "safeControl": "apps/trading/src/reports/reports.controller.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-fs.md",
+    "documentation": "docs/vulnerabilities/fs.md",
     "test": "apps/trading/test/scenarios/exports.int-spec.ts",
     "expectedFinding": true
   },
