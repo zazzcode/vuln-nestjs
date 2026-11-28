@@ -1114,5 +1114,225 @@
     "documentation": "docs/vulnerabilities/ssrf.md",
     "test": "apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts",
     "expectedFinding": true
+  },
+  {
+    "id": "SSRF-001",
+    "title": "A webhook posted to any URL",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-918",
+    "owasp": {
+      "top10": "A10",
+      "api": "API7"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "testWebhook(url: String!)",
+    "source": "apps/notifications/src/webhooks/test-webhook.resolver.ts",
+    "flow": "args.url → TestWebhookResolver.test → DeliveryService.deliverToUnchecked → WebhookClientService.send → fetch(url, { method: 'POST', redirect: 'follow' })",
+    "safeControl": "apps/notifications/src/settings/set-webhook-url.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/settings/register-webhook.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/ssrf.md",
+    "test": "apps/notifications/test/scenarios/ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "SSRF-003",
+    "title": "A URL fetched and its body returned",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-918",
+    "owasp": {
+      "top10": "A10",
+      "api": "API7"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/alerts/fetch",
+    "source": "apps/notifications/src/alerts/alerts-fetch.controller.ts",
+    "flow": "body.url → AlertsFetchController.fetch → WebhookClientService.read → fetch(url, { method: 'GET' }) → { status, body } returned to the caller",
+    "safeControl": "apps/notifications/src/alerts/alerts-import.controller.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/alerts-import-url.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/ssrf.md",
+    "test": "apps/notifications/test/scenarios/ssrf.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "OS-001",
+    "title": "A title interpolated into a shell command",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-78",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/announcements/send",
+    "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+    "flow": "body.title → AnnouncementsSendController.send → exec(`node scripts/notify.js --title \"${input.title}\" …`) → /bin/sh -c → stdout in the delivery record",
+    "safeControl": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcements-notify.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/os.md",
+    "test": "apps/notifications/test/scenarios/os.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "OS-002",
+    "title": "A caller URL passed to curl as an argument",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-88",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "pingWebhook(url: String!)",
+    "source": "apps/notifications/src/webhooks/ping-webhook.resolver.ts",
+    "flow": "args.url → PingWebhookResolver.ping → execFile('curl', [url]) → the argument is curl's to read: a file:// URL returns a local file's content in the record",
+    "safeControl": "apps/notifications/src/webhooks/preview-webhook.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/webhooks/webhooks-test.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/os.md",
+    "test": "apps/notifications/test/scenarios/os.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "DESER-002",
+    "title": "A user expression run with eval",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-95",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "createSmartAlert(expression: String!)",
+    "source": "apps/notifications/src/alerts/smart-alert.evaluation.ts",
+    "flow": "args.expression → stored on the alert → AlertEvaluationService.evaluate → evaluateExpression → eval(alert.expression), the row in scope",
+    "safeControl": "apps/notifications/src/alerts/create-alert.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/create-rule-alert.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/deser.md",
+    "test": "apps/notifications/test/scenarios/deser.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "DESER-003",
+    "title": "An announcement body compiled as a template",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1336",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "POST /internal/announcements/send",
+    "source": "apps/notifications/src/announcements/announcements-send.controller.ts",
+    "flow": "body.body → AnnouncementsSendController.send → ejs.render(input.body, { user, title }) → the rendered text on the notifier's command line",
+    "safeControl": "apps/notifications/src/announcements/broadcast-announcement.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcements-notify.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/deser.md",
+    "test": "apps/notifications/test/scenarios/deser.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "XSS-001",
+    "title": "Script in an announcement page",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-79",
+    "owasp": {
+      "top10": "A03"
+    },
+    "service": "notifications",
+    "surface": "rest",
+    "operation": "GET /internal/announcements/:id/html",
+    "source": "apps/notifications/src/announcements/announcement-html.controller.ts",
+    "flow": "stored body → AnnouncementHtmlController.html → res.render('announcement-html', { body }) → views/announcement-html.ejs writes <%- body %> → text/html, no policy",
+    "safeControl": "apps/notifications/src/announcements/announcement-by-id.controller.ts",
+    "safeControls": [
+      "apps/notifications/src/announcements/announcement-page.controller.ts"
+    ],
+    "documentation": "docs/vulnerabilities/xss.md",
+    "test": "apps/notifications/test/scenarios/xss.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "PROTO-003",
+    "title": "A path that reaches every object",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-1321",
+    "owasp": {
+      "top10": "A08"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "setChannelByPath(path: String!, enabled: Boolean!)",
+    "source": "apps/notifications/src/settings/set-channel-by-path.resolver.ts",
+    "flow": "args.path → dotProp.set(row, path, enabled) in dot-prop 4.1.0 → __proto__ followed as a segment → the row's prototype gains the channel, and every settings entity inherits it",
+    "safeControl": "apps/notifications/src/settings/set-channel.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/settings/set-channels.resolver.ts"
+    ],
+    "documentation": "docs/vulnerabilities/proto.md",
+    "test": "apps/notifications/test/scenarios/proto.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "INJECT-002",
+    "title": "A label forged into a log line",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-117",
+    "owasp": {
+      "top10": "A09"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "createLabeledAlert(label: String!, symbol: String!, direction: AlertDirection!, threshold: Decimal!)",
+    "source": "apps/notifications/src/alerts/create-labeled-alert.resolver.ts",
+    "flow": "args.label → Logger.log(`label accepted: ${label}`) → one message of two physical lines → the second line reads as an administrator action that never happened",
+    "safeControl": "apps/notifications/src/alerts/create-alert.resolver.ts",
+    "safeControls": [
+      "apps/notifications/src/alerts/label-record.interceptor.ts"
+    ],
+    "documentation": "docs/vulnerabilities/inject.md",
+    "test": "apps/notifications/test/scenarios/inject.int-spec.ts",
+    "expectedFinding": true
+  },
+  {
+    "id": "ACCESS-006",
+    "title": "Another user's alerts by id",
+    "status": "active",
+    "scanner": "SAST",
+    "cwe": "CWE-639",
+    "owasp": {
+      "top10": "A01"
+    },
+    "service": "notifications",
+    "surface": "graphql",
+    "operation": "alertsOf(userId: ID!)",
+    "source": "apps/notifications/src/alerts/alerts-of.resolver.ts",
+    "flow": "args.userId → AlertsService.of(userId) → AlertsRepository.findByUserId(userId) → the named user's alerts answered to any caller",
+    "safeControl": "apps/notifications/src/alerts/alerts.resolver.ts",
+    "safeControls": ["apps/notifications/src/alerts/user-alerts.resolver.ts"],
+    "documentation": "docs/vulnerabilities/access.md",
+    "test": "apps/notifications/test/scenarios/access.int-spec.ts",
+    "expectedFinding": true
   }
 ]
