@@ -46,6 +46,62 @@ const post = async (
   };
 };
 
+/**
+ * One POST to the gateway's own GraphQL endpoint, carrying the HTTP status of
+ * the answer: a batched call answers an array, so the body is parsed and left
+ * for each test to read as what it sent.
+ */
+const call = async (
+  payload: unknown,
+  headers: Record<string, string> = {},
+): Promise<{ status: number; body: unknown }> => {
+  const response = await request(`${lab().url}/graphql`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', ...headers },
+    body: typeof payload === 'string' ? payload : JSON.stringify(payload),
+  });
+  return { status: response.status, body: await response.json() };
+};
+
+// GQL-001 to GQL-004 are process-wide settings of the gateway's graph. Each
+// test asserts the exploit; the hardened value is named beside it, because a
+// setting has no protected twin to send the same payload to.
+
+// GQL-001 — introspection, and the IDE, served to anyone. Hardened value:
+// `introspection: false` and `graphiql: false`, in the factory's `server:` block.
+describe('GQL-001 — introspection and the IDE, served to anyone', () => {
+  test('GQL-001: a caller with no token reads the whole graph from __schema', async () => {
+    const answer = await call({
+      query: '{ __schema { queryType { name } types { name } } __typename }',
+    });
+
+    expect(answer.status).toBe(200);
+    const body = answer.body as GraphQLResponse;
+    expect(body.errors).toBeUndefined();
+    const names: string[] = (
+      body.data as { __schema: { types: { name: string }[] } }
+    ).__schema.types.map((type) => type.name);
+    // What was gained: the whole composed graph — every type of the three real
+    // services, its entities and its fields, with no credential at all.
+    expect(names).toEqual(
+      expect.arrayContaining(['User', 'Order', 'Market', 'Announcement']),
+    );
+  });
+
+  test('GQL-001: a browser that opens the endpoint is served the GraphiQL IDE', async () => {
+    const response = await request(`${lab().url}/graphql`, {
+      headers: { accept: 'text/html' },
+    });
+    const page = await response.text();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    // What was gained: the IDE itself, served by the running lab, ready to run
+    // queries against the graph it composed from the three services.
+    expect(page).toContain('<title>GraphiQL</title>');
+  });
+});
+
 describe('GQL-007 — the backend federation queries answer any caller', () => {
   const SCHEMA = '{ _service { sdl } }';
   const ADMINISTRATOR_BY_KEY =
