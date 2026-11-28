@@ -136,6 +136,37 @@ describe('GQL-002 — a query of unbounded depth is answered', () => {
   });
 });
 
+// GQL-003 — one HTTP request may carry many operations, answered as an array.
+// Hardened value: `allowBatchedHttpRequests: false`.
+describe('GQL-003 — one request, three operations, three answers', () => {
+  test('GQL-003: one request carrying three operations is answered as three', async () => {
+    const answer = await call(
+      [
+        { query: '{ __typename }' },
+        { query: 'query { markets { symbol } }' },
+        { query: '{ announcements { id title } }' },
+      ],
+      { authorization: `Bearer ${tokenOf('u-alice')}` },
+    );
+
+    expect(answer.status).toBe(200);
+    const bodies = answer.body as GraphQLResponse[];
+    // What was gained: an array of operations in one call, each answered by
+    // the service that owns it — trading its markets, notifications its
+    // announcements — the shape a brute force uses to fit many guesses in one
+    // request.
+    expect(Array.isArray(bodies)).toBe(true);
+    expect(bodies).toHaveLength(3);
+    expect((bodies[0]?.data as { __typename: string }).__typename).toBe(
+      'Query',
+    );
+    expect((bodies[1]?.data as { markets: unknown[] }).markets).toHaveLength(5);
+    expect(
+      (bodies[2]?.data as { announcements: unknown }).announcements,
+    ).toEqual([{ id: '1', title: 'Welcome to VCX' }]);
+  });
+});
+
 describe('GQL-007 — the backend federation queries answer any caller', () => {
   const SCHEMA = '{ _service { sdl } }';
   const ADMINISTRATOR_BY_KEY =
