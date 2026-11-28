@@ -121,3 +121,83 @@ describe('SSRF-001 — a webhook posted inside the lab', () => {
     await reset();
   });
 });
+
+/** One JSON POST through the gateway's pass-through, with its status and body. */
+const post = async (
+  path: string,
+  body: unknown,
+  token: string,
+): Promise<{ status: number; body: unknown }> => {
+  const response = await request(`${lab().url}${path}`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+  });
+  return { status: response.status, body: await response.json() };
+};
+
+// SSRF-002 — the avatar URL is fetched wherever it points. Hardened value:
+// the two operations that never make an unguarded request — one stores the
+// URL as data, the other fetches through an origin allowlist.
+describe('SSRF-002 — the avatar URL is fetched wherever it points', () => {
+  // One payload: notifications' own listener, a sibling service's internal
+  // endpoint on the transport it speaks.
+  const url = () => `${lab().serviceUrl('notifications')}/internal/health`;
+
+  test('SSRF-002: POST /api/v1/profile/avatar reaches the notifications listener from inside', async () => {
+    const answer = await post(
+      '/api/v1/profile/avatar',
+      { url: url() },
+      alice(),
+    );
+
+    expect(answer.status).toBe(200);
+    // What was gained: accounts fetched the URL the caller chose —
+    // notifications' internal health endpoint, an address no outside client
+    // was ever meant to point at — and notifications answered the fetch: its
+    // 200 is the status, and the URL is kept as the caller's avatar.
+    expect(answer.body).toMatchObject({ stored: true, status: 200 });
+    expect(
+      (answer.body as { user?: { avatarUrl?: string } }).user?.avatarUrl,
+    ).toBe(url());
+  });
+
+  test('SSRF-002 counterpart 1: setAvatarUrl stores the same URL and fetches nothing', async () => {
+    const stored = await query(
+      'mutation ($url: String!) { setAvatarUrl(url: $url) { id avatarUrl } }',
+      { token: alice(), variables: { url: url() } },
+    );
+
+    // Refused by the operation's shape: the URL is data, and the answer is
+    // the stored record alone — no status, no body of any fetch. The request
+    // the vulnerable twin made is never made here; the stub-count evidence
+    // stays in the service's own tests, where a listener can be observed.
+    expect(stored.errors).toBeUndefined();
+    expect(stored.data).toMatchObject({
+      setAvatarUrl: { id: 'u-alice', avatarUrl: url() },
+    });
+  });
+
+  test('SSRF-002 counterpart 2: the allowlisted fetch refuses the same URL before any request', async () => {
+    const answer = await post(
+      '/api/v1/profile/avatar/fetch',
+      { url: url() },
+      alice(),
+    );
+
+    expect(answer.status).toBe(200);
+    // Refused by the allowlist: the origin is not in AVATAR_ALLOWED_ORIGINS,
+    // so no request is made and nothing is stored — the reason names the rule
+    // that refused, before any connection is opened.
+    expect(answer.body).toMatchObject({ stored: false });
+    expect((answer.body as { reason?: string }).reason).toContain(
+      'not on the allowlist',
+    );
+
+    // The lab is returned to its fake data for the scenario that follows.
+    await reset();
+  });
+});
