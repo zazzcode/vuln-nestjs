@@ -92,16 +92,16 @@ The line (`apps/trading/src/trades/all-trades.resolver.ts`):
 <a id="res-002-exploit"></a>
 ### RES-002 — exploit lab
 
-The reproduction was run on 2026-11-27 against the service alone, on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`. The store held the seed's three trades of BTC-USD at the time.
+Run on 2026-11-28 against the whole lab, started by `pnpm start` on the port set 4600, 4601 to 4603, 4611, 4612. `$URL` is trading's relay, `http://127.0.0.1:4612` there (`3202` on the defaults): `trading` speaks HTTP/2 in cleartext, which curl cannot send, and the relay changes nothing in a request. The store held the seed's three trades of BTC-USD.
 
 ```console
 $ curl -s $URL/graphql -H 'content-type: application/json' \
     -d '{"query":"query($symbol: String!, $limit: Int!) { allTrades(symbol: $symbol, limit: $limit) { id } }",
          "variables":{"symbol":"BTC-USD","limit":100000}}'
-rows: 3        # every row the table holds, for a limit of one hundred thousand
+{"data":{"allTrades":[{"id":"1"},{"id":"2"},{"id":"3"}]}}
 ```
 
-A limit of 100000 was accepted and answered with the whole table. In the test the table is filled to 253 rows of one symbol, and the same request returns all 253: what was gained is the whole table in one answer, whatever its size.
+A limit of 100000 was accepted and answered with the whole table: all three rows. In the test the table is filled to 253 rows of one symbol, and the same request returns all 253: what was gained is the whole table in one answer, whatever its size.
 
 The same limit through the counterparts. `trades(symbol, orderBy, limit, offset)` clamps it to 200 before the store is asked, through `clampLimit`; `tradesNamed(symbol, side, limit, offset)` pages at most 200 rows per answer, in its fixed order.
 
