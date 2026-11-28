@@ -1,6 +1,6 @@
 # `XSS` — cross-site scripting
 
-3 scenarios: `XSS-001` in `notifications`, `XSS-002` in `accounts`, `XSS-004` in `accounts`.
+4 scenarios: `XSS-001` in `notifications`, `XSS-002` in `accounts`, `XSS-003` in `gateway`, `XSS-004` in `accounts`.
 
 **In `accounts`.**
 
@@ -18,6 +18,13 @@ template with the body escaped behind a content security policy.
 | ID | The operation | The sink | CWE |
 | --- | --- | --- | --- |
 | XSS-001 | `GET /internal/announcements/:id/html` | `<%- body %>` in `views/announcement-html.ejs`, served as `text/html` | CWE-79 |
+
+**In `gateway`.**
+
+The public status page greets the caller by the `name` it sent, written into
+the HTML as it arrived, from a scope that sets no security headers. The
+reproduction was run on 2026-11-27 against the gateway alone on
+`127.0.0.1:4400`.
 
 ## XSS-001 — an announcement page that serves script
 
@@ -157,6 +164,92 @@ $ curl -s -o /dev/null -w '%{http_code}\n' $RELAY/internal/documents/<id>/image 
 ### XSS-002 — tests
 
 `apps/accounts/test/scenarios/fs-xss-ssrf.int-spec.ts`, `XSS-002`: the view route answers `text/html` inline with the marker; by id the same document is an attachment with `nosniff`, and the image route refuses it.
+
+## XSS-003 — the public status page greets the caller with their own markup
+
+### XSS-003 — agent reference
+
+- **Source:** `apps/gateway/src/public-api/public-status.controller.ts` — `${name}` written into the greeting of the HTML answer.
+- **Operation:** `GET /api/v1/public/status?name=…`, REST, public.
+- **Sink:** the `text/html` answer of the public scope, which carries no content security policy, no `nosniff`, no frame options.
+- **Flow:** `?name=<img onerror> → the greeting line → the caller's markup is the page's markup`.
+- **Counterparts:** `apps/gateway/src/status/status.controller.ts` — `GET /api/v1/status` (the same name escaped into a fixed template, a policy set by hand), `GET /api/v1/status.json` (the name as a JSON value, `nosniff`).
+- **Documentation:** this module. **Tests:** `apps/gateway/test/scenarios/edge.int-spec.ts`.
+- **Expected finding:** CWE-79 on the public status controller. A report on the two counterpart routes for this CWE is a false positive.
+
+### XSS-003 — student guide
+
+A greeting that answers the caller by name is one interpolation; when the
+name is written into the page as it arrived, the page is whoever asks for it.
+Here the whole answer is built with a template literal whose only variable
+part is the caller's `name`, so a `name` of `<img src=x
+onerror="window.__zazzles='zazzles-lab-marker'">` is served as the page's own
+markup — and the page is served from the public scope, where the edge's
+security headers are off: no content security policy would refuse the script
+even if the browser believed the tag. Any browser that opens the link runs
+the `onerror` the moment the page renders.
+
+### XSS-003 — exploit lab
+
+The `name` is the marker, URL-encoded by the caller's client as
+`%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E`.
+
+```console
+$ curl -s -i "http://127.0.0.1:4400/api/v1/public/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+HTTP/1.1 200 OK
+Origin-Agent-Cluster: ?1
+content-type: text/html; charset=utf-8
+…
+    <p>Hello, <img src=x onerror="window.__zazzles='zazzles-lab-marker'">.</p>
+```
+
+`200`, `text/html`, and the marker sits in the page unescaped with no policy
+above it: opened in a browser, `window.__zazzles` becomes
+`'zazzles-lab-marker'`. The same `name` through the counterparts:
+
+```console
+$ curl -s "http://127.0.0.1:4400/api/v1/status?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+<!DOCTYPE html>
+…
+    <p>Hello, &lt;img src=x onerror=&quot;window.__zazzles=&#39;zazzles-lab-marker&#39;&quot;&gt;.</p>
+…
+
+$ curl -s -i "http://127.0.0.1:4400/api/v1/status.json?name=%3Cimg%20src%3Dx%20onerror%3D%22window.__zazzles%3D'zazzles-lab-marker'%22%3E"
+HTTP/1.1 200 OK
+…
+X-Content-Type-Options: nosniff
+…
+content-type: application/json; charset=utf-8
+…
+{"status":"ok","service":"gateway","caller":"<img src=x onerror=\"window.__zazzles='zazzles-lab-marker'\">","backendServices":["accounts","trading","notifications"]}
+```
+
+In Postman: `GET {{gatewayUrl}}/api/v1/public/status?name=<the encoded
+marker>` and read the raw `<img` in the body. In Burp: the same GET from
+Repeater, or paste the decoded URL into a browser driven by the intercepting
+proxy.
+
+### XSS-003 — vulnerable and protected
+
+| | What it does with the same `name` | Why that holds |
+| --- | --- | --- |
+| `public/status` (vulnerable) | Writes it into the greeting unescaped, as `text/html`, no policy | The template interpolates the caller's markup into the page |
+| `status` (protected) | Escapes it — `<` becomes `&lt;`, quotes become entities — behind `content-security-policy: default-src 'self'` and `x-frame-options: DENY` | The name is data in a fixed template, and the policy would refuse a script even if one slipped through |
+| `status.json` (protected) | Answers it as a JSON value with `nosniff` | JSON is not a document to run markup in, and `nosniff` keeps a browser from reading it as one |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the
+`name` that is markup on the first route is escaped text on the second and a
+JSON value on the third. The claim is not that escaping or `nosniff` makes
+every page safe; only that this marker reaches no DOM through them.
+
+### XSS-003 — tests
+
+`apps/gateway/test/scenarios/edge.int-spec.ts`: one test sends the encoded
+marker to the public page and asserts the answer is `text/html` carrying the
+marker unescaped (`&lt;img` nowhere) — what was gained; two tests send the
+same marker to the counterparts and assert the escape (`&lt;img src=x` and
+`default-src 'self'`) and the JSON shape (`nosniff`, the marker a value) —
+why each was refused.
 
 ## XSS-004 — a stored display name rendered unescaped
 

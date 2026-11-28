@@ -43,8 +43,25 @@ function subgraphsOf(environment: Environment) {
         const subgraphs = subgraphsOf(environment);
         return {
           server: {
+            // GQL-001 / CWE-200: introspection is served to anyone who asks.
+            // Hardened value: `introspection: false`.
+            introspection: true,
+            // GQL-001 / CWE-200: the GraphiQL IDE is served to any browser
+            // that opens the endpoint. Hardened value: `graphiql: false`.
+            graphiql: true,
             // The lab's error codes, in `extensions.code`.
             formatError: formatGraphQLError,
+            // GQL-002 / CWE-770: no `validationRules`, so no depth or
+            // complexity limit: a query nested to any depth is accepted and
+            // planned. Hardened value: a depth rule with a limit of 5.
+            // GQL-003 / CWE-307: one HTTP request may carry an array of
+            // operations, answered as an array, so a brute force fits in a
+            // single call. Hardened value: `allowBatchedHttpRequests: false`.
+            allowBatchedHttpRequests: true,
+            // GQL-004 / CWE-209: every error carries the server's stack, in
+            // `extensions.stacktrace`. Hardened value:
+            // `includeStacktraceInErrorResponses: false`.
+            includeStacktraceInErrorResponses: true,
             // What identifies the caller travels to the service that owns each field.
             context: (request: { headers: Record<string, string> }) => ({
               headers: request.headers,
@@ -57,7 +74,12 @@ function subgraphsOf(environment: Environment) {
               const subgraph = subgraphs.find(
                 (candidate) => candidate.name === name,
               ) as (typeof subgraphs)[number];
-              return new SubgraphDataSource(subgraph.name, subgraph.url, http2);
+              return new SubgraphDataSource(
+                subgraph.name,
+                subgraph.url,
+                http2,
+                environment.INTERNAL_SERVICE_TOKEN,
+              );
             },
           },
         };
