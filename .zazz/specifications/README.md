@@ -36,7 +36,9 @@ The steps are defined in the [implementation plan](../project/implementation-pla
 | `002b-trading.md` | 2b — The `trading` service | `phase-2b-trading` | Planned |
 | `002c-notifications.md` | 2c — The `notifications` service | `phase-2c-notifications` | Planned |
 | `002d-gateway.md` | 2d — The `gateway` service | `phase-2d-gateway` | Planned |
-| `003-integration.md` | 3 — Integration | `phase-3-integration` | Planned |
+| `003-integration.md` | 3 — Integration | `phase-3-integration` | In implementation since 2026-11-28 |
+| `003a-vulnerability-docs.md` | The documentation pass over `docs/vulnerabilities/`, beside Step 3 | `phase-3a-vulnerability-docs` | In implementation since 2026-11-28 |
+| `003b-cleanup.md` | The cleanup after Step 2: dependencies nothing imports, the contracts' counts, SC10's lint rule | `phase-2-cleanup` | In implementation since 2026-11-28 |
 | `004-dependencies.md` | 4 — The dependency pins | `phase-4-dependencies` | Planned |
 | `005-release.md` | 5 — Verification and release | `phase-5-release` | Planned |
 
