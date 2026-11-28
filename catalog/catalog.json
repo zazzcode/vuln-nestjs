@@ -162,7 +162,10 @@
     "source": "apps/trading/src/wallets/wallet-of.resolver.ts",
     "flow": "args.userId -> repository where clause: the caller names any user, the balances answer to the token alone",
     "safeControl": "apps/trading/src/wallets/wallet.resolver.ts",
-    "safeControls": ["apps/trading/src/wallets/wallets-by-user.resolver.ts"],
+    "safeControls": [
+      "apps/trading/src/wallets/wallets-by-user.resolver.ts",
+      "apps/trading/src/wallets/ledger.resolver.ts"
+    ],
     "documentation": "docs/vulnerabilities/trading-access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true

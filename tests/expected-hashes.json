@@ -104,6 +104,7 @@
   "apps/trading/src/trades/trades.resolver.ts": "3f4c7d0fa2f1c34724220047f0e89bccb0e5c06ac073ada7cd584c8c12794677",
   "apps/trading/src/wallets/credit-wallet.resolver.ts": "ece255a86d5debb8d950240dee622405ea5c28a694dcf42bd0c5e5e452407030",
   "apps/trading/src/wallets/deposit.resolver.ts": "24d5dfa099584e04354a40f2da1760fe11edd86a6928ced433b342076ed980c3",
+  "apps/trading/src/wallets/ledger.resolver.ts": "afe025c43a0a7b232fa7638a09d69fde721360cbbb741171d8367a05df684532",
   "apps/trading/src/wallets/payout.resolver.ts": "cc774e88699a62a6daa0a81d25718e74048da4013cb7bd6d1f12818f7784025b",
   "apps/trading/src/wallets/wallet-of.resolver.ts": "67d9723f611a81bb18778218cbd3e10cde52e7ddc4541e1c43f35487688b426e",
   "apps/trading/src/wallets/wallet.resolver.ts": "307cca6d5bda1375b283e626582ffc1995ed35ed89873d52bfd56fbb4a831c55",

@@ -165,6 +165,14 @@
     {
       "id": "ACCESS-008-safeControl",
       "controlFor": "ACCESS-008",
+      "source": "apps/trading/src/wallets/ledger.resolver.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-639",
+      "scanner": "SAST"
+    },
+    {
+      "id": "ACCESS-008-safeControl",
+      "controlFor": "ACCESS-008",
       "source": "apps/trading/src/wallets/wallet.resolver.ts",
       "expectedFinding": false,
       "cwe": "CWE-639",
