@@ -2,8 +2,10 @@
 
 Three weaknesses of the legacy account path in `accounts`. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults).
 
+<a id="crypto-001"></a>
 ## CRYPTO-001 — the sign-up of the old client stores an unsalted SHA-1
 
+<a id="crypto-001-agent"></a>
 ### CRYPTO-001 — agent reference
 
 | | |
@@ -15,10 +17,12 @@ Three weaknesses of the legacy account path in `accounts`. Reproductions run aga
 | Tests | `apps/accounts/test/scenarios/auth.int-spec.ts` |
 | Expected finding | Yes, CWE-759 / CWE-916, SAST |
 
+<a id="crypto-001-student"></a>
 ### CRYPTO-001 — student guide
 
 A hash without a salt is a lookup table waiting to happen: every caller of the same password stores the same bytes. The legacy sign-up writes `$sha1$` + the digest, and SHA-1 is fast enough to brute-force offline once the store is read.
 
+<a id="crypto-001-exploit"></a>
 ### CRYPTO-001 — exploit lab
 
 Two accounts, one password, then the stored hashes read through the lab's own query surface (`findUsers`, MONGO-002's operation, with an ordinary signed-in token):
@@ -38,6 +42,7 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' -H "authorization: 
 
 One digest for both accounts. The same password through `createUser` or `POST /internal/admin/users` stores two different `scrypt$16384$8$1$…` strings, because each gets its own salt.
 
+<a id="crypto-001-safe"></a>
 ### CRYPTO-001 — vulnerable and protected
 
 | | Why |
@@ -46,12 +51,15 @@ One digest for both accounts. The same password through `createUser` or `POST /i
 | `createUser` (protected) | scrypt with a random salt per account: the same password stores two different hashes |
 | `POST /internal/admin/users` (protected) | The same scrypt path through a DTO and the roles guard |
 
+<a id="crypto-001-tests"></a>
 ### CRYPTO-001 — tests
 
 `apps/accounts/test/scenarios/auth.int-spec.ts`, `CRYPTO-001`: two sign-ups store one identical `$sha1$` hash; `createUser` and the admin route store two different scrypt hashes for the same password.
 
+<a id="crypto-002"></a>
 ## CRYPTO-002 — the recovery code of the old client comes from `Math.random()`
 
+<a id="crypto-002-agent"></a>
 ### CRYPTO-002 — agent reference
 
 | | |
@@ -63,10 +71,12 @@ One digest for both accounts. The same password through `createUser` or `POST /i
 | Tests | `apps/accounts/test/scenarios/auth.int-spec.ts` |
 | Expected finding | Yes, CWE-338, SAST |
 
+<a id="crypto-002-student"></a>
 ### CRYPTO-002 — student guide
 
 `Math.random()` is not a source of unpredictable values; given a little of its output, its state is recoverable. The legacy recovery mutation both draws the code from it and hands the code back in the response.
 
+<a id="crypto-002-exploit"></a>
 ### CRYPTO-002 — exploit lab
 
 ```console
@@ -83,6 +93,7 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' \
 {"data":{"requestPasswordReset":true}}
 ```
 
+<a id="crypto-002-safe"></a>
 ### CRYPTO-002 — vulnerable and protected
 
 | | Why |
@@ -91,12 +102,15 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' \
 | `requestPasswordReset` (protected) | `crypto.randomInt` for the code, and no code in the answer for either case |
 | `resetPassword` (protected) | The new password is `crypto.randomBytes` material, returned once to the administrator |
 
+<a id="crypto-002-tests"></a>
 ### CRYPTO-002 — tests
 
 `apps/accounts/test/scenarios/auth.int-spec.ts`, `CRYPTO-002`: with `Math.random` stubbed to `0.42` the code is the predicted one; `requestPasswordReset` answers the same for both cases and returns no code; `resetPassword` hands out random bytes.
 
+<a id="crypto-003"></a>
 ## CRYPTO-003 — the committed fallback secret verifies tokens
 
+<a id="crypto-003-agent"></a>
 ### CRYPTO-003 — agent reference
 
 | | |
@@ -108,10 +122,12 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' \
 | Tests | `apps/accounts/test/scenarios/auth.int-spec.ts` |
 | Expected finding | Yes, CWE-798, SAST |
 
+<a id="crypto-003-student"></a>
 ### CRYPTO-003 — student guide
 
 A secret in source is a secret everyone who reads the source holds. The legacy guard falls back to a constant committed beside it; the run never sets the environment variable, so the constant is what verifies.
 
+<a id="crypto-003-exploit"></a>
 ### CRYPTO-003 — exploit lab
 
 ```console
@@ -125,6 +141,7 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' \
 
 The same token against `me`: `UNAUTHENTICATED` — the safe guard's secret comes from validated configuration, which this run set and the repository does not carry.
 
+<a id="crypto-003-safe"></a>
 ### CRYPTO-003 — vulnerable and protected
 
 | | Why |
@@ -133,6 +150,7 @@ The same token against `me`: `UNAUTHENTICATED` — the safe guard's secret comes
 | `me` (protected) | The secret comes from validated configuration; a token signed with the committed string does not verify |
 | `sessionInfo` (protected) | The `JwtModule` is configured from the same validated configuration |
 
+<a id="crypto-003-tests"></a>
 ### CRYPTO-003 — tests
 
 `apps/accounts/test/scenarios/auth.int-spec.ts`, `CRYPTO-003`: a token signed with `LEGACY_FALLBACK_SECRET` reads the administrator through `whoAmI`; `me` and `sessionInfo` refuse the same token.
