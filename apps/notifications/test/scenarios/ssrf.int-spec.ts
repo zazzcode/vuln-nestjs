@@ -1,14 +1,12 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   errorCode,
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../../src/app.module.js';
+import { startNotificationsService } from '../support/service.js';
 import { STAND_IN_MARKER, StandInListener } from '../support/stand-in.js';
 import { WebhookReceiver } from '../support/receiver.js';
 
@@ -30,11 +28,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
   standIn = await StandInListener.start();

@@ -42,7 +42,11 @@ const bob = tokenOf('u-bob');
 const admin = tokenOf('u-admin', 'ADMIN');
 const query = (
   source: string,
-  options: { token?: string; variables?: Record<string, unknown> } = {},
+  options: {
+    token?: string;
+    variables?: Record<string, unknown>;
+    headers?: Record<string, string>;
+  } = {},
 ) => graphql(`${service.url}/graphql`, source, options);
 const call = (path: string, init: RequestInit = {}) =>
   request(`${service.url}${path}`, init);
@@ -112,6 +116,8 @@ describe('the fake data (AC1)', () => {
       {
         token: admin,
         variables: { representations: [{ __typename: 'User', id: 'u-erin' }] },
+        // As the gateway calls an entity: with the service token.
+        headers: { 'x-internal-token': SERVICE_TOKEN },
       },
     );
     expect(erinOrders.data).toEqual({
@@ -297,6 +303,8 @@ describe('the safe operations (AC2)', () => {
         {
           token: admin,
           variables: { representations: [{ __typename: 'User', id: 'u-bob' }] },
+          // As the gateway calls an entity: with the service token.
+          headers: { 'x-internal-token': SERVICE_TOKEN },
         },
       );
       expect(answer.data).toEqual({

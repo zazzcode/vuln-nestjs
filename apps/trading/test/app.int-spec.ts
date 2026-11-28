@@ -38,13 +38,24 @@ const tokenOf = (sub: string, role: 'ADMIN' | 'USER' = 'USER'): string =>
   sessionToken(JWT_SECRET, { sub, sid: `s-${sub}`, role });
 const query = (
   source: string,
-  options: { token?: string; variables?: Record<string, unknown> } = {},
+  options: {
+    token?: string;
+    variables?: Record<string, unknown>;
+    headers?: Record<string, string>;
+  } = {},
 ) => graphql(`${service.url}/graphql`, source, options);
 
+// The gateway resolves entities by key, presenting the service token on the call: this subgraph answers its
+// federation queries to that token and to nobody else. A test that sends `_entities` plays the gateway, and presents it too.
+const AS_THE_GATEWAY = { 'x-internal-token': SERVICE_TOKEN };
 const ENTITIES =
   'query($representations: [_Any!]!) { _entities(representations: $representations) { ... on Order { id userId symbol } ... on User { id orders { id userId } } } }';
 const entities = (token: string, representations: Record<string, unknown>[]) =>
-  query(ENTITIES, { token, variables: { representations } });
+  query(ENTITIES, {
+    token,
+    variables: { representations },
+    headers: AS_THE_GATEWAY,
+  });
 
 describe('the trading service, started alone', () => {
   test('says it is up, with its store connected', async () => {
@@ -123,7 +134,10 @@ describe('the trading service, started alone', () => {
 
     expect(
       errorCode(
-        await query(ENTITIES, { variables: { representations: order('1') } }),
+        await query(ENTITIES, {
+          variables: { representations: order('1') },
+          headers: AS_THE_GATEWAY,
+        }),
       ),
     ).toBe('UNAUTHENTICATED');
     expect((await entities(tokenOf('u-alice'), order('1'))).data).toEqual({
@@ -150,6 +164,7 @@ describe('the trading service, started alone', () => {
       errorCode(
         await query(ENTITIES, {
           variables: { representations: user('u-alice') },
+          headers: AS_THE_GATEWAY,
         }),
       ),
     ).toBe('UNAUTHENTICATED');

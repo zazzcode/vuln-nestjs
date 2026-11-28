@@ -13,8 +13,12 @@
 // The catalogue is validated against catalog/catalog.schema.json. The validator
 // here reads that file and enforces the keywords it uses, so that the schema is
 // the one description of an entry and nothing has to be kept in step with it.
+//
+// One rule more, from the testing strategy: a request per scenario. Every
+// registered scenario has a request named after it under postman/, or the
+// catalogue is not right.
 import { createHash } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -28,8 +32,14 @@ export const inCodeUnitOrder = (first, second) =>
 /** Where the scenario IDs are designed. An ID can be registered only if it is designed here. */
 export const DESIGNED_IN = '.zazz/project/scenario-catalog.md';
 
+/** Where the Postman collections are: a folder per service, holding that service's collection. */
+export const POSTMAN_IN = 'postman';
+
 /** A scenario ID at the start of a table row. */
 const DESIGN_ID = /^\| ([A-Z]+-[0-9]{3}) \|/gm;
+
+/** A scenario ID at the start of a request's name. */
+const REQUEST_ID = /^([A-Z]+-[0-9]{3})\b/;
 
 /**
  * What the name of an application file must not say. Which operation is which
@@ -149,10 +159,16 @@ function describe(value) {
 
 // --- The catalogue as a catalogue ------------------------------------------------
 
-/** The protected counterparts of an entry, in order. */
+/**
+ * The protected counterparts of an entry, in order, each once: an entry may
+ * name one file as both `safeControl` and in `safeControls`, and it is one
+ * counterpart — one file to hash, one row for a scanner to leave alone.
+ */
 export const counterpartsOf = (entry) => [
-  ...(entry.safeControl ? [entry.safeControl] : []),
-  ...(entry.safeControls ?? []),
+  ...new Set([
+    ...(entry.safeControl ? [entry.safeControl] : []),
+    ...(entry.safeControls ?? []),
+  ]),
 ];
 
 /** Every file that must exist for an entry: its own, its counterparts', its documentation and its test. */
@@ -174,18 +190,62 @@ export function designedIds(designed) {
   ];
 }
 
+/** Every request of a collection, under whatever folders it holds them. */
+function requestsIn(items) {
+  return items.flatMap((item) =>
+    item.request === undefined ? requestsIn(item.item ?? []) : [item],
+  );
+}
+
+/**
+ * The scenario IDs that a request under `postman/` is named after, each once:
+ * a request whose name begins with an ID, in any collection, under whatever
+ * folder the collection holds it.
+ *
+ * @param {string} root
+ * @returns {Promise<Set<string>>}
+ */
+export async function requestedIds(root) {
+  const folder = path.join(root, POSTMAN_IN);
+  const entries = await readdir(folder, { recursive: true }).catch((error) => {
+    // No collections at all is every scenario without a request, not a crash.
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  });
+  const ids = new Set();
+  for (const file of entries) {
+    if (!file.endsWith('.postman_collection.json')) {
+      continue;
+    }
+    const collection = JSON.parse(
+      await readFile(path.join(folder, file), 'utf8'),
+    );
+    for (const { name } of requestsIn(collection.item ?? [])) {
+      const id = typeof name === 'string' ? REQUEST_ID.exec(name) : null;
+      if (id !== null) {
+        ids.add(id[1]);
+      }
+    }
+  }
+  return ids;
+}
+
 /**
  * What is wrong with the catalogue beyond its shape: an ID used twice, an ID
  * nobody designed, a weakness registered without a protected counterpart or a
- * hardened value, a registered file that does not exist, or an application
- * file whose name says what it is.
+ * hardened value, a registered file that does not exist, an application file
+ * whose name says what it is — and, when the requested IDs are given, a
+ * scenario with no request named after it.
  *
  * @param {Record<string, any>[]} catalogue
  * @param {string} designed The text the scenario IDs are designed in.
  * @param {(file: string) => Promise<boolean>} exists
+ * @param {Set<string>} [requested] The IDs a request under `postman/` is named after.
  * @returns {Promise<string[]>}
  */
-export async function problemsIn(catalogue, designed, exists) {
+export async function problemsIn(catalogue, designed, exists, requested) {
   const problems = [];
   const designedOnce = new Set(designedIds(designed));
   const seen = new Set();
@@ -198,6 +258,9 @@ export async function problemsIn(catalogue, designed, exists) {
     seen.add(id);
     if (!designedOnce.has(id)) {
       problems.push(`${id}: not designed in ${DESIGNED_IN}`);
+    }
+    if (requested !== undefined && !requested.has(id)) {
+      problems.push(`${id}: no request under ${POSTMAN_IN}/ is named after it`);
     }
     // A weakness is never registered alone: it has a protected counterpart, or, being a setting, a hardened value.
     // A dependency version has neither: nothing else in the lab can carry the same library.
@@ -324,7 +387,8 @@ export async function checkScenarios({
       () => true,
       () => false,
     );
-  problems.push(...(await problemsIn(entries, designed, exists)));
+  const requested = await requestedIds(root);
+  problems.push(...(await problemsIn(entries, designed, exists, requested)));
 
   const files = registeredFiles(entries);
   const hashes = {};
@@ -336,6 +400,9 @@ export async function checkScenarios({
     }
   }
   const findings = scannerFindingsIn(entries);
+  const requestedAmong = entries.filter((entry) =>
+    requested.has(entry.id),
+  ).length;
   const all = [...new Set(problems)];
 
   if (update) {
@@ -393,7 +460,8 @@ export async function checkScenarios({
     problems: all,
     summary:
       `The catalogue is sound; ${entries.length} of ${designedIds(designed).length} designed scenarios are registered; ` +
-      `${files.length} registered files match tests/expected-hashes.json; tests/expected-scanner-findings.json matches the catalogue (${findings.sources.length} rows).`,
+      `${files.length} registered files match tests/expected-hashes.json; tests/expected-scanner-findings.json matches the catalogue (${findings.sources.length} rows); ` +
+      `${requestedAmong} of ${entries.length} registered scenarios have a request under ${POSTMAN_IN}/.`,
   };
 }
 

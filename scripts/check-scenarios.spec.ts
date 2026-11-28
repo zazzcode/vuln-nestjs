@@ -12,13 +12,16 @@ import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, test } from 'vitest';
 import {
   DESIGNED_IN,
+  POSTMAN_IN,
   checkScenarios,
+  counterpartsOf,
   designedIds,
   filesOf,
   hashesOf,
   inCodeUnitOrder,
   problemsIn,
   registeredFiles,
+  requestedIds,
   scannerFindingsIn,
   validateAgainst,
 } from './check-scenarios.mjs';
@@ -224,6 +227,30 @@ describe('the ground truth made from the catalogue', () => {
     ]);
   });
 
+  // A builder may name one file as both `safeControl` and in `safeControls`: it is one
+  // counterpart. The documentation pass found 25 entries that do, and 25 rows twice.
+  test('counts a counterpart named twice once, in the files and in the rows', () => {
+    const twice = entry({
+      safeControl: 'apps/lab/src/markets/markets.resolver.ts',
+      safeControls: [
+        'apps/lab/src/markets/markets.resolver.ts',
+        'apps/lab/src/markets/markets-by-assets.resolver.ts',
+      ],
+    });
+
+    expect(counterpartsOf(twice)).toEqual([
+      'apps/lab/src/markets/markets.resolver.ts',
+      'apps/lab/src/markets/markets-by-assets.resolver.ts',
+    ]);
+    // The vulnerable file beside them: three registered files, not four.
+    expect(registeredFiles([twice])).toHaveLength(3);
+    expect(
+      scannerFindingsIn([twice]).sources.filter(
+        (row: { expectedFinding: boolean }) => !row.expectedFinding,
+      ),
+    ).toHaveLength(2);
+  });
+
   test('says which files a scanner must report and which it must leave alone', () => {
     const { sources } = scannerFindingsIn(catalogue);
 
@@ -281,10 +308,17 @@ describe('the command', () => {
     }
   });
 
-  /** A small repository holding a catalogue and the files it registers. */
+  /**
+   * A small repository holding a catalogue, the files it registers, and a
+   * collection with a request named after each entry — unless one is left out.
+   */
   function repositoryWith(
     catalogue: unknown[],
-    { omit = '', contentOf = (_file: string) => 'export {};\n' } = {},
+    {
+      omit = '',
+      contentOf = (_file: string) => 'export {};\n',
+      withoutRequestFor = '',
+    } = {},
   ): string {
     const root = mkdtempSync(path.join(tmpdir(), 'vuln-nestjs-catalogue-'));
     roots.push(root);
@@ -304,6 +338,25 @@ describe('the command', () => {
         write(file, contentOf(file));
       }
     }
+    const idOf = (scenario: { id: string }) => scenario.id;
+    write(
+      `${POSTMAN_IN}/lab/vuln-nestjs.lab.postman_collection.json`,
+      JSON.stringify({
+        item: [
+          {
+            name: 'Scenarios',
+            item: catalogue
+              .filter(
+                (scenario) => idOf(scenario as never) !== withoutRequestFor,
+              )
+              .map((scenario) => ({
+                name: `${idOf(scenario as never)}: its request`,
+                request: { method: 'GET', url: 'http://127.0.0.1/' },
+              })),
+          },
+        ],
+      }),
+    );
     return root;
   }
 
@@ -338,8 +391,21 @@ describe('the command', () => {
 
     expect(checked.problems).toEqual([]);
     expect(checked.summary).toBe(
-      'The catalogue is sound; 1 of 3 designed scenarios are registered; 3 registered files match tests/expected-hashes.json; tests/expected-scanner-findings.json matches the catalogue (3 rows).',
+      'The catalogue is sound; 1 of 3 designed scenarios are registered; 3 registered files match tests/expected-hashes.json; tests/expected-scanner-findings.json matches the catalogue (3 rows); ' +
+        `1 of 1 registered scenarios have a request under ${POSTMAN_IN}/.`,
     );
+  });
+
+  // The testing strategy's rule, made ground truth: every scenario has a request under postman/.
+  test('refuses a scenario that no request is named after, and will not snapshot it', async () => {
+    const root = repositoryWith([entry()], { withoutRequestFor: 'SQL-003' });
+
+    const written = await checkScenarios({ update: true, root });
+
+    expect(written.written).toBe(false);
+    expect(written.problems).toEqual([
+      'SQL-003: no request under postman/ is named after it',
+    ]);
   });
 
   test('will not snapshot a catalogue that is not right', async () => {
@@ -424,7 +490,73 @@ describe('the command', () => {
     expect(checked.summary).toBe(
       `The catalogue is sound; ${catalogue.length} of ${designedCount} designed scenarios are registered; ` +
         `${registeredFiles(catalogue).length} registered files match tests/expected-hashes.json; ` +
-        `tests/expected-scanner-findings.json matches the catalogue (${rows} rows).`,
+        `tests/expected-scanner-findings.json matches the catalogue (${rows} rows); ` +
+        `${catalogue.length} of ${catalogue.length} registered scenarios have a request under ${POSTMAN_IN}/.`,
     );
+  });
+});
+
+describe('a request per scenario', () => {
+  const roots: string[] = [];
+  afterEach(() => {
+    for (const root of roots.splice(0)) {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  test('collects the IDs the requests are named after, through the folders, and nothing else', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'vuln-nestjs-postman-'));
+    roots.push(root);
+    const collection = {
+      item: [
+        {
+          name: 'Scenarios',
+          item: [
+            {
+              name: 'SQL-003 LIKE pattern built from search text',
+              request: {},
+            },
+            {
+              name: 'Nested',
+              item: [{ name: 'CONFIG-004: the debug page', request: {} }],
+            },
+          ],
+        },
+        { name: 'the sign-in request', request: {} },
+      ],
+    };
+    mkdirSync(path.join(root, POSTMAN_IN, 'lab'), { recursive: true });
+    writeFileSync(
+      path.join(
+        root,
+        POSTMAN_IN,
+        'lab/vuln-nestjs.lab.postman_collection.json',
+      ),
+      JSON.stringify(collection),
+    );
+    writeFileSync(
+      path.join(root, POSTMAN_IN, 'local.postman_environment.json'),
+      JSON.stringify({ values: [] }),
+    );
+
+    expect(await requestedIds(root)).toEqual(
+      new Set(['SQL-003', 'CONFIG-004']),
+    );
+  });
+
+  test('is nobody, where there is no collection at all', async () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'vuln-nestjs-postman-'));
+    roots.push(root);
+
+    expect(await requestedIds(root)).toEqual(new Set());
+  });
+
+  test('names the scenario that has none', async () => {
+    expect(await problemsIn([entry()], designed, present, new Set())).toEqual([
+      'SQL-003: no request under postman/ is named after it',
+    ]);
+    expect(
+      await problemsIn([entry()], designed, present, new Set(['SQL-003'])),
+    ).toEqual([]);
   });
 });

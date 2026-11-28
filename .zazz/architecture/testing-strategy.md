@@ -1,6 +1,6 @@
 # Testing strategy
 
-**Status:** revised on 2026-11-26, and again the same day once the scaffolding had run: the lab is four processes, not one; the Postman collections are one per microservice; and `pnpm test:api` starts the lab itself. `docs/setup-and-testing.md` records each command only after it has been run.
+**Status:** revised on 2026-11-26, and again the same day once the scaffolding had run: the lab is four processes, not one; the Postman collections are one per microservice; and `pnpm test:api` starts the lab itself. `docs/setup-and-testing.md` records each command only after it has been run. On 2026-11-28 a request per scenario became a check: `pnpm scenario:check` fails on a registered scenario with no request named after it under `postman/`.
 
 ## 1. What the tests are for
 
@@ -98,7 +98,7 @@ Generated from `catalog/catalog.json`, committed, and never edited by hand. The 
 
 | Check | Fails when |
 | --- | --- |
-| `pnpm scenario:check` | A registered file changed, or a catalogue entry points at a file that does not exist |
+| `pnpm scenario:check` | A registered file changed, a catalogue entry points at a file that does not exist, or a registered scenario has no request named after it under `postman/` |
 | `pnpm audit:check` | The audit differs from the snapshot. It is its own CI job, because a new upstream advisory must be visible and must not stop the tests |
 | `pnpm audit:update` | The audit returns an advisory the snapshot has and the update was not told to retire it by name |
 

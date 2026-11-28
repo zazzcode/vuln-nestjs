@@ -1,14 +1,12 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   errorCode,
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 
 // Authorization: every admin operation refuses a user and no token; every
 // own-data operation refuses another user's object. AC9, each case by name.
@@ -25,11 +23,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
 }, 300_000);
 
 afterAll(async () => {
@@ -96,6 +90,22 @@ describe('the administrator operations refuse a user and no token', () => {
     const body = JSON.stringify({ title: 'T', body: 'B' });
     const call = (token: string | undefined) =>
       request(`${service.url}/internal/announcements/notify`, {
+        method: 'POST',
+        headers: {
+          ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),
+          'content-type': 'application/json',
+        },
+        body,
+      });
+
+    expect((await call(alice())).status).toBe(403);
+    expect((await call(undefined)).status).toBe(401);
+  });
+
+  test('POST /internal/announcements/send', async () => {
+    const body = JSON.stringify({ title: 'T', body: 'B' });
+    const call = (token: string | undefined) =>
+      request(`${service.url}/internal/announcements/send`, {
         method: 'POST',
         headers: {
           ...(token === undefined ? {} : { authorization: `Bearer ${token}` }),

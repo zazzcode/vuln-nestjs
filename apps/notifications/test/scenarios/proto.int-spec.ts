@@ -1,14 +1,12 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   errorCode,
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../../src/app.module.js';
+import { startNotificationsService } from '../support/service.js';
 import { UserSettingsEntity } from '../../src/settings/user-settings.entity.js';
 
 // PROTO-003: one payload, a path that walks off the row it was given, sent to
@@ -25,11 +23,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
 }, 300_000);
 
 afterAll(async () => {

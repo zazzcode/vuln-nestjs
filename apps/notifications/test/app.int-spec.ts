@@ -1,4 +1,3 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import { DataSource } from 'typeorm';
 import { readFileSync } from 'node:fs';
 import { connect } from 'node:http2';
@@ -8,11 +7,10 @@ import {
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
 import { labStart } from '@zazzles/exchange-lab-data';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 
 // The service is started with the adapter it uses, on its own port, with a store it holds itself.
 const JWT_SECRET = runSecret();
@@ -23,11 +21,7 @@ let service: ServiceHandle;
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
 }, 300_000);
 
 // Stops the service, and fails when anything it created remains.

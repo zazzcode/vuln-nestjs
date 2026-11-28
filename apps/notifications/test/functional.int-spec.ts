@@ -1,15 +1,15 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import { Logger } from '@nestjs/common';
+import { createServer } from 'node:http';
+import type { Socket } from 'node:net';
 import {
   errorCode,
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../src/app.module.js';
+import { startNotificationsService } from './support/service.js';
 import { AlertsRepository } from '../src/alerts/alerts.repository.js';
 import { WebhookReceiver } from './support/receiver.js';
 
@@ -30,11 +30,7 @@ const alice = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   alerts = service.app.get(AlertsRepository);
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
@@ -449,6 +445,48 @@ describe('the webhook operations', () => {
       responseBody: '{"received":true}',
     });
     expect(receiver.requestsTo('/webhook/alice')).toHaveLength(1);
+  });
+
+  test('a delivery to a receiver that never answers gives up after five seconds', async () => {
+    await reset();
+    receiver.reset();
+
+    // A receiver that accepts the connection and never answers: the client
+    // must give up rather than wait, and the record must name the timeout.
+    const sockets = new Set<Socket>();
+    const silent = createServer(() => {});
+    silent.on('connection', (socket) => sockets.add(socket));
+    await new Promise<void>((resolve) =>
+      silent.listen(0, '127.0.0.1', resolve),
+    );
+    const { port } = silent.address() as { port: number };
+    const url = `http://127.0.0.1:${port}/silent`;
+    try {
+      const startedAt = Date.now();
+      const given = await query(
+        'mutation($url: String!) { testWebhook(url: $url) { id url status attempts lastError } }',
+        { token: alice(), variables: { url } },
+      );
+      const waited = Date.now() - startedAt;
+
+      expect(given.errors).toBeUndefined();
+      expect(given.data?.testWebhook).toMatchObject({
+        url,
+        status: 'FAILED',
+        attempts: 1,
+        lastError: expect.stringContaining('network timeout'),
+      });
+      // The wait was the client's five seconds, not a hang and not a refusal.
+      expect(waited).toBeGreaterThanOrEqual(5_000);
+      expect(waited).toBeLessThan(15_000);
+    } finally {
+      for (const socket of sockets) socket.destroy();
+      await new Promise<void>((resolve, reject) =>
+        silent.close((error) =>
+          error === undefined ? resolve() : reject(error),
+        ),
+      );
+    }
   });
 
   test("GET /internal/deliveries answers the caller's records whole, responseBody included", async () => {
