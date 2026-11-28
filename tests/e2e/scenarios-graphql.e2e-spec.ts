@@ -102,6 +102,40 @@ describe('GQL-001 — introspection and the IDE, served to anyone', () => {
   });
 });
 
+// GQL-002 — no depth or complexity limit. Hardened value: a depth rule with a
+// limit of 5, in `validationRules`. The document is nested twelve deep: the
+// seed gives every user two orders, so deeper walks fan out past the test
+// worker's heap, and twelve already proves no limit stands in the way.
+describe('GQL-002 — a query of unbounded depth is answered', () => {
+  test('GQL-002: a query nested far past any limit is accepted and answered with data', async () => {
+    const depth = 12;
+    let source = 'me { displayName ';
+    for (let level = 0; level < depth; level++) {
+      source += 'orders { id user { id ';
+    }
+    source += '}'.repeat(depth * 2) + ' }';
+    source = `query { ${source} }`;
+
+    const answer = await call(
+      { query: source },
+      { authorization: `Bearer ${tokenOf('u-alice')}` },
+    );
+
+    expect(answer.status).toBe(200);
+    const body = answer.body as GraphQLResponse;
+    expect(body.errors).toBeUndefined();
+    // What was gained: the running graph planned and ran a document of
+    // unbounded depth — one request walks the caller's orders and their users
+    // twelve levels down, each level a real round trip to trading and accounts.
+    let level: unknown = (body.data as { me: unknown }).me;
+    for (let walked = 0; walked < depth; walked++) {
+      const order = (level as { orders?: { user?: unknown }[] }).orders?.[0];
+      level = order?.user;
+      expect(level).toMatchObject({ id: 'u-alice' });
+    }
+  });
+});
+
 describe('GQL-007 — the backend federation queries answer any caller', () => {
   const SCHEMA = '{ _service { sdl } }';
   const ADMINISTRATOR_BY_KEY =
