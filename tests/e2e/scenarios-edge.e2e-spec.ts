@@ -68,3 +68,50 @@ describe('REDIR-001 — the redirect follows next off-site', () => {
     expect(response.headers.get('location')).not.toContain('4010');
   });
 });
+
+// XSS-003 — the caller's name is written into the page as it arrived.
+// Hardened value: a template that escapes what it shows; the two counterparts
+// are the same page outside the public scope and its JSON form.
+describe('XSS-003 — the public status page serves the name unescaped', () => {
+  // One payload: the lab's marker, as the name a caller sends.
+  const MARKER =
+    '<img src=x onerror="window.__zazzles=\'zazzles-lab-marker\'">';
+  const NAMED = `?name=${encodeURIComponent(MARKER)}`;
+
+  test('XSS-003: the public status page serves the name unescaped, as text/html', async () => {
+    const response = await call(`/api/v1/public/status${NAMED}`);
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    // What was gained: the marker is served as markup, in a page with no CSP —
+    // a browser that opens the link runs the script the caller sent.
+    const page = await response.text();
+    expect(page).toContain(MARKER);
+    expect(page).not.toContain('&lt;img');
+  });
+
+  test('XSS-003 counterpart 1: the default-scope status page escapes the same name', async () => {
+    const response = await call(`/api/v1/status${NAMED}`);
+
+    expect(response.status).toBe(200);
+    // Refused by the template: the same name arrives as data, escaped, in a
+    // page that also carries a CSP.
+    const page = await response.text();
+    expect(page).not.toContain(MARKER);
+    expect(page).toContain('&lt;img src=x');
+    expect(response.headers.get('content-security-policy')).toBe(
+      "default-src 'self'",
+    );
+  });
+
+  test('XSS-003 counterpart 2: status.json answers JSON with nosniff', async () => {
+    const response = await call(`/api/v1/status.json${NAMED}`);
+
+    expect(response.status).toBe(200);
+    // Refused twice over: JSON is not a document to run markup in, and
+    // `nosniff` keeps a browser from reading it as one.
+    expect(response.headers.get('content-type')).toContain('application/json');
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(((await response.json()) as { caller: string }).caller).toBe(MARKER);
+  });
+});
