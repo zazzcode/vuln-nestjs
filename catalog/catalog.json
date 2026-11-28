@@ -433,7 +433,7 @@
     "flow": "args.toUserId -> { ...order, user: { id: toUserId } }: the reference the gateway resolves is the caller's choice",
     "safeControl": "apps/trading/src/orders/place-order.resolver.ts",
     "safeControls": ["apps/trading/src/orders/orders.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-gql.md",
+    "documentation": "docs/vulnerabilities/gql.md",
     "test": "apps/trading/test/scenarios/graph.int-spec.ts",
     "expectedFinding": true
   },
