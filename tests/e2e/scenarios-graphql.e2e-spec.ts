@@ -2,20 +2,16 @@ import {
   errorCode,
   graphql,
   request,
-  sessionToken,
   type GraphQLErrorShape,
   type GraphQLResponse,
 } from '@zazzles/exchange-testing';
 import { useLab } from './lab.js';
+import { tokenOf } from './scenarios.js';
 
 // The GraphQL scenarios of the gateway (GQL-001 to GQL-004), and the one
 // deployment-level setting the gateway shares with its subgraphs (GQL-007),
 // against the real lab: the gateway and the three services, no stand-in.
 const lab = useLab();
-
-/** A session token for one of the fake users, signed with the secret of this run. */
-const tokenOf = (sub: string, role: 'ADMIN' | 'USER' = 'USER'): string =>
-  sessionToken(lab().secrets.JWT_SECRET, { sub, sid: `s-${sub}`, role });
 
 const query = (source: string, token?: string) =>
   graphql(`${lab().url}/graphql`, source, { token });
@@ -119,7 +115,7 @@ describe('GQL-002 — a query of unbounded depth is answered', () => {
 
     const answer = await call(
       { query: source },
-      { authorization: `Bearer ${tokenOf('u-alice')}` },
+      { authorization: `Bearer ${tokenOf(lab, 'u-alice')}` },
     );
 
     expect(answer.status).toBe(200);
@@ -147,7 +143,7 @@ describe('GQL-003 — one request, three operations, three answers', () => {
         { query: 'query { markets { symbol } }' },
         { query: '{ announcements { id title } }' },
       ],
-      { authorization: `Bearer ${tokenOf('u-alice')}` },
+      { authorization: `Bearer ${tokenOf(lab, 'u-alice')}` },
     );
 
     expect(answer.status).toBe(200);
@@ -172,7 +168,7 @@ describe("GQL-004 — a validation error carries the server's stack", () => {
   test("GQL-004: a validation error answers the server's stack in extensions.stacktrace", async () => {
     const answer = await call(
       { query: '{ me { nope } }' },
-      { authorization: `Bearer ${tokenOf('u-alice')}` },
+      { authorization: `Bearer ${tokenOf(lab, 'u-alice')}` },
     );
 
     // Apollo answers a validation failure with 400; the answer carries the
@@ -241,7 +237,7 @@ describe('GQL-007 — the backend federation queries answer any caller', () => {
       errorCode(
         (
           await post('accounts', '{ user(id: "u-admin") { id } }', {
-            authorization: `Bearer ${tokenOf('u-alice')}`,
+            authorization: `Bearer ${tokenOf(lab, 'u-alice')}`,
           })
         ).body,
       ),
@@ -272,7 +268,10 @@ describe('GQL-007 — the backend federation queries answer any caller', () => {
 
   // A session token says who the caller is; it does not say the caller is the gateway.
   test('GQL-007: a session token does not make a caller the gateway: trading still answers 403', async () => {
-    for (const token of [tokenOf('u-alice'), tokenOf('u-admin', 'ADMIN')]) {
+    for (const token of [
+      tokenOf(lab, 'u-alice'),
+      tokenOf(lab, 'u-admin', 'ADMIN'),
+    ]) {
       expectRefusedByTrading(
         await post('trading', ORDER_BY_KEY, {
           authorization: `Bearer ${token}`,
@@ -299,7 +298,7 @@ describe('GQL-007 — the backend federation queries answer any caller', () => {
     // The joins that are themselves _entities calls: trading's orders with the
     // user each one references, which accounts answers; the other way round, an
     // _entities call to trading; and a field of each of the three services.
-    const alice = tokenOf('u-alice');
+    const alice = tokenOf(lab, 'u-alice');
     const orders = await query(
       '{ orders { id symbol user { id email displayName } } }',
       alice,
@@ -330,7 +329,7 @@ describe('GQL-007 — the backend federation queries answer any caller', () => {
 
     const user = await query(
       '{ user(id: "u-alice") { id email orders { id symbol } } }',
-      tokenOf('u-admin', 'ADMIN'),
+      tokenOf(lab, 'u-admin', 'ADMIN'),
     );
     expect(user.errors).toBeUndefined();
     expect(user.data).toEqual({
@@ -363,7 +362,7 @@ describe('GQL-007 — the backend federation queries answer any caller', () => {
     expect(markets.body.data?.markets).toHaveLength(5);
 
     const orders = await post('trading', '{ orders { id userId } }', {
-      authorization: `Bearer ${tokenOf('u-alice')}`,
+      authorization: `Bearer ${tokenOf(lab, 'u-alice')}`,
     });
     expect(orders.status).toBe(200);
     expect(orders.body.errors).toBeUndefined();

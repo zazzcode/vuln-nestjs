@@ -14,7 +14,7 @@
 
 **Greenlight.** The Project Owner's instruction of 2026-11-28 — to continue from the handoff and complete the implementation, testing and documentation of VCX, committing at reasonable checkpoints — is the approval to implement this step as [the plan's section 4](../project/implementation-plan.md#4-step-3--integration) and [the gateway contract's section 6](../project/services/gateway.md#6-api-tests) define it. The instruction did not settle one question, D-2: which subgraph keeps the flaw. It is taken as the invariants require, and put to the Project Owner in the pull request.
 
-**The base of the branch.** Cut from a local merge of the tips of #6 (`e5db3dd`) and #7 (`9992636`), commit `abeab16`, not from `main`: this step cannot start from a `main` that lacks the gateway, the two branches do not conflict, and their merge is the tree `main` holds once both are merged. Until they are, the pull request's diff shows their files too; afterwards, this step's own. The scope of this step is therefore checked from `abeab16` (section 5).
+**The base of the branch.** Cut from a local merge of the tips of #6 (`e5db3dd`) and #7 (`9992636`), commit `abead16`, not from `main`: this step cannot start from a `main` that lacks the gateway, the two branches do not conflict, and their merge is the tree `main` holds once both are merged. Until they are, the pull request's diff shows their files too. It goes on showing one sibling's after they are merged — their two tips are both merge bases of this branch and of `main`, and Git picks one — until `main` is merged into this branch, which the Lead Agent does before anything else happens on it. The scope of this step is checked from `abead16` until that merge, and from `main` after it (section 5).
 
 ---
 
@@ -112,6 +112,7 @@ Every file this specification adds or changes is under `tests/e2e/`, `scripts/ch
 | `scripts/check-scenarios.mjs`, `scripts/check-scenarios.spec.ts` | modified | `pnpm scenario:check` fails when a scenario has no request under `postman/` |
 | `docs/vulnerabilities/gql.md` | modified | Section GQL-007 only: the three subgraphs as built, every command in it run by the lead |
 | `.zazz/specifications/003-integration.md`, `.zazz/specifications/README.md` | new, modified | This file; its row in the index |
+| `AGENTS.md`, `.zazz/architecture/testing-strategy.md` | modified | One line each, saying what `pnpm scenario:check` fails on since this step: a registered scenario with no request named after it |
 
 ### Out of scope
 
@@ -130,7 +131,7 @@ Each answers "why this over the obvious alternative?".
 
 ### D-1 — The branch starts from a local merge of #6 and #7
 
-**Decision.** `phase-3-integration` is cut from `abeab16`, the gateway's tip with the notifications tip merged into it, and pushed at once as a draft.
+**Decision.** `phase-3-integration` is cut from `abead16`, the gateway's tip with the notifications tip merged into it, and pushed at once as a draft.
 
 **Why.** Over waiting for the merges: the Project Owner asked for the work to go on, and every hour between the two merges and this branch is an hour added to the end. Over a local-only branch rebased later: a pushed branch has CI on every push, the pre-push hook on every push and nothing to lose to the usage limit, which stopped builders twice on 2026-11-27. The merge is clean (`git merge-tree --write-tree` exits 0) and the combined tree passed the whole gate on 2026-11-28, so the base is what `main` will be.
 
@@ -202,7 +203,7 @@ Every command runs in the worktree: `cd /Users/michael/Dev/zazzcode/vuln-nestjs-
 
 ### Scope verification
 
-Until #6 and #7 are merged, `git diff origin/main...HEAD --name-only` lists their files as well. The scope of this step is `git diff abead16..HEAD --name-only`: only the paths of section 3. After the merges, both commands agree.
+The pull request's diff is `git diff origin/main...HEAD --name-only`, from the merge base. Until #6 and #7 are merged it lists their files as well. After they are merged it still lists one sibling's: their two tips are then both merge bases of this branch and of `main`, and Git picks one (measured on 2026-11-28 with throwaway commits: 52 files, where this step has 25). So, until `main` is merged into this branch, the scope of this step is `git diff abead16..HEAD --name-only`: only the paths of section 3. The Lead Agent merges `main` into the branch as soon as #7 and #6 are merged, before anything else happens on it; from then on the scope is `git diff origin/main...HEAD --name-only`, which is what the pull request shows.
 
 ### Run log
 
@@ -254,7 +255,7 @@ Reference data: the fake data of `@zazzles/exchange-lab-data` as every run loads
 - **AC9 — Clean, and nothing left behind.** `pnpm build`, `pnpm lint` (0 warnings, 0 errors), `pnpm format:check`, `pnpm test`, `pnpm test:int`, `pnpm test:e2e`, `pnpm test:api`, `pnpm scenario:check` and `pnpm audit:check` each exit 0 on the tip. Every end-to-end file's stop finds nothing forced and nothing left behind, which `useLab()` asserts. Verified by each exit code, read from where it was written.
 - **AC10 — The documentation says what is built.** Section GQL-007 of `docs/vulnerabilities/gql.md` shows accounts and notifications answering a direct `_entities` call with no credential, trading answering 403 to the same call and 200 with the service token, and the graph still answering; every command in it was run against a lab of the lead's, on a port set of its own, and its output is what was printed. Its "vulnerable and protected" table says why each counterpart works, as a scoped claim. Verified by the run log's lines for each command, and `doc-check`'s manual pass.
 - **AC11 — The counterpart is proven live.** With the `plugins` line removed from trading's module, its three refusal tests fail and pass restored. The check is a line of the run log: what was removed, the file run, how many failed, the names. Verified by the run log.
-- **AC12 — Scope.** `git diff abead16..HEAD --name-only` lists only the paths of section 3. `pnpm-lock.yaml` and `tests/expected-audit.json` are unchanged: this step adds no dependency and no pin. Verified by that command.
+- **AC12 — Scope.** `git diff abead16..HEAD --name-only` lists only the paths of section 3 — and, once `main` is merged into the branch, so does `git diff origin/main...HEAD --name-only`. `pnpm-lock.yaml` and `tests/expected-audit.json` are unchanged: this step adds no dependency and no pin. Verified by that command.
 
 ---
 
@@ -284,7 +285,7 @@ Trading's existing tests that call `_entities` — `app.int-spec.ts`, `safe.int-
 
 **`scripts/check-scenarios.spec.ts`** — AC8. The new function: a scenario whose ID no request's name starts with is reported; one with a request is not; a request naming an ID the catalogue does not have is ignored.
 
-**`libs/internal-auth/src/auth-guard.spec.ts`** — `sameSecret`, moved not changed: the existing service-token tests keep passing; one test each for equal, different, and different length.
+**`libs/internal-auth/src/secret.spec.ts`** — `sameSecret`, moved from the guard and not changed: one test each for equal, different, and of another length. The guard's own suite, `auth-guard.spec.ts`, keeps passing unchanged.
 
 Existing coverage reused: `tests/e2e/graph.e2e-spec.ts` (the join, AC4's third query), `apps/gateway/test/scenarios/*.int-spec.ts` (the thirteen against stand-ins: unchanged, they stay), `tests/api/collections.api-spec.ts` (every request passes under Newman).
 
@@ -439,6 +440,8 @@ Write your findings to .zazz/ephemeral/003-review-<axis>.md as you establish eac
 
 - **2026-11-28, the Lead Agent, at drafting.** Sections 4 (D-2), 6 (AC2, AC3, AC10), 7, 8. The specification of #6 and the handoff planned that each real subgraph require the token. Measured on the lab and taken as D-2: accounts keeps the flaw, trading and notifications are its counterpart. Awaiting the Project Owner's confirmation (OQ-1); no verification impact beyond what AC2 and AC3 already name.
 - **2026-11-28, the Lead Agent, during implementation, before the GQL-007 commit.** Sections 0, 3, 4 (D-2), 6 (AC2, AC3, AC10, AC11), 7, 8. D-2 first made trading and notifications both the counterpart. The full gate showed why not: the existing tests of both services call `_entities` directly, as the gateway does, without the service token — five tests of trading and nine of notifications failed, and two of trading's passed on the plugin's 403 instead of the resolver's refusal. One hardened subgraph is the contract's design. Now trading is hardened and its four test files present the token; notifications keeps the flaw beside accounts. Verification impact: AC2 gains notifications; AC3 and AC11 lose it; the scope gains trading's four test files.
+
+- **2026-11-28, the Lead Agent, after the review.** The header, and sections 3, 5, 6 (AC12), 7 and 13. The review of both axes found: the base's hash mispelled in two places; a claim that the two scope commands agree once #6 and #7 are merged — measured false with throwaway commits, since their two tips are both merge bases, so `main` has to be merged into this branch before the pull request shows this step's files alone; `sameSecret`'s tests named in the wrong file; and the request rule undocumented on the two pages that describe the check. The scope gains those two pages. No acceptance criterion changes its result; AC12 names the command for after the merge too. Closed with them, on the Standards axis: the GraphQL end-to-end file now uses the shared token helper of `tests/e2e/scenarios.ts`.
 
 ---
 

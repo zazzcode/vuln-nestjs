@@ -35,7 +35,7 @@ Violating any of these is a bad change, however green the tests.
 
 ## Repository commands
 
-All from the root. Each was last run on 2026-11-26, the `git config` line on 2026-11-27.
+All from the root. Each was last run on 2026-11-26, the `git config` line on 2026-11-27 and the `scenario:check` line on 2026-11-28.
 
 | Command | What it does |
 | --- | --- |
@@ -49,7 +49,7 @@ All from the root. Each was last run on 2026-11-26, the `git config` line on 202
 | `pnpm test:int` | Each service's integration tests, one service at a time. Starts a database engine. |
 | `pnpm test:e2e` | The whole lab as four processes. Uses ports 3000, 3101–3103 and the relays on 3201, 3202. |
 | `pnpm test:api` | Every collection under `postman/`, each run under Newman against the whole lab. The same ports as `test:e2e`. |
-| `pnpm scenario:check`, `pnpm scenario:update` | Compares the scenario ground truth with the catalogue, or rewrites it. Never hand-edit `tests/expected-hashes.json` or `tests/expected-scanner-findings.json`. |
+| `pnpm scenario:check`, `pnpm scenario:update` | Compares the scenario ground truth with the catalogue, or rewrites it. The check fails when a registered file changed, when a catalogue entry points at a file that does not exist, or when a registered scenario has no request named after it under `postman/`. Never hand-edit `tests/expected-hashes.json` or `tests/expected-scanner-findings.json`. |
 | `pnpm audit:check`, `pnpm audit:update` | Compares the production audit with `tests/expected-audit.json`, or rewrites it. An advisory leaves only by name: `pnpm audit:update --retire <id>`. |
 | `pnpm audit:lab` | The raw production audit. A nonzero exit is the lab working, once it has its pins. |
 
