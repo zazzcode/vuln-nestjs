@@ -2,7 +2,7 @@
 
 **Status: installed.** All eight pins are in the workspaces their sections name, as the four `package.json` files declare them, and `pnpm audit:check` finds `tests/expected-audit.json` true: 24 advisories, the complete answer. This page is its summary.
 
-The versions and their advisories were checked on 2026-11-26 against the GitHub Advisory Database, through its API, and against the npm registry. Where the audit differs from that reading, the section says so.
+The versions and their advisories were checked on 2026-11-26 against the GitHub Advisory Database, through its API, and against the npm registry. Where the audit differs from that reading, the section says so. Checked again on 2026-11-28, through the same API, for every advisory the tables below name: the severity and the version that fixes it agree for all 26 rows, and 23 carry the CVE identifier the database gives; three have none (GHSA-9c5c-9qcx-q35q, GHSA-3f6p-5ww8-9rcr and GHSA-rgwj-5xj2-c3m3). Until that check the last two carried the identifier of another advisory.
 
 The pins have no reproduction of their own beyond `pnpm audit:lab`, the raw production audit. Run on 2026-11-28, it reports 24 vulnerabilities (8 moderate, 12 high, 4 critical) and exits 1: a nonzero exit is the lab working. Three of the pins are needed by a scenario's exploit, which is reproduced in that scenario's module: [AUTH-001](auth.md#auth-001-exploit), [DESER-001](deser.md#deser-001-exploit) and [PROTO-003](proto.md#proto-003-exploit).
 
@@ -74,8 +74,8 @@ The audit returns both.
 | [GHSA-4rch-2fh8-94vw](https://github.com/advisories/GHSA-4rch-2fh8-94vw) · CVE-2024-21511 | Critical | Arbitrary code injection | 3.9.7 |
 | [GHSA-pmh2-wpjm-fj45](https://github.com/advisories/GHSA-pmh2-wpjm-fj45) · CVE-2024-21512 | High | Prototype pollution | 3.9.8 |
 | [GHSA-49j4-86m8-q2jw](https://github.com/advisories/GHSA-49j4-86m8-q2jw) · CVE-2024-21509 | Medium | Prototype poisoning | 3.9.4 |
-| [GHSA-3f6p-5ww8-9rcr](https://github.com/advisories/GHSA-3f6p-5ww8-9rcr) · CVE-2024-21508 | High | Authentication plugin downgrade leaks plaintext credentials | 3.22.0 |
-| [GHSA-rgwj-5xj2-c3m3](https://github.com/advisories/GHSA-rgwj-5xj2-c3m3) · CVE-2024-21509 | Medium | Unbounded decompression allows a decompression-bomb denial of service | 3.23.1 |
+| [GHSA-3f6p-5ww8-9rcr](https://github.com/advisories/GHSA-3f6p-5ww8-9rcr) | High | Authentication plugin downgrade leaks plaintext credentials | 3.22.0 |
+| [GHSA-rgwj-5xj2-c3m3](https://github.com/advisories/GHSA-rgwj-5xj2-c3m3) | Medium | Unbounded decompression allows a decompression-bomb denial of service | 3.23.1 |
 
 The audit returns all six.
 
