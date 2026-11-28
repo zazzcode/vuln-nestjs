@@ -163,7 +163,7 @@
     "flow": "args.userId -> repository where clause: the caller names any user, the balances answer to the token alone",
     "safeControl": "apps/trading/src/wallets/wallet.resolver.ts",
     "safeControls": ["apps/trading/src/wallets/wallets-by-user.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -184,7 +184,7 @@
     "flow": "args.id -> OrdersService.byId -> returned to the caller with no check of who placed the order",
     "safeControl": "apps/trading/src/orders/orders.resolver.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -205,7 +205,7 @@
     "flow": "args.userId, args.amount -> WalletsService.adjust: the amount is checked, the role never is",
     "safeControl": "apps/trading/src/wallets/deposit.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -226,7 +226,7 @@
     "flow": "request body -> Object.assign(order, body) -> repository.save: status and userId are properties of the entity",
     "safeControl": "apps/trading/src/orders/update-order.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
@@ -247,7 +247,7 @@
     "flow": "args.price -> repository.update(referencePrice): no role check, any signed-in caller moves the price",
     "safeControl": "apps/trading/src/markets/tick-prices.resolver.ts",
     "safeControls": ["apps/trading/src/internal/internal.controller.ts"],
-    "documentation": "docs/vulnerabilities/trading-access.md",
+    "documentation": "docs/vulnerabilities/access.md",
     "test": "apps/trading/test/scenarios/access.int-spec.ts",
     "expectedFinding": true
   },
