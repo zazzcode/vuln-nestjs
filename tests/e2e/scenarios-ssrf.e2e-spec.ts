@@ -201,3 +201,57 @@ describe('SSRF-002 — the avatar URL is fetched wherever it points', () => {
     await reset();
   });
 });
+
+// SSRF-003 — a URL fetched and its body returned. Hardened value: the two
+// import routes — one takes the content and fetches nothing, the other
+// fetches through the outbound guard.
+describe('SSRF-003 — a URL fetched and its body returned', () => {
+  // One payload: trading's own internal health endpoint, on the relay in
+  // front of it. No allowlist names this origin.
+  const url = () => `${lab().http1Url('trading')}/internal/health`;
+
+  test("SSRF-003: POST /api/v1/alerts/fetch answers trading's own body", async () => {
+    const answer = await post('/api/v1/alerts/fetch', { url: url() }, alice());
+
+    expect(answer.status).toBe(200);
+    const read = answer.body as { status: number; body: string };
+    // What was gained: trading's internal health endpoint was read from
+    // inside the machine, and its own answer — service name, store engine,
+    // connection state — came back to the caller in the body field.
+    expect(read.status).toBe(200);
+    expect(read.body).toContain('"service":"trading"');
+    expect(read.body).toContain('"engine":"mysql"');
+  });
+
+  test('SSRF-003 counterpart 1: alerts/import takes the content and fetches nothing', async () => {
+    const answer = await post(
+      '/api/v1/alerts/import',
+      { json: url() },
+      alice(),
+    );
+
+    // Refused by the operation's shape: the route takes the content itself,
+    // so the URL string is not an alert document — and no request is ever
+    // made for it.
+    expect(answer.status).toBe(400);
+    expect((answer.body as { message?: string }).message).toContain(
+      'not an alert document',
+    );
+  });
+
+  test('SSRF-003 counterpart 2: alerts/import-url refuses the origin through the guard', async () => {
+    const answer = await post(
+      '/api/v1/alerts/import-url',
+      { url: url() },
+      alice(),
+    );
+
+    // Refused by the outbound guard: the origin is not on the webhook
+    // allowlist, so the import fetches nothing — the reason names the rule
+    // that refused, before any connection is opened.
+    expect(answer.status).toBe(400);
+    expect((answer.body as { message?: string }).message).toContain(
+      'not on the webhook allowlist',
+    );
+  });
+});
