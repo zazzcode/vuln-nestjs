@@ -1,5 +1,6 @@
 import { request } from '@zazzles/exchange-testing';
 import { useLab } from './lab.js';
+import { tokenOf } from './scenarios.js';
 
 /**
  * The security-misconfiguration scenarios of the gateway's public scope and
@@ -151,5 +152,58 @@ describe('CONFIG-002 — the public scope serves its pages with no security head
     );
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
     expect(response.headers.get('x-frame-options')).toBe('DENY');
+  });
+});
+
+// CONFIG-003 — the API document, served with no authentication. Hardened
+// value: the two guarded copies of the document and no open one.
+describe('CONFIG-003 — the API document is served with no authentication', () => {
+  test('CONFIG-003: the API pages answer with no token at all', async () => {
+    const index = await get('/docs');
+    expect(index.status).toBe(200);
+    expect(index.headers.get('content-type')).toContain('text/html');
+    expect(await index.text()).toContain('href="/docs/json"');
+
+    const document = await get('/docs/json');
+    expect(document.status).toBe(200);
+    const paths = Object.keys(
+      ((await document.json()) as { paths: Record<string, unknown> }).paths,
+    );
+    // What was gained: the whole API surface — every route the running edge
+    // carries, its methods and its schemas — read with no credential at all.
+    expect(paths).toEqual(
+      expect.arrayContaining([
+        '/api/v1/health',
+        '/api/v1/auth/sign-in',
+        '/api/v1/admin/users',
+      ]),
+    );
+  });
+
+  test('CONFIG-003 counterpart 1: the administrator document refuses a caller without the role', async () => {
+    const refused = await get('/api/v1/admin/openapi.json');
+    // Refused by the guard: the document is an administrator's, and this is nobody.
+    expect(refused.status).toBe(401);
+
+    const answered = await get('/api/v1/admin/openapi.json', {
+      authorization: `Bearer ${tokenOf(lab, 'u-admin', 'ADMIN')}`,
+    });
+    expect(answered.status).toBe(200);
+    expect(
+      Object.keys(
+        ((await answered.json()) as { paths: Record<string, unknown> }).paths,
+      ),
+    ).toContain('/api/v1/health');
+  });
+
+  test('CONFIG-003 counterpart 2: the service-token document refuses a caller without the token', async () => {
+    const refused = await get('/api/v1/openapi.json');
+    // Refused by the guard: only the system's own call reads this copy.
+    expect(refused.status).toBe(401);
+
+    const answered = await get('/api/v1/openapi.json', {
+      'x-internal-token': lab().secrets.INTERNAL_SERVICE_TOKEN,
+    });
+    expect(answered.status).toBe(200);
   });
 });
