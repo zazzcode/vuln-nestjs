@@ -371,7 +371,7 @@
     "flow": "orders.memo -> CSV cell written as it is: =zazzles-lab-marker stays a formula",
     "safeControl": "apps/trading/src/reports/reports.controller.ts",
     "safeControls": [],
-    "documentation": "docs/vulnerabilities/trading-inject.md",
+    "documentation": "docs/vulnerabilities/inject.md",
     "test": "apps/trading/test/scenarios/exports.int-spec.ts",
     "expectedFinding": true
   },
