@@ -1,32 +1,15 @@
 # `DESER` — unsafe deserialization
 
-3 scenarios: `DESER-001` in `accounts`, `DESER-002` in `notifications`, `DESER-003` in `notifications`.
+Three weaknesses that treat a caller's string as something to execute. The legacy remember-me resume of `accounts` hands its cookie to `node-serialize`, whose format can carry functions (`DESER-001`). Two places in `notifications` do the same: the smart alert's expression is run with `eval` when the prices arrive (`DESER-002`), and the announcement send compiles the body as an `ejs` template before it reaches the notifier's command line (`DESER-003`). Everywhere else a caller's string is stored, compared or rendered as data. The protected counterparts are in `apps/accounts/src/auth/auth.controller.ts`, `apps/notifications/src/alerts/create-alert.resolver.ts`, `apps/notifications/src/alerts/create-rule-alert.resolver.ts`, `apps/notifications/src/announcements/broadcast-announcement.resolver.ts` and `apps/notifications/src/announcements/announcements-notify.controller.ts`.
 
-**In `accounts`.**
+`DESER-001` needs the `node-serialize` 0.0.4 pin, the only version there is ([SCA-007](dependencies.md)). `notifications` also carries the `ejs` 3.1.6 pin ([SCA-004](dependencies.md)): the version itself is a finding for the dependency scanner, beside the code-level flaw of `DESER-003`.
 
-The legacy "remember me" resume of `accounts`. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults).
+The `accounts` reproduction runs against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults); the `notifications` ones were run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with Alice's token in `$A` and an administrator's in `$T`. Each counterpart's claim is scoped: this operation, receiving the identical input, keeps the string inert for the reason given. Nothing here says any operation is secure in general.
 
-**In `notifications`.**
-
-**Family:** `DESER` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A03
-
-Two places treat a caller's string as something to execute: the smart
-alert's expression is run with `eval` when the prices arrive, and the
-announcement send compiles the body as an `ejs` template before it reaches
-the notifier's command line. Everywhere else a caller's string is stored,
-compared or rendered as data.
-
-| ID | The operation | The sink | CWE |
-| --- | --- | --- | --- |
-| DESER-002 | `createSmartAlert(expression: String!)` | `eval(alert.expression)` at evaluation | CWE-95 |
-| DESER-003 | `POST /internal/announcements/send` | `ejs.render(input.body, …)` | CWE-1336 |
-
-This service carries the `ejs` pin (3.1.6, [SCA-004](dependencies.md)): the
-version itself is a finding for the dependency scanner, beside the code-level
-flaw below.
-
+<a id="deser-001"></a>
 ## DESER-001 — the remember cookie goes to `node-serialize`
 
+<a id="deser-001-agent"></a>
 ### DESER-001 — agent reference
 
 | | |
@@ -38,10 +21,12 @@ flaw below.
 | Tests | `apps/accounts/test/scenarios/auth.int-spec.ts` |
 | Expected finding | Yes, CWE-502, SAST and SCA (the `node-serialize` 0.0.4 pin) |
 
+<a id="deser-001-student"></a>
 ### DESER-001 — student guide
 
 `node-serialize`'s format can carry functions: the marker `_$$ND_FUNC$$_` turns the string that follows into executable code when the value is unserialized. The legacy resume route hands the cookie to it unchanged, so the cookie's author chooses what runs.
 
+<a id="deser-001-exploit"></a>
 ### DESER-001 — exploit lab
 
 ```console
@@ -61,6 +46,7 @@ $ curl -s -o /dev/null -w '%{http_code}\n' $RELAY/internal/sessions/resume \
 
 The signature is checked before anything is parsed, and this value was never signed. In Burp: the same cookie header against both routes.
 
+<a id="deser-001-safe"></a>
 ### DESER-001 — vulnerable and protected
 
 | | Why |
@@ -69,12 +55,19 @@ The signature is checked before anything is parsed, and this value was never sig
 | `POST /internal/sessions/resume` (protected) | The cookie is signed by the service first, then `JSON.parse`d, then validated against a DTO: this payload fails at the signature |
 | `introspect` (protected) | No cookie decides anything: the session record named by the token does |
 
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the cookie whose function runs on the legacy resume route is refused with 400 by the signed resume route, which checks a signature this value never had before anything is parsed, and at `introspect` no cookie is read at all, the session record of the token deciding. The claim is not that a signed cookie resists everyone who holds the signing key; only that this cookie executes nothing through them.
+
+<a id="deser-001-tests"></a>
 ### DESER-001 — tests
 
 `apps/accounts/test/scenarios/auth.int-spec.ts`, `DESER-001`: the function in the cookie runs and its return value is answered; the signed resume route refuses the same cookie with 400; `introspect` answers by the session record alone.
 
+The collection `postman/accounts/vuln-nestjs.accounts.postman_collection.json` carries the request `DESER-001: the function in the remember cookie runs`.
+
+<a id="deser-002"></a>
 ## DESER-002 — an alert expression that is code
 
+<a id="deser-002-agent"></a>
 ### DESER-002 — agent reference
 
 - **Scenario:** DESER-002, a user expression run with `eval`.
@@ -86,6 +79,7 @@ The signature is checked before anything is parsed, and this value was never sig
 - **Tests:** `apps/notifications/test/scenarios/deser.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report a stored caller string reaching `eval`.
 
+<a id="deser-002-student"></a>
 ### DESER-002 — student guide
 
 The line (`apps/notifications/src/alerts/smart-alert.evaluation.ts`):
@@ -107,6 +101,7 @@ The author's belief: "it is the user's own alert, on their own row." But
 what is nearest, not what is only. The expression decides deliveries, and
 anything it can reach from the evaluation is its playground.
 
+<a id="deser-002-exploit"></a>
 ### DESER-002 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with
@@ -134,6 +129,7 @@ returned `true`, and rewrote the row it was stored on. In Postman: the
 request `DESER-002: an alert expression that is code`. In Burp: send the
 mutation and the evaluation from Repeater and read the alert back.
 
+<a id="deser-002-safe"></a>
 ### DESER-002 — vulnerable and protected
 
 | | Operation | What it does with the same string |
@@ -148,6 +144,7 @@ inert value in a typed field — the same bytes, never executed, no delivery.
 The claim is not that any label is safe for any purpose; only that these
 two inputs decide with a threshold and an operator.
 
+<a id="deser-002-tests"></a>
 ### DESER-002 — tests
 
 `apps/notifications/test/scenarios/deser.int-spec.ts`, describe `DESER-002:
@@ -163,8 +160,12 @@ followed by `evaluateAlerts` with a price no structured rule crosses:
   and a rule carrying an `expression` property is refused at input
   coercion, by name.
 
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries three requests: `DESER-002: an alert expression that is code`, `DESER-002: the prices arrive` and `DESER-002: the row the expression rewrote`.
+
+<a id="deser-003"></a>
 ## DESER-003 — an announcement body that is a template
 
+<a id="deser-003-agent"></a>
 ### DESER-003 — agent reference
 
 - **Scenario:** DESER-003, the announcement body compiled as a template.
@@ -176,6 +177,7 @@ followed by `evaluateAlerts` with a price no structured rule crosses:
 - **Tests:** `apps/notifications/test/scenarios/deser.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report caller input compiled as a template.
 
+<a id="deser-003-student"></a>
 ### DESER-003 — student guide
 
 The line (`apps/notifications/src/announcements/announcements-send.controller.ts`):
@@ -197,6 +199,7 @@ The author's belief: "rendering is formatting, and the body is an
 administrator's field." A template compiled from input is input executed,
 and an administrator's field is still caller input.
 
+<a id="deser-003-exploit"></a>
 ### DESER-003 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with an
@@ -217,6 +220,7 @@ its value delivered. In Postman: the request `DESER-003: an announcement
 body that is a template`. In Burp: send the same POST from Repeater and
 read the record.
 
+<a id="deser-003-safe"></a>
 ### DESER-003 — vulnerable and protected
 
 | | Operation | What it does with the same body |
@@ -231,6 +235,7 @@ intact as text — the same bytes, never compiled. The claim is not that
 every template is safe; only that these two never compile the caller's
 string.
 
+<a id="deser-003-tests"></a>
 ### DESER-003 — tests
 
 `apps/notifications/test/scenarios/deser.int-spec.ts`, describe `DESER-003:
@@ -242,3 +247,5 @@ ending in `<%= 7*7 %>` — is sent to all three operations:
 - **Counterpart 1:** the record contains `<%= 7*7 %>` and not `49`.
 - **Counterpart 2:** the receiver on 4010 was sent the notice with
   `<%= 7*7 %>` in it, as text.
+
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries the request `DESER-003: an announcement body that is a template`.
