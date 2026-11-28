@@ -1,4 +1,4 @@
-import { request } from '@zazzles/exchange-testing';
+import { graphql, request } from '@zazzles/exchange-testing';
 import { useLab } from './lab.js';
 import { tokenOf } from './scenarios.js';
 
@@ -113,5 +113,83 @@ describe('XSS-003 — the public status page serves the name unescaped', () => {
     expect(response.headers.get('content-type')).toContain('application/json');
     expect(response.headers.get('x-content-type-options')).toBe('nosniff');
     expect(((await response.json()) as { caller: string }).caller).toBe(MARKER);
+  });
+});
+
+// COOKIE-003 — a state change a page on another site can submit. Hardened
+// value: the two routes that ask for what a cross-site form cannot send.
+describe('COOKIE-003 — a form post with the session cookie changes the profile', () => {
+  // One payload: the form a page on another site submits — a field the real
+  // profile accepts — and nothing but the cookie the browser adds to it.
+  const FORM = 'displayName=Cross+site+change';
+  const alice = () => tokenOf(lab, 'u-alice');
+
+  /** The cross-site form itself: the cookie, the urlencoded body, nothing else. */
+  const postForm = (path: string, headers: Record<string, string> = {}) =>
+    call(path, {
+      method: 'POST',
+      headers: {
+        cookie: `vcx_session=${alice()}`,
+        'content-type': 'application/x-www-form-urlencoded',
+        ...headers,
+      },
+      body: FORM,
+    });
+
+  /** Alice's display name, as the gateway's own graph reads it from accounts. */
+  const displayName = async (): Promise<string> => {
+    const read = await graphql(
+      `${lab().url}/graphql`,
+      '{ me { displayName } }',
+      {
+        token: alice(),
+      },
+    );
+    expect(read.errors).toBeUndefined();
+    return (read.data as { me: { displayName: string } }).me.displayName;
+  };
+
+  test('COOKIE-003: a form post with the session cookie changes the profile', async () => {
+    const response = await postForm('/api/v1/profile/preferences');
+
+    expect(response.status).toBe(200);
+    // What was gained: the change crossed to the real profile in accounts —
+    // written from nothing but a form a browser submits and the cookie it
+    // adds — and the gateway's own graph reads the new name back.
+    expect(await displayName()).toBe('Cross site change');
+
+    // The lab is returned to its fake data for what follows in this file.
+    await call('/api/v1/lab/reset', { method: 'POST' });
+    expect(await displayName()).toBe('Alice');
+  });
+
+  test('COOKIE-003 counterpart 1: preferences/json wants a bearer header and a JSON body', async () => {
+    const unauthenticated = await postForm('/api/v1/profile/preferences/json');
+    // Refused by what a cross-site form cannot send: no bearer header to
+    // carry, so the cookie alone is not taken for the caller.
+    expect(unauthenticated.status).toBe(401);
+
+    const form = await call('/api/v1/profile/preferences/json', {
+      method: 'POST',
+      headers: {
+        authorization: `Bearer ${alice()}`,
+        'content-type': 'application/x-www-form-urlencoded',
+      },
+      body: FORM,
+    });
+    // And the body a form does send is not the JSON the route carries.
+    expect(form.status).toBe(415);
+    expect(await displayName()).toBe('Alice');
+  });
+
+  test('COOKIE-003 counterpart 2: preferences/csrf refuses the same post without its token', async () => {
+    const response = await postForm('/api/v1/profile/preferences/csrf');
+
+    // Refused by the CSRF check: a cookie alone is a request a page on
+    // another site can arrange; the token it cannot also add is missing, and
+    // nothing is carried to the profile.
+    expect(response.status).toBe(403);
+    expect(await response.text()).toContain('csrf');
+    expect(await displayName()).toBe('Alice');
   });
 });
