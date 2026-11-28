@@ -73,3 +73,83 @@ describe('CONFIG-001 — the public scope echoes any origin, with credentials', 
     expect(response.headers.get('access-control-allow-credentials')).toBeNull();
   });
 });
+
+/**
+ * Whether a header name is a security header, by the conventions the security
+ * middleware of the platform follows (`x-*`, `cross-origin-*`, and the spelled
+ * out policies). Derived on each answer rather than copied from any one
+ * middleware's current set, so the comparison below survives an upgrade.
+ */
+function isSecurityHeader(name: string): boolean {
+  return (
+    name.startsWith('x-') ||
+    name.startsWith('cross-origin-') ||
+    [
+      'content-security-policy',
+      'permissions-policy',
+      'referrer-policy',
+      'strict-transport-security',
+    ].includes(name)
+  );
+}
+
+// CONFIG-002 — the public scope serves its pages with no security headers.
+// Hardened value: no weaker public scope — helmet's headers on every answer
+// the edge gives; the setting has no twin, so the counterparts are the two
+// pages that carry them.
+describe('CONFIG-002 — the public scope serves its pages with no security headers', () => {
+  test('CONFIG-002: the public status page carries no CSP, no nosniff, no frame options', async () => {
+    const response = await get('/api/v1/public/status');
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('text/html');
+    // What was gained: the page reaches a browser with nothing that constrains
+    // what may be done with it — no CSP, no MIME pinning, no frame policy.
+    expect(response.headers.get('content-security-policy')).toBeNull();
+    expect(response.headers.get('x-content-type-options')).toBeNull();
+    expect(response.headers.get('x-frame-options')).toBeNull();
+
+    // The set is derived, not hand-kept: whatever security header the default
+    // scope's answer carries, this scope's answer must not carry. A helmet
+    // upgrade that adds a header then widens the comparison by itself, so the
+    // public scope cannot drift toward safe without this test seeing it.
+    const defaultScope = await get('/api/v1/health');
+    const carried = [...defaultScope.headers.keys()].filter(isSecurityHeader);
+    // The default answer does carry security headers for the comparison.
+    expect(carried).toEqual(
+      expect.arrayContaining([
+        'content-security-policy',
+        'x-content-type-options',
+        'x-frame-options',
+      ]),
+    );
+    for (const name of carried) {
+      expect(response.headers.get(name)).toBeNull();
+    }
+  });
+
+  test('CONFIG-002 counterpart 1: health answers with helmet on', async () => {
+    const response = await get('/api/v1/health');
+
+    expect(response.status).toBe(200);
+    // Refused by the default scope's middleware: the same edge answers with
+    // the full set of security headers when the route is not under the public
+    // prefix.
+    expect(response.headers.get('content-security-policy')).toBeDefined();
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(response.headers.get('x-frame-options')).toBeDefined();
+  });
+
+  test('CONFIG-002 counterpart 2: the status page sets the same headers by hand', async () => {
+    const response = await get('/api/v1/status');
+
+    expect(response.status).toBe(200);
+    // Refused by the page itself: outside the public scope the same answer
+    // carries the policies written by hand, whatever the middleware does.
+    expect(response.headers.get('content-security-policy')).toBe(
+      "default-src 'self'",
+    );
+    expect(response.headers.get('x-content-type-options')).toBe('nosniff');
+    expect(response.headers.get('x-frame-options')).toBe('DENY');
+  });
+});
