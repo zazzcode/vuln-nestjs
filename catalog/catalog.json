@@ -412,7 +412,7 @@
     "flow": "args.limit -> repository take: the caller's number, uncapped, sizes the answer",
     "safeControl": "apps/trading/src/trades/trades.resolver.ts",
     "safeControls": ["apps/trading/src/trades/trades-named.resolver.ts"],
-    "documentation": "docs/vulnerabilities/trading-res.md",
+    "documentation": "docs/vulnerabilities/res.md",
     "test": "apps/trading/test/scenarios/graph.int-spec.ts",
     "expectedFinding": true
   },
