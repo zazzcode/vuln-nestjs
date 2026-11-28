@@ -1,13 +1,11 @@
-import { ExpressAdapter } from '@nestjs/platform-express';
 import {
   graphql,
   request,
   runSecret,
   sessionToken,
-  startService,
   type ServiceHandle,
 } from '@zazzles/exchange-testing';
-import { AppModule } from '../../src/app.module.js';
+import { startNotificationsService } from '../support/service.js';
 import { WebhookReceiver } from '../support/receiver.js';
 
 // XSS-001: one payload, an announcement whose body is a script, sent to the
@@ -25,11 +23,7 @@ const admin = () =>
 beforeAll(async () => {
   process.env.JWT_SECRET = JWT_SECRET;
   process.env.INTERNAL_SERVICE_TOKEN = SERVICE_TOKEN;
-  service = await startService({
-    module: AppModule,
-    adapter: () => new ExpressAdapter(),
-    port: 3103,
-  });
+  service = await startNotificationsService();
   receiver = WebhookReceiver.forSecret(JWT_SECRET);
   await receiver.listen();
 }, 300_000);

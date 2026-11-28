@@ -4,8 +4,10 @@ import type { NextFunction, Request, Response } from 'express';
 
 /**
  * The JSON body parser of this service, as an Express idiom: a NestJS
- * middleware class, applied to the `/internal` routes that receive a JSON
- * body. GraphQL parses its own body.
+ * middleware class, applied to every route that receives a JSON body. The
+ * application is created with `bodyParser: false`, so this middleware is
+ * the parser. GraphQL does not parse its own body: Apollo reads what the
+ * framework parsed.
  */
 @Injectable()
 export class JsonBodyMiddleware implements NestMiddleware {
