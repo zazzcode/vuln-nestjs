@@ -1,30 +1,30 @@
 # `OS` — the caller's string on a command line
 
-**Family:** `OS` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A03
-
-Two operations reach for a process: the announcement send builds the
-notifier's command line by interpolation, and the webhook ping hands its URL
-to `curl` as an argument. Both put a caller's string where the shell or the
-tool reads it as syntax, not data.
+Two operations of `notifications` reach for a process, and both put a caller's string where the shell or the tool reads it as syntax, not data: the announcement send builds the notifier's command line by interpolation, and the webhook ping hands its URL to `curl` as an argument. Their protected counterparts are in `apps/notifications/src/announcements/broadcast-announcement.resolver.ts`, `apps/notifications/src/announcements/announcements-notify.controller.ts`, `apps/notifications/src/webhooks/preview-webhook.resolver.ts` and `apps/notifications/src/webhooks/webhooks-test.controller.ts`.
 
 | ID | The operation | The sink | CWE |
 | --- | --- | --- | --- |
 | OS-001 | `POST /internal/announcements/send` | `exec` of a command line with the title in it | CWE-78 |
 | OS-002 | `pingWebhook(url: String!)` | `execFile('curl', [url])` | CWE-88 |
 
+The reproductions were run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with Alice's token in `$A` and an administrator's in `$T`. Each counterpart's claim is scoped: this operation, receiving the identical input, keeps the string inert for the reason given. Nothing here says any operation is secure in general.
+
+<a id="os-001"></a>
 ## OS-001 — a title that reaches a shell
 
+<a id="os-001-agent"></a>
 ### OS-001 — agent reference
 
 - **Scenario:** OS-001, a title interpolated into a shell command.
 - **Source:** `apps/notifications/src/announcements/announcements-send.controller.ts`
 - **Operation:** `POST /internal/announcements/send` (gateway: `POST /api/v1/admin/announcements/send`), REST, administrator.
-- **Sink:** `exec` of `` node scripts/notify.js --title "${title}" --body "${rendered}" --url "${url}" ``.
+- **Sink:** `exec` of a `node` command line, run from the service's directory with its script `apps/notifications/scripts/notify.js` first: `` node scripts/notify.js --title "${title}" --body "${rendered}" --url "${url}" ``.
 - **Flow:** `body.title → AnnouncementsSendController.send → exec(command) → /bin/sh -c`.
 - **Counterparts:** `apps/notifications/src/announcements/broadcast-announcement.resolver.ts` (`execFile` with a fixed argument vector), `apps/notifications/src/announcements/announcements-notify.controller.ts` (a function call, no process).
 - **Tests:** `apps/notifications/test/scenarios/os.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report caller input interpolated into a command passed to `exec`.
 
+<a id="os-001-student"></a>
 ### OS-001 — student guide
 
 The line (`apps/notifications/src/announcements/announcements-send.controller.ts`):
@@ -45,6 +45,7 @@ field anyway." The quote is exactly what the payload turns into a door, and
 an administrator's field is still caller input: any string that can hold a
 `"` can close the quoting.
 
+<a id="os-001-exploit"></a>
 ### OS-001 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with an
@@ -70,6 +71,7 @@ shell` in the notifications collection. In Burp: send the same POST to the
 gateway's `/api/v1/admin/announcements/send` from Repeater, then read the
 last delivery.
 
+<a id="os-001-safe"></a>
 ### OS-001 — vulnerable and protected
 
 | | Operation | What it does with the same title |
@@ -85,6 +87,7 @@ shows (`{"title":"Maintenance\"; echo zazzles-lab-marker; echo \"", …}`).
 Neither claim is wider: neither says anything about other fields or other
 routes to a process.
 
+<a id="os-001-tests"></a>
 ### OS-001 — tests
 
 `apps/notifications/test/scenarios/os.int-spec.ts`, describe `OS-001: a
@@ -99,8 +102,12 @@ hidden in its quote — is sent to all three operations:
   the record holds the receiver's answer (`{"received":true}`), and no line
   is the marker.
 
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries the request `OS-001: a title that reaches a shell`.
+
+<a id="os-002"></a>
 ## OS-002 — an option where a URL was expected
 
+<a id="os-002-agent"></a>
 ### OS-002 — agent reference
 
 - **Scenario:** OS-002, a caller URL passed to `curl` as an argument.
@@ -112,6 +119,7 @@ hidden in its quote — is sent to all three operations:
 - **Tests:** `apps/notifications/test/scenarios/os.int-spec.ts`.
 - **Expected finding:** yes. A SAST tool must report caller input passed as a command argument where a leading dash makes it an option.
 
+<a id="os-002-student"></a>
 ### OS-002 — student guide
 
 The line (`apps/notifications/src/webhooks/ping-webhook.resolver.ts`):
@@ -135,6 +143,7 @@ The author's belief: "`execFile` is the safe one — no shell, no injection."
 True for the shell; false for the tool. The argument vector is only as fixed
 as the values in it, and the service decided on none of them.
 
+<a id="os-002-exploit"></a>
 ### OS-002 — exploit lab
 
 Run on 2026-11-27 against the service alone on `127.0.0.1:3103`, with
@@ -163,6 +172,7 @@ was expected`, whose payload is `-h` — curl prints its own usage instead of
 asking for any URL, which is the same fact seen without a filesystem. In
 Burp: send the mutation from Repeater and read the record.
 
+<a id="os-002-safe"></a>
 ### OS-002 — vulnerable and protected
 
 | | Operation | What it does with the same value |
@@ -177,6 +187,7 @@ run — the guard's `the scheme file is not http or https` is the refusal for
 exactly this value. The claim is not that the guard makes every URL safe;
 only that this value never reaches a tool that would read it as curl does.
 
+<a id="os-002-tests"></a>
 ### OS-002 — tests
 
 `apps/notifications/test/scenarios/os.int-spec.ts`, describe `OS-002: an
@@ -194,3 +205,5 @@ file the test creates under its own temporary directory holding
 
 The temporary directory is removed in `afterAll`: nothing of the test
 remains.
+
+The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries two requests: `OS-002: an option where a URL was expected` and `OS-002: what curl printed, read back from the record`.
