@@ -1,4 +1,5 @@
 import { INestApplication, Type } from '@nestjs/common';
+import type { NestApplicationOptions } from '@nestjs/common';
 import { AbstractHttpAdapter, NestFactory } from '@nestjs/core';
 import {
   LOOPBACK_HOST,
@@ -17,12 +18,19 @@ export const HEALTH_PATH = '/internal/health';
 /** Where the gateway says it is up. */
 export const GATEWAY_HEALTH_PATH = '/api/v1/health';
 
-/** A service as a test starts it: its module, the adapter it uses, and its port. */
+/** A service as a test starts it: its module, the adapter it uses, its port, and the options its process is created with. */
 export interface ServiceOptions {
   module: Type<unknown>;
   /** Creates the adapter its service uses. Required: a test that uses another one tests another stack. */
   adapter: () => AbstractHttpAdapter;
   port: number;
+  /**
+   * NestJS's own options for the application, passed as given. A service whose
+   * `main.ts` creates its application with one gives it here too, so that a
+   * test starts the service as its process does. `logger` and `abortOnError`
+   * are the launcher's.
+   */
+  applicationOptions?: Omit<NestApplicationOptions, 'logger' | 'abortOnError'>;
 }
 
 export interface ServiceHandle {
@@ -65,6 +73,7 @@ async function startOne(
   const app = await NestFactory.create(options.module, options.adapter(), {
     logger: ['error', 'warn'],
     abortOnError: false,
+    ...options.applicationOptions,
   });
   const received: string[] = [];
   const server: Server = app.getHttpServer();

