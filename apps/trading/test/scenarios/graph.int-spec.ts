@@ -38,7 +38,11 @@ const alice = tokenOf('u-alice');
 const bob = tokenOf('u-bob');
 const query = (
   source: string,
-  options: { token?: string; variables?: Record<string, unknown> } = {},
+  options: {
+    token?: string;
+    variables?: Record<string, unknown>;
+    headers?: Record<string, string>;
+  } = {},
 ) => graphql(`${service.url}/graphql`, source, options);
 const reset = () =>
   request(`${service.url}/internal/lab/reset`, {
@@ -162,6 +166,8 @@ describe('GQL-006 — giftOrder builds the user reference from the input', () =>
       variables: {
         representations: [{ __typename: 'User', id: 'u-erin' }],
       },
+      // As the gateway calls an entity: with the service token, so that the resolver is reached.
+      headers: { 'x-internal-token': SERVICE_TOKEN },
     });
 
     expect(errorCode(answer)).toBe('FORBIDDEN');

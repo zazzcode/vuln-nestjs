@@ -36,7 +36,11 @@ const tokenOf = (sub: string, role: 'ADMIN' | 'USER' = 'USER'): string =>
 const alice = tokenOf('u-alice');
 const query = (
   source: string,
-  options: { token?: string; variables?: Record<string, unknown> } = {},
+  options: {
+    token?: string;
+    variables?: Record<string, unknown>;
+    headers?: Record<string, string>;
+  } = {},
 ) => graphql(`${service.url}/graphql`, source, options);
 const call = (path: string, init: RequestInit = {}) =>
   request(`${service.url}${path}`, init);
@@ -141,6 +145,8 @@ describe('ACCESS-002 — orderDetails: no ownership check', () => {
           variables: {
             representations: [{ __typename: 'User', id: 'u-bob' }],
           },
+          // As the gateway calls an entity: with the service token, so that the resolver is reached.
+          headers: { 'x-internal-token': SERVICE_TOKEN },
         }),
       ),
     ).toBe('FORBIDDEN');

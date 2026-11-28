@@ -1417,7 +1417,7 @@
   },
   {
     "id": "GQL-007",
-    "title": "The backend federation queries answer any caller; the gateway proves itself, the subgraphs do not ask",
+    "title": "The backend federation queries answer any caller; the gateway proves itself, one subgraph asks for it, two do not",
     "status": "active",
     "scanner": "SAST",
     "cwe": "CWE-306",
@@ -1427,14 +1427,15 @@
     },
     "service": "gateway",
     "surface": "setting",
-    "operation": "a subgraph requires no credential on _entities and _service; the gateway presents x-internal-token on every subgraph fetch",
-    "source": "apps/gateway/src/graphql/subgraph-data.source.ts",
+    "operation": "accounts and notifications ask no credential on _entities and _service; the gateway presents x-internal-token on every subgraph fetch",
+    "source": "apps/accounts/src/graphql/graphql.module.ts",
     "flow": "a direct POST /graphql to a subgraph's own port with _entities -> no credential asked -> any user read by key, where user(id) is admin only",
     "safeControl": "apps/gateway/src/graphql/subgraph-data.source.ts",
-    "hardenedValue": "each subgraph requires x-internal-token on _entities and _service (the lead's half, after this service's report)",
+    "hardenedValue": "a subgraph requires x-internal-token on _entities and _service: trading registers a plugin that answers both only to the service token and refuses any other caller with 403",
     "documentation": "docs/vulnerabilities/gql.md",
-    "test": "apps/gateway/test/scenarios/gql.int-spec.ts",
-    "expectedFinding": true
+    "test": "tests/e2e/scenarios-graphql.e2e-spec.ts",
+    "expectedFinding": true,
+    "safeControls": ["apps/trading/src/graphql/graphql.module.ts"]
   },
   {
     "id": "CONFIG-001",

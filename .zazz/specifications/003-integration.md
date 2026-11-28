@@ -20,7 +20,7 @@
 
 ## 0. Capability
 
-Completes the lab as one application. The catalogue registers all 77 scenarios of the code, the gateway's thirteen last. Each real subgraph plays its part in GQL-007: accounts keeps answering its federation queries to any caller, which is the flaw, and trading and notifications answer theirs only to the gateway, which is the protected counterpart the running lab lacked. The end-to-end suite proves, against the real services and no stand-in, the thirteen scenarios of the gateway with their counterparts, the three scenarios of request forgery whose request reaches a sibling service, and what the gateway answers when a service behind it is gone. `pnpm scenario:check` also fails when a scenario has no request in the Postman collections. **No flaw is fixed, and none is added.**
+Completes the lab as one application. The catalogue registers all 77 scenarios of the code, the gateway's thirteen last. Each real subgraph plays its part in GQL-007: accounts and notifications keep answering their federation queries to any caller, which is the flaw, and trading answers its own only to the gateway, which is the protected counterpart the running lab lacked. The end-to-end suite proves, against the real services and no stand-in, the thirteen scenarios of the gateway with their counterparts, the three scenarios of request forgery whose request reaches a sibling service, and what the gateway answers when a service behind it is gone. `pnpm scenario:check` also fails when a scenario has no request in the Postman collections. **No flaw is fixed, and none is added.**
 
 ---
 
@@ -89,18 +89,21 @@ One pull request, as the header records. If implementation shows a need to split
 
 ### Strict scope constraint
 
-Every file this specification adds or changes is under `tests/e2e/`, `scripts/check-scenarios.{mjs,spec.ts}`, `catalog/`, the two ground-truth files under `tests/`, `libs/internal-auth/src/`, the GraphQL module of each subgraph and the one plugin file beside it, the one new test file of trading and of notifications, section GQL-007 of `docs/vulnerabilities/gql.md`, and this file. A file outside it stops the work (section 5).
+Every file this specification adds or changes is under `tests/e2e/`, `scripts/check-scenarios.{mjs,spec.ts}`, `catalog/`, the two ground-truth files under `tests/`, `libs/internal-auth/src/`, the GraphQL module of accounts and that of trading with the one plugin file beside it, the tests of trading — one new file and the four that call `_entities` — section GQL-007 of `docs/vulnerabilities/gql.md`, and this file. A file outside it stops the work (section 5).
 
 ### In scope
 
 | Path | New / modified | Reason |
 | --- | --- | --- |
 | `catalog/catalog.json`, `tests/expected-hashes.json`, `tests/expected-scanner-findings.json` | modified | The gateway's thirteen entries, registered in the order of merge; the entry of GQL-007 corrected to the files that now carry the flaw and its counterparts; re-snapshotted |
-| `libs/internal-auth/src/secret.ts`, `auth.guard.ts`, `index.ts`, `auth-guard.spec.ts` | new, modified | `sameSecret`, the comparison the guard already made, exported for the plugin; the guard imports it |
-| `apps/trading/src/graphql/federation-queries.plugin.ts`, `apps/notifications/src/graphql/federation-queries.plugin.ts` | new | The counterpart of GQL-007: an Apollo Server plugin that answers `_entities` and `_service` only to the service token |
-| `apps/trading/src/graphql/graphql.module.ts`, `apps/notifications/src/graphql/graphql.module.ts` | modified | Each registers the plugin: the hardened setting, with its marker |
-| `apps/trading/test/federation-queries.int-spec.ts`, `apps/notifications/test/federation-queries.int-spec.ts` | new | The counterpart proven in each service alone, both directions |
-| `apps/accounts/src/graphql/graphql.module.ts` | modified | The marker of GQL-007 on the weak setting. A comment: the behaviour of accounts does not change |
+| `libs/internal-auth/src/secret.ts`, `secret.spec.ts`, `auth.guard.ts`, `index.ts` | new, modified | `sameSecret`, the comparison the guard already made, moved to a file of its own and exported for the plugin, with its tests; the guard imports it |
+| `apps/trading/src/graphql/federation-queries.plugin.ts` | new | The counterpart of GQL-007: an Apollo Server plugin that answers `_entities` and `_service` only to the service token |
+| `apps/trading/src/graphql/graphql.module.ts` | modified | Registers the plugin: the hardened setting, with its marker |
+| `apps/trading/test/federation-queries.int-spec.ts` | new | The counterpart proven in the service alone, both directions |
+| `apps/trading/test/app.int-spec.ts`, `safe.int-spec.ts`, `scenarios/access.int-spec.ts`, `scenarios/graph.int-spec.ts` | modified | Their `_entities` calls present the service token, as the gateway does on every fetch. No assertion changes: with the token presented, it is the resolver that answers or refuses |
+
+
+| `apps/accounts/src/graphql/graphql.module.ts` | modified | The marker of GQL-007 on the weak setting. A comment: the behaviour of accounts does not change, and nothing in `apps/notifications` changes |
 | `tests/e2e/scenarios-graphql.e2e-spec.ts` | new | GQL-001 to GQL-004 and GQL-007 against the real lab |
 | `tests/e2e/scenarios-config.e2e-spec.ts` | new | CONFIG-001 to CONFIG-004 against the real lab |
 | `tests/e2e/scenarios-edge.e2e-spec.ts` | new | REDIR-001, XSS-003, COOKIE-003, INFO-002 against the real lab; then the gateway with trading gone |
@@ -131,11 +134,11 @@ Each answers "why this over the obvious alternative?".
 
 **Why.** Over waiting for the merges: the Project Owner asked for the work to go on, and every hour between the two merges and this branch is an hour added to the end. Over a local-only branch rebased later: a pushed branch has CI on every push, the pre-push hook on every push and nothing to lose to the usage limit, which stopped builders twice on 2026-11-27. The merge is clean (`git merge-tree --write-tree` exits 0) and the combined tree passed the whole gate on 2026-11-28, so the base is what `main` will be.
 
-### D-2 — Accounts keeps the flaw; trading and notifications are the counterpart
+### D-2 — Accounts and notifications keep the flaw; trading is the counterpart
 
-**Decision.** The specification of #6 (D-5, section 13) and the handoff say each real subgraph must require the token. Built as written, no subgraph would answer a direct `_entities` call any more: the flaw would exist only in the gateway's tests, against a stand-in. Accounts keeps the weak setting — the federation queries are added to its schema outside the reach of the global guard, and answer any caller — and trading and notifications register the plugin.
+**Decision.** The specification of #6 (D-5, section 13) and the handoff say each real subgraph must require the token. Built as written, no subgraph would answer a direct `_entities` call any more: the flaw would exist only in the gateway's tests, against a stand-in. Accounts and notifications keep the weak setting — the federation queries are added to their schema outside the reach of the global guard, and answer any caller — and trading registers the plugin.
 
-**Why.** Invariant 1 forbids removing a vulnerable operation; invariant 4 requires its counterpart in the lab. With three real subgraphs, one weak and two hardened gives both, and the gateway contract's row already says "a subgraph requires it", not "each subgraph". Accounts is the weak one because the contract's own example is its port: a direct `_entities` call to `127.0.0.1:3101` reads any user by key, where `user(id)` is an administrator's question. Measured on 2026-11-28 with no credential at all: accounts answers `_service` with its whole schema and `_entities` with `u-admin`'s record. Hardening accounts and leaving another weak was rejected: the gain the scenario is about is the user's record.
+**Why.** Invariant 1 forbids removing a vulnerable operation; invariant 4 requires its counterpart in the lab. The gateway contract's row designs one: "a subgraph requires it", not "each subgraph", as every other scenario has one twin. Accounts stays weak because the contract's own example is its port: a direct `_entities` call to `127.0.0.1:3101` reads any user by key, where `user(id)` is an administrator's question. Measured on 2026-11-28 with no credential at all: accounts answers `_service` with its whole schema and `_entities` with `u-admin`'s record; notifications answers `_entities` with an announcement by key. Hardening accounts and leaving another weak was rejected: the gain the scenario is about is the user's record. Of the other two, trading is the one hardened. Its `_entities` already asks for a session token, so there the hardened setting changes the most — any signed-in user becomes the gateway alone — and its tests call `_entities` in four files, where those of notifications do in six. First drafted with both hardened; changed the same day on the evidence of the gate (section 13).
 
 ### D-3 — The counterpart is an Apollo Server plugin in the subgraph's GraphQL module
 
@@ -241,16 +244,16 @@ Stop and surface to the Project Owner if:
 Reference data: the fake data of `@zazzles/exchange-lab-data` as every run loads it (`u-admin`, `u-alice`, `u-bob`, orders `1` and `6`, announcement `1`), the secrets of the run (`lab().secrets`), and the payloads of 002d's section 8, sent unchanged.
 
 - **AC1 — The catalogue is complete.** `pnpm scenario:check` exits 0 with "77 of 85 designed scenarios are registered"; the eight not registered are the pins. `tests/expected-hashes.json` and `tests/expected-scanner-findings.json` were regenerated by `pnpm scenario:update` in the commits that changed the catalogue, never edited. Verified by that command, and by `git log --stat` of the commits that touch `catalog/`.
-- **AC2 — Accounts still answers any caller.** A `POST /graphql` to accounts' own listener, over HTTP/2 cleartext, with no credential: `{ _service { sdl } }` answers 200 with the schema; `_entities(representations: [{__typename: "User", id: "u-admin"}])` answers 200 with `{ id: "u-admin", email: "admin@vcx.exchange", displayName: "Admin" }`; and `user(id: "u-admin")` answers `UNAUTHENTICATED`. Its module carries the marker `GQL-007 / CWE-306`. Verified by `tests/e2e/scenarios-graphql.e2e-spec.ts`.
-- **AC3 — Trading and notifications answer their federation queries to the gateway only.** To each, a direct `POST /graphql`: (a) `_service` and `_entities` with no credential answer 403, with `errors[0].extensions.code` `FORBIDDEN`, the message `<service> answers its federation queries to the gateway only`, and no `data`; (b) the same with a plain user's session token: 403; (c) `_entities` under an alias, inside an inline fragment on `Query`: 403; (d) with the run's service token: 200 and the query answered; (e) an ordinary operation of that subgraph, with no credential where its own guard allows one and with a session token elsewhere, is answered as before. The same five answers through the relay of each where it has one. Verified by `apps/trading/test/federation-queries.int-spec.ts`, `apps/notifications/test/federation-queries.int-spec.ts` (the service alone) and `tests/e2e/scenarios-graphql.e2e-spec.ts` (the lab).
+- **AC2 — Accounts and notifications still answer any caller.** A `POST /graphql` to accounts' own listener, over HTTP/2 cleartext, with no credential: `{ _service { sdl } }` answers 200 with the schema; `_entities(representations: [{__typename: "User", id: "u-admin"}])` answers 200 with `{ id: "u-admin", email: "admin@vcx.exchange", displayName: "Admin" }`; and `user(id: "u-admin")` answers `UNAUTHENTICATED`. To notifications' own listener, with no credential: `_entities` answers announcement `1` and `_service` its schema. Accounts' module carries the marker `GQL-007 / CWE-306`. Verified by `tests/e2e/scenarios-graphql.e2e-spec.ts`.
+- **AC3 — Trading answers its federation queries to the gateway only.** A direct `POST /graphql` to trading: (a) `_service` and `_entities` with no credential answer 403, with `errors[0].extensions.code` `FORBIDDEN`, the message `trading answers its federation queries to the gateway only`, and no `data`; (b) the same with a plain user's session token and with an administrator's: 403; (c) `_entities` under an alias, inside an inline fragment on `Query`: 403; (d) with the run's service token: 200 and the query answered; (e) an ordinary operation of trading is answered as before. The same refusal and the same answer through its relay. Verified by `apps/trading/test/federation-queries.int-spec.ts` (the service alone) and `tests/e2e/scenarios-graphql.e2e-spec.ts` (the lab).
 - **AC4 — The graph still answers.** Through the gateway, as Alice: `{ orders { id symbol user { id email displayName } } }` returns her two orders with her own record on each, which is trading's root and accounts' `_entities`; as an administrator: `{ user(id: "u-alice") { id orders { id symbol } } }`, which is the other way round; and one query with a field of each of the three services. No error in any. Verified by `tests/e2e/scenarios-graphql.e2e-spec.ts` and, for the third, the existing `tests/e2e/graph.e2e-spec.ts`.
 - **AC5 — The thirteen scenarios of the gateway, end to end.** Each payload of 002d's section 8 is sent, through the gateway, to the vulnerable endpoint and to each protected counterpart of its row. The exploit assertion names what was gained, on the real service's answer; the counterpart assertion names why it was refused. In four files: GQL-001 to GQL-004 and GQL-007 in `scenarios-graphql`, CONFIG-001 to CONFIG-004 in `scenarios-config`, REDIR-001, XSS-003, COOKIE-003 and INFO-002 in `scenarios-edge`. A setting's test asserts the exploit; its hardened value is not set. Verified by `pnpm test:e2e`.
 - **AC6 — Request forgery reaches a sibling.** SSRF-001, SSRF-002 and SSRF-003, each with the URL of a sibling service's `/internal/*` path: the exploit asserts that service's own answer was returned to the caller; each counterpart of the contract's row receives the identical URL and the assertion names why it was refused (`setWebhookUrl` at save time, `registerWebhook` at delivery time, the avatar allowlist, `import` which fetches nothing, `import-url` behind the guard). Verified by `tests/e2e/scenarios-ssrf.e2e-spec.ts`.
 - **AC7 — The gateway with a service gone.** With trading stopped by `lab().stopService('trading')`: a REST pass-through route whose upstream is trading answers 503 in the lab's error shape, its message naming `trading`; `GET /api/v1/health` answers 503 with trading `unavailable`; and INFO-002's page answers the failure as its module shows. Verified by `tests/e2e/scenarios-edge.e2e-spec.ts`, the tests that take the lab apart running last in the file.
 - **AC8 — A request per scenario is ground truth.** `pnpm scenario:check` exits 0 and its line says that 77 of 77 registered scenarios have a request under `postman/`; with one request's ID renamed in a scratch copy, it exits 1 and names the scenario. Verified by that command and by the unit test of `scripts/check-scenarios.spec.ts`.
 - **AC9 — Clean, and nothing left behind.** `pnpm build`, `pnpm lint` (0 warnings, 0 errors), `pnpm format:check`, `pnpm test`, `pnpm test:int`, `pnpm test:e2e`, `pnpm test:api`, `pnpm scenario:check` and `pnpm audit:check` each exit 0 on the tip. Every end-to-end file's stop finds nothing forced and nothing left behind, which `useLab()` asserts. Verified by each exit code, read from where it was written.
-- **AC10 — The documentation says what is built.** Section GQL-007 of `docs/vulnerabilities/gql.md` shows accounts answering a direct `_entities` call, trading and notifications answering 403 to the same call and 200 with the service token, and the graph still answering; every command in it was run against a lab of the lead's, on a port set of its own, and its output is what was printed. Its "vulnerable and protected" table says why each counterpart works, as a scoped claim. Verified by the run log's lines for each command, and `doc-check`'s manual pass.
-- **AC11 — Each counterpart is proven live.** With the `plugins` line removed from trading's module, its counterpart tests fail — the three refusals of AC3 among them — and pass restored; the same for notifications. Each check is a line of the run log: what was removed, the file run, how many failed, the names. Verified by the run log.
+- **AC10 — The documentation says what is built.** Section GQL-007 of `docs/vulnerabilities/gql.md` shows accounts and notifications answering a direct `_entities` call with no credential, trading answering 403 to the same call and 200 with the service token, and the graph still answering; every command in it was run against a lab of the lead's, on a port set of its own, and its output is what was printed. Its "vulnerable and protected" table says why each counterpart works, as a scoped claim. Verified by the run log's lines for each command, and `doc-check`'s manual pass.
+- **AC11 — The counterpart is proven live.** With the `plugins` line removed from trading's module, its three refusal tests fail and pass restored. The check is a line of the run log: what was removed, the file run, how many failed, the names. Verified by the run log.
 - **AC12 — Scope.** `git diff abead16..HEAD --name-only` lists only the paths of section 3. `pnpm-lock.yaml` and `tests/expected-audit.json` are unchanged: this step adds no dependency and no pin. Verified by that command.
 
 ---
@@ -261,13 +264,15 @@ Every test below proves an AC. Nothing is added to prove what an existing test a
 
 ### Automated tests
 
-**`apps/trading/test/federation-queries.int-spec.ts` and `apps/notifications/test/federation-queries.int-spec.ts`** — AC3, AC11. The service alone, as its tests start it. Five tests, each named for what it proves:
+**`apps/trading/test/federation-queries.int-spec.ts`** — AC3, AC11. The service alone, as its tests start it. Five tests, each named for what it proves:
 
 - "GQL-007, the counterpart: `_service` and `_entities` answer 403 to a call with no credential" — status, the code, the message, no `data`.
 - "…to a call with a session token and no service token" — the same, for a plain user and for an administrator.
 - "…where the query hides `_entities` under an alias and a fragment".
 - "with the service token, both are answered" — `_service` returns the schema; `_entities` reaches the resolvers.
 - "an operation that is neither is answered as before" — one public root operation, one that needs a caller.
+
+Trading's existing tests that call `_entities` — `app.int-spec.ts`, `safe.int-spec.ts`, `scenarios/access.int-spec.ts`, `scenarios/graph.int-spec.ts` — present the service token on those calls, as the gateway does. Two of them assert a counterpart's `FORBIDDEN`; without the token they would pass on the plugin's 403 instead of the resolver's refusal, and that is what the gate showed.
 
 **`tests/e2e/scenarios-graphql.e2e-spec.ts`** — AC2, AC3, AC4, AC5. One lab. GQL-007 against the three real subgraphs and the gateway; then GQL-001 (introspection to a caller with no token; the GraphiQL IDE to a browser), GQL-002 (the walk of twelve levels, answered with data), GQL-003 (one request, three operations, three answers), GQL-004 (a validation error carrying `extensions.stacktrace`). A setting has no twin: each test asserts the exploit and names the hardened value in the catalogue.
 
@@ -311,10 +316,10 @@ It fails before the plugin is registered (the service answers 200), and passes a
 **Phase 2: GQL-007's subgraph half (AC2, AC3, AC4, AC11).**
 2.1. `sameSecret` exported from `libs/internal-auth`; the guard imports it. `pnpm --filter @zazzles/exchange-internal-auth test`.
 2.2. Trading: the plugin and its registration; the five tests, each failing first; the regression check of AC11, recorded.
-2.3. Notifications: the same file, the same five tests, the same check.
-2.4. Accounts: the marker comment, and nothing else. Its `test:int` unchanged: 146 tests.
+2.3. Trading's existing tests that call `_entities` present the service token on those calls: `app.int-spec.ts`, `safe.int-spec.ts`, `scenarios/access.int-spec.ts`, `scenarios/graph.int-spec.ts`. `pnpm --filter @zazzles/exchange-trading test:int`: 120 tests.
+2.4. Accounts: the marker comment, and nothing else. Its `test:int` unchanged: 146 tests. Notifications: nothing.
 2.5. `tests/e2e/scenarios-graphql.e2e-spec.ts`: GQL-007 against the lab (AC2, AC3, AC4). `pnpm build && pnpm test:e2e tests/e2e/scenarios-graphql.e2e-spec.ts`.
-2.6. The catalogue entry of GQL-007: `source` accounts' module, `safeControl` the gateway's data source, `safeControls` the modules of trading and notifications, `test` the end-to-end file, the hardened value as built; `pnpm scenario:update` in the same commit.
+2.6. The catalogue entry of GQL-007: `source` accounts' module, `safeControl` the gateway's data source, `safeControls` trading's module, `test` the end-to-end file, the hardened value as built; `pnpm scenario:update` in the same commit.
 
 **Phase 3: The request check (AC8).** In `scripts/check-scenarios.mjs`: the function, its unit test, the summary line. `pnpm scenario:check`: 77 of 85, 77 with a request.
 
@@ -324,7 +329,7 @@ It fails before the plugin is registered (the service answers 200), and passes a
 
 **Phase 6: The gate and the review.** Section 6's commands, each exit code read; two reviewers, one per axis; what they find closed with its proof; CI green on the tip; the body with `pr-builder`; the draft put to the Project Owner.
 
-### Skeleton: `apps/<service>/src/graphql/federation-queries.plugin.ts`
+### Skeleton: `apps/trading/src/graphql/federation-queries.plugin.ts`
 
 ```ts
 export function federationQueriesNeedTheToken(service: string, expectedToken: string): ApolloServerPlugin {
@@ -433,6 +438,7 @@ Write your findings to .zazz/ephemeral/003-review-<axis>.md as you establish eac
 ## 13. Implementation and review changes
 
 - **2026-11-28, the Lead Agent, at drafting.** Sections 4 (D-2), 6 (AC2, AC3, AC10), 7, 8. The specification of #6 and the handoff planned that each real subgraph require the token. Measured on the lab and taken as D-2: accounts keeps the flaw, trading and notifications are its counterpart. Awaiting the Project Owner's confirmation (OQ-1); no verification impact beyond what AC2 and AC3 already name.
+- **2026-11-28, the Lead Agent, during implementation, before the GQL-007 commit.** Sections 0, 3, 4 (D-2), 6 (AC2, AC3, AC10, AC11), 7, 8. D-2 first made trading and notifications both the counterpart. The full gate showed why not: the existing tests of both services call `_entities` directly, as the gateway does, without the service token — five tests of trading and nine of notifications failed, and two of trading's passed on the plugin's 403 instead of the resolver's refusal. One hardened subgraph is the contract's design. Now trading is hardened and its four test files present the token; notifications keeps the flaw beside accounts. Verification impact: AC2 gains notifications; AC3 and AC11 lose it; the scope gains trading's four test files.
 
 ---
 

