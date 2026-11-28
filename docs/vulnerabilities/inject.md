@@ -4,6 +4,90 @@ Two weaknesses that write a caller's string into something a machine parses. An 
 
 The `trading` reproduction was run on 2026-11-27 against the service alone on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`, with Alice's token in `$A`; the `notifications` one the same day, against the service alone on `127.0.0.1:3103`, with `$A` Alice's token. Each counterpart's claim is scoped: this operation, receiving the identical input, keeps the string data for the reason given. Nothing here says any export or log is secure in general.
 
+<a id="inject-001"></a>
+## INJECT-001 — spreadsheet-formula injection in a CSV export
+
+<a id="inject-001-agent"></a>
+### INJECT-001 — agent reference
+
+- **Service:** `trading`.
+- **Source:** `apps/trading/src/reports/trades-raw.controller.ts`
+- **Operation:** `GET /internal/reports/trades-raw.csv`, REST, a signed-in user.
+- **Sink:** `row.o_memo ?? ''`: the memo written to the CSV as it is.
+- **Flow:** an order's `memo` → the CSV cell written as it is → `=zazzles-lab-marker` stays a formula.
+- **Counterparts:** `apps/trading/src/reports/reports.controller.ts`: `GET /internal/reports/trades.csv` (every cell text: a cell that begins like a formula is prefixed with an apostrophe), `GET /internal/reports/trades.json` (JSON, an attachment).
+- **Tests:** `apps/trading/test/scenarios/exports.int-spec.ts`.
+- **Expected finding:** yes. A SAST tool must report caller text written into a spreadsheet cell as it is: CWE-1236.
+
+<a id="inject-001-student"></a>
+### INJECT-001 — student guide
+
+An order's `memo` is free text. Written to a CSV as it is, a memo that begins with `=`, `+`, `-` or `@` is a formula to whichever spreadsheet opens the export: on the machine of whoever downloads it, in the context of whoever opened the file. Nothing in the export says the cell is text, so the spreadsheet does not either.
+
+The line (`apps/trading/src/reports/trades-raw.controller.ts`):
+
+```ts
+// INJECT-001 / CWE-1236: the memo is written to the CSV as it is; a cell that starts with = is a formula
+row.o_memo ?? '',
+```
+
+<a id="inject-001-exploit"></a>
+### INJECT-001 — exploit lab
+
+The reproduction was run on 2026-11-27 against the service alone, on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`. `$A` is Alice's token. Alice's seed order carries the memo `=zazzles-lab-marker`.
+
+```console
+$ curl -s $URL/internal/reports/trades-raw.csv -H "authorization: Bearer $A"
+id,symbol,side,price,quantity,fee,memo
+1,BTC-USD,BUY,640000,10000000,640,=zazzles-lab-marker
+3,BTC-USD,BUY,645000,5000000,323,=zazzles-lab-marker
+8,SOL-USD,SELL,15200,100000000,152,
+```
+
+Two cells of the export are formulas: what was gained is code that runs when the file is opened, written by nothing more than a memo. The same memo through the counterparts. `GET /internal/reports/trades.csv`, the same export with every cell text:
+
+```console
+$ curl -s $URL/internal/reports/trades.csv -H "authorization: Bearer $A"
+id,symbol,side,price,quantity,fee,memo
+1,BTC-USD,BUY,6400.00,0.10000000,6.40,'=zazzles-lab-marker
+3,BTC-USD,BUY,6450.00,0.05000000,3.23,'=zazzles-lab-marker
+8,SOL-USD,SELL,152.00,1.00000000,1.52,
+```
+
+`GET /internal/reports/trades.json`, JSON and an attachment: nothing parses a JSON string as a formula.
+
+```console
+$ curl -s -D - -o trades.json $URL/internal/reports/trades.json -H "authorization: Bearer $A" | grep -iE 'content-type|content-disposition'
+content-type: application/json; charset=utf-8
+content-disposition: attachment; filename="trades.json"
+$ head -c 120 trades.json
+{"trades":[{"id":"1","symbol":"BTC-USD","side":"BUY","price":"6400.00","quantity":"0.10000000","fee":"6.40","memo":"=zazzles-lab-marker"}...
+```
+
+The memo is still the same string — as data, not as a cell.
+
+<a id="inject-001-safe"></a>
+### INJECT-001 — vulnerable and protected
+
+| | Operation | What it does with the same memo |
+| --- | --- | --- |
+| Vulnerable | `GET /internal/reports/trades-raw.csv` | Writes it into the CSV as it is: a cell that begins with `=` is a formula to the spreadsheet that opens the file |
+| Counterpart 1 | `GET /internal/reports/trades.csv` | Writes every cell as text: a cell that begins like a formula is prefixed with an apostrophe |
+| Counterpart 2 | `GET /internal/reports/trades.json` | Answers JSON, as an attachment: nothing parses a JSON string as a formula |
+
+**Scoped claim.** Each counterpart defeats this flaw for identical input: the memo that reaches the first export as a formula reaches the second as text, the apostrophe first, and the third as a value inside a JSON document. The claim is not that an apostrophe or a JSON answer is harmless in every reader; only that this memo opens as no formula through them.
+
+<a id="inject-001-tests"></a>
+### INJECT-001 — tests
+
+`apps/trading/test/scenarios/exports.int-spec.ts`, describe `INJECT-001 — trades-raw.csv writes the memo as it is`. One payload — Alice's seed order, whose memo is `=zazzles-lab-marker` — read through the three exports:
+
+- **The exploit:** the raw export's cell is `=zazzles-lab-marker`, with no apostrophe before it.
+- **Counterpart 1:** the CSV writes the same memo as text, an apostrophe first.
+- **Counterpart 2:** the JSON export answers `application/json`, as an attachment, with the memo as it was sent.
+
+The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `INJECT-001 the raw export writes the memo as a formula`.
+
 <a id="inject-002"></a>
 ## INJECT-002 — a label that forges a log line
 
@@ -109,86 +193,3 @@ the counterpart, with the logger spied where the service runs:
   is a field whose value is the payload.
 
 The collection `postman/notifications/vuln-nestjs.notifications.postman_collection.json` carries two requests: `INJECT-002: a label that forges a log line` and `INJECT-002: the counterpart carries the same label as data`.
-<a id="inject-001"></a>
-## INJECT-001 — spreadsheet-formula injection in a CSV export
-
-<a id="inject-001-agent"></a>
-### INJECT-001 — agent reference
-
-- **Service:** `trading`.
-- **Source:** `apps/trading/src/reports/trades-raw.controller.ts`
-- **Operation:** `GET /internal/reports/trades-raw.csv`, REST, a signed-in user.
-- **Sink:** `row.o_memo ?? ''`: the memo written to the CSV as it is.
-- **Flow:** an order's `memo` → the CSV cell written as it is → `=zazzles-lab-marker` stays a formula.
-- **Counterparts:** `apps/trading/src/reports/reports.controller.ts`: `GET /internal/reports/trades.csv` (every cell text: a cell that begins like a formula is prefixed with an apostrophe), `GET /internal/reports/trades.json` (JSON, an attachment).
-- **Tests:** `apps/trading/test/scenarios/exports.int-spec.ts`.
-- **Expected finding:** yes. A SAST tool must report caller text written into a spreadsheet cell as it is: CWE-1236.
-
-<a id="inject-001-student"></a>
-### INJECT-001 — student guide
-
-An order's `memo` is free text. Written to a CSV as it is, a memo that begins with `=`, `+`, `-` or `@` is a formula to whichever spreadsheet opens the export: on the machine of whoever downloads it, in the context of whoever opened the file. Nothing in the export says the cell is text, so the spreadsheet does not either.
-
-The line (`apps/trading/src/reports/trades-raw.controller.ts`):
-
-```ts
-// INJECT-001 / CWE-1236: the memo is written to the CSV as it is; a cell that starts with = is a formula
-row.o_memo ?? '',
-```
-
-<a id="inject-001-exploit"></a>
-### INJECT-001 — exploit lab
-
-The reproduction was run on 2026-11-27 against the service alone, on `127.0.0.1:4202`, through the HTTP/1.1 relay on `127.0.0.1:4212`. `$A` is Alice's token. Alice's seed order carries the memo `=zazzles-lab-marker`.
-
-```console
-$ curl -s $URL/internal/reports/trades-raw.csv -H "authorization: Bearer $A"
-id,symbol,side,price,quantity,fee,memo
-1,BTC-USD,BUY,640000,10000000,640,=zazzles-lab-marker
-3,BTC-USD,BUY,645000,5000000,323,=zazzles-lab-marker
-8,SOL-USD,SELL,15200,100000000,152,
-```
-
-Two cells of the export are formulas: what was gained is code that runs when the file is opened, written by nothing more than a memo. The same memo through the counterparts. `GET /internal/reports/trades.csv`, the same export with every cell text:
-
-```console
-$ curl -s $URL/internal/reports/trades.csv -H "authorization: Bearer $A"
-id,symbol,side,price,quantity,fee,memo
-1,BTC-USD,BUY,6400.00,0.10000000,6.40,'=zazzles-lab-marker
-3,BTC-USD,BUY,6450.00,0.05000000,3.23,'=zazzles-lab-marker
-8,SOL-USD,SELL,152.00,1.00000000,1.52,
-```
-
-`GET /internal/reports/trades.json`, JSON and an attachment: nothing parses a JSON string as a formula.
-
-```console
-$ curl -s -D - -o trades.json $URL/internal/reports/trades.json -H "authorization: Bearer $A" | grep -iE 'content-type|content-disposition'
-content-type: application/json; charset=utf-8
-content-disposition: attachment; filename="trades.json"
-$ head -c 120 trades.json
-{"trades":[{"id":"1","symbol":"BTC-USD","side":"BUY","price":"6400.00","quantity":"0.10000000","fee":"6.40","memo":"=zazzles-lab-marker"}...
-```
-
-The memo is still the same string — as data, not as a cell.
-
-<a id="inject-001-safe"></a>
-### INJECT-001 — vulnerable and protected
-
-| | Operation | What it does with the same memo |
-| --- | --- | --- |
-| Vulnerable | `GET /internal/reports/trades-raw.csv` | Writes it into the CSV as it is: a cell that begins with `=` is a formula to the spreadsheet that opens the file |
-| Counterpart 1 | `GET /internal/reports/trades.csv` | Writes every cell as text: a cell that begins like a formula is prefixed with an apostrophe |
-| Counterpart 2 | `GET /internal/reports/trades.json` | Answers JSON, as an attachment: nothing parses a JSON string as a formula |
-
-**Scoped claim.** Each counterpart defeats this flaw for identical input: the memo that reaches the first export as a formula reaches the second as text, the apostrophe first, and the third as a value inside a JSON document. The claim is not that an apostrophe or a JSON answer is harmless in every reader; only that this memo opens as no formula through them.
-
-<a id="inject-001-tests"></a>
-### INJECT-001 — tests
-
-`apps/trading/test/scenarios/exports.int-spec.ts`, describe `INJECT-001 — trades-raw.csv writes the memo as it is`. One payload — Alice's seed order, whose memo is `=zazzles-lab-marker` — read through the three exports:
-
-- **The exploit:** the raw export's cell is `=zazzles-lab-marker`, with no apostrophe before it.
-- **Counterpart 1:** the CSV writes the same memo as text, an apostrophe first.
-- **Counterpart 2:** the JSON export answers `application/json`, as an attachment, with the memo as it was sent.
-
-The collection `postman/trading/vuln-nestjs.trading.postman_collection.json` carries the request `INJECT-001 the raw export writes the memo as a formula`.
