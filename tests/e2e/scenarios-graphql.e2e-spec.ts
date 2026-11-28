@@ -3,6 +3,7 @@ import {
   graphql,
   request,
   sessionToken,
+  type GraphQLErrorShape,
   type GraphQLResponse,
 } from '@zazzles/exchange-testing';
 import { useLab } from './lab.js';
@@ -157,13 +158,36 @@ describe('GQL-003 — one request, three operations, three answers', () => {
     // request.
     expect(Array.isArray(bodies)).toBe(true);
     expect(bodies).toHaveLength(3);
-    expect((bodies[0]?.data as { __typename: string }).__typename).toBe(
-      'Query',
-    );
-    expect((bodies[1]?.data as { markets: unknown[] }).markets).toHaveLength(5);
+    expect(bodies[0].data).toEqual({ __typename: 'Query' });
+    expect((bodies[1].data as { markets: unknown[] }).markets).toHaveLength(5);
     expect(
-      (bodies[2]?.data as { announcements: unknown }).announcements,
+      (bodies[2].data as { announcements: unknown }).announcements,
     ).toEqual([{ id: '1', title: 'Welcome to VCX' }]);
+  });
+});
+
+// GQL-004 — every error carries the server's own stack. Hardened value:
+// `includeStacktraceInErrorResponses: false`.
+describe("GQL-004 — a validation error carries the server's stack", () => {
+  test("GQL-004: a validation error answers the server's stack in extensions.stacktrace", async () => {
+    const answer = await call(
+      { query: '{ me { nope } }' },
+      { authorization: `Bearer ${tokenOf('u-alice')}` },
+    );
+
+    // Apollo answers a validation failure with 400; the answer carries the
+    // stack all the same, which is what the scenario is about.
+    expect(answer.status).toBe(400);
+    const body = answer.body as GraphQLResponse;
+    expect(body.errors).toHaveLength(1);
+    const error = body.errors?.[0] as GraphQLErrorShape;
+    expect(error.message).toContain('nope');
+    // What was gained: the running server's own stack — frames and file paths
+    // of the gateway process — returned to whoever sent the bad query.
+    expect(Array.isArray(error.extensions?.stacktrace)).toBe(true);
+    const stack = error.extensions?.stacktrace as string[];
+    expect(stack.length).toBeGreaterThan(3);
+    expect(stack.join('\n')).toMatch(/\sat\s/);
   });
 });
 
