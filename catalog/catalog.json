@@ -900,7 +900,8 @@
     "scanner": "SAST",
     "cwe": "CWE-807",
     "owasp": {
-      "top10": "A01"
+      "top10": "A01",
+      "api": "API10"
     },
     "service": "accounts",
     "surface": "rest",
@@ -1322,7 +1323,8 @@
     "scanner": "SAST",
     "cwe": "CWE-639",
     "owasp": {
-      "top10": "A01"
+      "top10": "A01",
+      "api": "API1"
     },
     "service": "notifications",
     "surface": "graphql",
